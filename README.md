@@ -265,6 +265,12 @@ Guard", so those exist as answers to Cadenza specifically:
 - **Anti-kiting.** The Stalker's Dart In closes up to 5 and its Harry reaches
   range 1~4 with a pull; the Warden's Chain Pull drags you 3~5 spaces. A
   roster that could only threaten range 1~2 made a sniper unloseable.
+- **Placement.** Enemies arrive from one side by default, which measures as
+  *harder* than surrounding the player — stacked enemies threaten
+  simultaneously (32% of beats) while a pincer's converge one at a time (8%).
+  Three-enemy pincers are banned outright: they cap achievable distance at
+  1~2 and delete ranged play. Full analysis in
+  [`docs/enemy-placement.md`](docs/enemy-placement.md).
 - Most intents carry **Stun Guard**, so a light poke no longer cancels a full
   activation. Locking an enemy out costs a real commitment.
 - **Brute** — *Brace* has Stun Guard 4 and Soak 2, so chip damage will not stun
@@ -286,6 +292,7 @@ Guard", so those exist as answers to Cadenza specifically:
 | `tools/balance.mjs` | Solver telemetry. |
 | `tools/forgiveness.mjs` | Clear rate vs. mistake rate. |
 | `tools/sloppy.mjs` | Fully random play — the harshest forgiveness bar. |
+| `docs/enemy-placement.md` | Why enemies arrive from one side, with the measurements. |
 | `public/` | Browser client. No build step, no dependencies. |
 
 ## Seven bugs the tests caught

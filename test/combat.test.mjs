@@ -418,15 +418,45 @@ test('every character starts at the shared STARTING_LIFE constant', () => {
   }
 });
 
-test('fighters open on the 3rd and 5th tiles', () => {
+test('standard encounters open on the 3rd and 5th tiles', () => {
   assert.equal(PLAYER_START, 3);
   assert.equal(ENEMY_START, 5);
   for (const enc of ENCOUNTERS) {
-    assert.equal(enc.playerSpace, PLAYER_START, `${enc.name} player start`);
+    // A pincer cannot satisfy this and still leave a distance-3 tile, so it
+    // is a declared exception. Everything else must hold the line.
+    if (enc.pincer) continue;
+    const p = enc.mirrored ? 8 - PLAYER_START : PLAYER_START;
+    const e = enc.mirrored ? 8 - ENEMY_START : ENEMY_START;
+    assert.equal(enc.playerSpace, p, `${enc.name} player start`);
     assert.ok(
-      enc.enemies.some((e) => e.space === ENEMY_START),
-      `${enc.name} has no enemy on the 5th tile`
+      enc.enemies.some((x) => x.space === e),
+      `${enc.name} has no enemy on the opening tile`
     );
+    assert.equal(Math.abs(p - e), 2, `${enc.name} opening gap`);
+  }
+});
+
+test('at most one pincer per run, and never with three enemies', () => {
+  // Three enemies on both sides caps achievable distance at 1~2, which
+  // deletes ranged play rather than pressuring it. See docs/enemy-placement.md.
+  const pincers = ENCOUNTERS.filter((e) => e.pincer);
+  assert.ok(pincers.length <= 1, `${pincers.length} pincers is too many`);
+  for (const enc of pincers) {
+    assert.ok(enc.enemies.length <= 2, `${enc.name} pincers with ${enc.enemies.length}`);
+  }
+});
+
+test('every encounter leaves a tile at distance 3 from all enemies', () => {
+  // The hard floor: a ranged character must always have somewhere to shoot
+  // from. This is the invariant that a three-enemy pincer violates.
+  for (const enc of ENCOUNTERS) {
+    const foes = enc.enemies.map((e) => e.space);
+    let best = 0;
+    for (let t = 1; t <= ARENA_SIZE; t++) {
+      if (foes.includes(t)) continue;
+      best = Math.max(best, Math.min(...foes.map((f) => Math.abs(f - t))));
+    }
+    assert.ok(best >= 3, `${enc.name} caps distance at ${best} — ranged kits cannot function`);
   }
 });
 

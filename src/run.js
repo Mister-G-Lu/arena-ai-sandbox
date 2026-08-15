@@ -29,8 +29,11 @@ export const ENCOUNTERS = [
   {
     name: 'The Long Hall',
     blurb: 'An archer holds the far end and punishes standing still.',
-    playerSpace: PLAYER_START,
-    enemies: [{ type: 'archer', space: 7 }, { type: 'husk', space: ENEMY_START }],
+    // Mirrored: the pack approaches from the low side, so the player is not
+    // always giving ground in the same direction across a run.
+    mirrored: true,
+    playerSpace: 8 - PLAYER_START,
+    enemies: [{ type: 'archer', space: 1 }, { type: 'husk', space: 8 - ENEMY_START }],
   },
   {
     name: 'Ironclad',
@@ -49,13 +52,22 @@ export const ENCOUNTERS = [
     ],
   },
   {
+    // The one sanctioned pincer of the run — see docs/enemy-placement.md.
+    // Mixed roles on purpose: you cannot solve it by facing one way. A
+    // two-enemy pincer still leaves a distance-3 tile, so a ranged kit keeps
+    // a firing line; a three-enemy pincer would not.
+    //
+    // A pincer cannot use the standard 3-vs-5 opening: no two-enemy pincer on
+    // seven spaces both preserves a distance-3 tile and places an enemy on
+    // tile 5. Flagged so the invariant test treats it as a declared exception
+    // rather than an accident.
+    pincer: true,
     name: 'Crossfire',
-    blurb: 'A stalker leads, a brute follows, an archer holds the back line.',
-    playerSpace: PLAYER_START,
+    blurb: 'An archer at your back, a stalker in front. You cannot face both.',
+    playerSpace: 4,
     enemies: [
-      { type: 'stalker', space: ENEMY_START },
-      { type: 'brute', space: 6 },
-      { type: 'archer', space: 7 },
+      { type: 'archer', space: 1 },
+      { type: 'stalker', space: 7 },
     ],
   },
   {

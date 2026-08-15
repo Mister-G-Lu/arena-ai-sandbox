@@ -140,16 +140,21 @@ export const ENEMY_TYPES = {
       }
       if (d <= 2) {
         return intent({
-          name: 'Backhand', range: [1, 2], power: phase2 ? 6 : 4, priority: 5, guard: 4,
+          name: 'Backhand', range: [1, 2], power: phase2 ? 6 : 4, priority: 5,
+          stunImmune: true,
           hit: [{ k: 'push', min: 2, max: 2 }],
-          text: 'Hit: Push 2',
+          text: 'Stun Immune. OH: Push 2',
         });
       }
-      if (d >= 5) {
+      // Anti-kiting. This used to trigger only at distance 5+, which a sniper
+      // simply never gave it — Rukyuk parked at 3.19 and the boss whiffed all
+      // fight. It now answers anything outside its own melee band.
+      if (d >= 4) {
         return intent({
-          name: 'Chain Pull', range: [3, 7], power: 4, priority: 4, guard: 3,
-          hit: [{ k: 'pull', min: 2, max: 3 }],
-          text: 'Hit: Pull 2~3',
+          name: 'Chain Pull', range: [2, 7], power: 5, priority: 4,
+          stunImmune: true,
+          hit: [{ k: 'pull', min: 3, max: 5 }],
+          text: 'Stun Immune. OH: Pull 3~5 — it drags you into melee.',
         });
       }
       return intent({
