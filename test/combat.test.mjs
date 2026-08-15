@@ -348,11 +348,17 @@ test('the boss reacts to your position', () => {
 });
 
 test('intentThreatens accounts for telegraphed movement', () => {
+  // Shamble advances 2~3 then strikes at range 1, so from space 4 it reaches
+  // a player on space 1 — the warning must account for the approach.
   const s = mkState([{ type: 'husk', space: 4 }], { playerSpace: 1 });
   assert.equal(s.enemies[0].intent.name, 'Shamble');
   assert.equal(intentThreatens(s, s.enemies[0]), true);
-  s.enemies[0].space = 7;
-  assert.equal(intentThreatens(s, s.enemies[0]), false);
+
+  // A Heavy Swing has no movement at all, so the same gap is safe.
+  s.enemies[0].patternIndex = 1;
+  telegraph(s);
+  assert.equal(s.enemies[0].intent.name, 'Heavy Swing');
+  assert.equal(intentThreatens(s, s.enemies[0]), false, 'no approach, cannot reach');
 });
 
 test('threatSpaces marks exactly the reachable spaces', () => {

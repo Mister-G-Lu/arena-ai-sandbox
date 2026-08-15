@@ -22,7 +22,7 @@ export const ENCOUNTERS = [
   },
   {
     name: 'Two Blades',
-    blurb: 'A second blade circles behind you. Do not get sandwiched.',
+    blurb: 'A stalker with a husk at its shoulder.',
     playerSpace: PLAYER_START,
     enemies: [{ type: 'stalker', space: ENEMY_START }, { type: 'husk', space: 7 }],
   },
@@ -44,18 +44,18 @@ export const ENCOUNTERS = [
     playerSpace: PLAYER_START,
     enemies: [
       { type: 'automaton', space: ENEMY_START },
+      { type: 'husk', space: 6 },
       { type: 'husk', space: 7 },
-      { type: 'husk', space: 1 },
     ],
   },
   {
     name: 'Crossfire',
-    blurb: 'Three enemies, two directions.',
+    blurb: 'A stalker leads, a brute follows, an archer holds the back line.',
     playerSpace: PLAYER_START,
     enemies: [
-      { type: 'archer', space: 1 },
       { type: 'stalker', space: ENEMY_START },
-      { type: 'brute', space: 7 },
+      { type: 'brute', space: 6 },
+      { type: 'archer', space: 7 },
     ],
   },
   {

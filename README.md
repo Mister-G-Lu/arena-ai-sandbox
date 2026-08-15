@@ -191,33 +191,41 @@ decisions into random legal plays — a direct model of a player making mistakes
 
 ```
   err%   cadenza                    rukyuk
-    0%   ############  97% (7.0/7)   ##########..  80% (6.8/7)
-   10%   #########...  77% (6.7/7)   ########....  70% (6.6/7)
-   20%   ######......  47% (6.3/7)   #####.......  43% (5.9/7)
-   30%   ##..........  20% (5.4/7)   ##..........  13% (5.2/7)
-   40%   #...........   7% (5.1/7)   #...........  10% (4.8/7)
-   50%   ............   3% (4.6/7)   ............   3% (4.3/7)
+    0%   ###########.  88% (6.9/7)   ############ 100% (7.0/7)
+   10%   ########....  68% (6.6/7)   #########...  76% (6.6/7)
+   20%   ####........  36% (6.3/7)   ##########..  80% (6.8/7)
+   30%   #...........  12% (5.6/7)   #####.......  40% (5.9/7)
+   40%   #...........  12% (5.4/7)   ###.........  24% (5.4/7)
+   50%   ............   4% (4.6/7)   ##..........  16% (5.3/7)
 
   floor (avg encounters cleared at 30-50% error):
-    cadenza 4.98   rukyuk 4.79
+    cadenza 5.29   rukyuk 5.71
 
   fully random play (tools/sloppy.mjs, 300 runs):
-    cadenza 2.27 / 7 encounters
-    rukyuk  0.58 / 7 encounters
+    cadenza 2.11 / 7 encounters
+    rukyuk  0.94 / 7 encounters
 ```
 
-Rukyuk is harder than Cadenza at every level: lower ceiling (80% vs 97% under
-perfect play), lower floor (4.79 vs 4.98 encounters), and a hard collapse under
-genuinely careless play (**0.58** encounters to Cadenza's **2.27**). He punishes
-inattention through his resource rather than through raw numbers — every beat
-without a loaded shell is a wasted beat.
+**Rukyuk rewards mastery rather than raising the floor.** Played well he is the
+stronger character — 100% clear, and the Swift-Shell Reload line (teleport to
+the far edge, refund the whole magazine, Priority 8 so it happens first) is a
+genuinely powerful tempo reset. Played carelessly he is by far the weaker one:
+under fully random play he manages **0.94** encounters to Cadenza's **2.11**,
+because every beat without a loaded shell is a wasted beat.
 
-Two earlier passes got this backwards and the harness caught both. Ammo used to
-refill between encounters, which made the sniper *more* forgiving than the tank
-(6.06 vs 4.98); tokens now carry over exactly as the fight ended them. And while
-his styles were briefly modelled as absolute ranges, he could not establish
-distance at all and needed invented Start-band moves to function — with the
-correct modifier maths his reach is real and those crutches are gone.
+He still tests as slightly more forgiving than Cadenza on the *structured*
+curve (5.71 vs 5.29). That is an artifact of the harness, not the design: its
+"mistakes" are random card choices, but it still antes a shell almost every
+beat — which is exactly the discipline the character is about. `sloppy.mjs`,
+which drops ammo discipline too, shows the intended ordering.
+
+Three earlier passes got this wrong and the harness caught each one. Ammo used
+to refill between encounters, making the sniper more forgiving than the tank;
+tokens now carry over as the fight ended them. His styles were briefly modelled
+as absolute ranges, leaving him unable to establish distance at all. And the
+enemy roster could only threaten range 1~2, which handed a ranged character a
+free win — several intents now close 3~5 spaces in the Start band, and the
+Warden's Chain Pull drags you 3~5 back into melee.
 
 Supporting telemetry (`npm run balance`), per run:
 
@@ -251,9 +259,12 @@ Guard", so those exist as answers to Cadenza specifically:
 - **Automaton** (The Foundry) — **Stun Immune** on every intent. You cannot
   lock it down; you have to out-position it. Its *Shove* (Push 2~3) drags you
   out of melee, which is what **Grapnel** (Pull 3) is for.
-- **Tracking intents.** The Husk, Stalker and Warden now do their approach in
-  the **Start** band, so they close *as you evade*. Dodge and Burst still beat
-  a given attack, but they no longer reset the whole fight.
+- **Tracking intents.** The Husk, Stalker, Automaton and Warden do their
+  approach in the **Start** band, so they close *as you evade*. Dodge and Burst
+  still beat a given attack, but they no longer reset the whole fight.
+- **Anti-kiting.** The Stalker's Dart In closes up to 5 and its Harry reaches
+  range 1~4 with a pull; the Warden's Chain Pull drags you 3~5 spaces. A
+  roster that could only threaten range 1~2 made a sniper unloseable.
 - Most intents carry **Stun Guard**, so a light poke no longer cancels a full
   activation. Locking an enemy out costs a real commitment.
 - **Brute** — *Brace* has Stun Guard 4 and Soak 2, so chip damage will not stun
@@ -277,7 +288,7 @@ Guard", so those exist as answers to Cadenza specifically:
 | `tools/sloppy.mjs` | Fully random play — the harshest forgiveness bar. |
 | `public/` | Browser client. No build step, no dependencies. |
 
-## Five bugs the tests caught
+## Seven bugs the tests caught
 
 Worth recording, because both were design errors rather than typos:
 
@@ -301,11 +312,30 @@ Worth recording, because both were design errors rather than typos:
    official turn sequence, which put On Hit before damage and split On Damage
    out as its own band. The finisher had been quietly broken for three commits.
 
+6. **The After Activating band did not exist.** `start`, `before`, `hit`,
+   `damage` and `end` were all wired into the beat; `after` was referenced
+   nowhere. Every AA effect in the game was dead code — Sniper's "Move 1~3",
+   Gunner's "Move 1 or 2", Force Grenade's retreat, and most importantly
+   Reload's teleport, which is the core of Rukyuk's escape plan. Three
+   separate `continue` statements in the activation loop also skipped it, so
+   a whiff or a non-damaging pair silently lost its AA as well.
+7. **`clampPick` clamped free-form choices to zero.** Teleport has no min/max,
+   so `Math.min(eff.max ?? 0, …)` forced *every* teleport destination to space
+   1 regardless of what was requested. Movement direction had the same
+   problem, and `move` compounded it by silently reversing at the board edge —
+   a fleeing sniper would turn around and walk back into melee.
+
 And one that was not a rules bug at all: the solver's state clone was a bare
 object spread, which **dropped the `tokens` accessor**. Every score became
 `NaN`, every option tied, and the AI just took the first legal play — Rukyuk
 scored a 0% clear rate. `cloneState()` now rebuilds the accessor. Worth
 remembering that a getter is invisible to `{...obj}`.
+
+A measurement bug is worth recording too: the whiff-rate instrumentation
+matched `/whiffs/` against the whole combat log, counting **enemy** misses as
+Rukyuk's failures. That reported a 73% whiff rate for a character who was
+actually connecting on almost every beat. Scoping the pattern to his own name
+dropped it to 0–12%. Instrument the specific actor, not the log.
 
 ## Extending
 

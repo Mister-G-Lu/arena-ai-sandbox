@@ -25,8 +25,8 @@ export const ENEMY_TYPES = {
     pattern: (self, i) => [
       intent({
         name: 'Shamble', range: [1, 1], power: 2, priority: 2, guard: 2,
-        start: [{ k: 'advance', min: 1, max: 2 }],
-        text: 'Start: Advance 1~2 (tracks you). Guard 2',
+        start: [{ k: 'advance', min: 2, max: 3 }],
+        text: 'Start: Advance 2~3 (tracks you). Guard 2',
       }),
       intent({
         name: 'Heavy Swing', range: [1, 1], power: 5, priority: 1, guard: 3,
@@ -40,18 +40,19 @@ export const ENEMY_TYPES = {
     blurb: 'Fast, fragile, and always trying to stay at knife range.',
     pattern: (self, i) => [
       intent({
-        name: 'Dart In', range: [1, 2], power: 3, priority: 6,
-        start: [{ k: 'close', min: 0, max: 3 }],
-        text: 'Start: Close up to 3 (tracks you as you move)',
+        name: 'Dart In', range: [1, 3], power: 3, priority: 6,
+        start: [{ k: 'close', min: 0, max: 5 }],
+        text: 'Start: Close up to 5 (runs you down). Range 1~3',
       }),
       intent({
         name: 'Slash', range: [1, 1], power: 4, priority: 5, guard: 2,
         text: 'Guard 2. Quick and clean.',
       }),
       intent({
-        name: 'Fade', range: [1, 3], power: 2, priority: 7,
-        after: [{ k: 'retreat', min: 1, max: 2 }],
-        text: 'After: Retreat 1~2',
+        name: 'Harry', range: [1, 4], power: 2, priority: 7,
+        start: [{ k: 'close', min: 0, max: 4 }],
+        hit: [{ k: 'pull', min: 1, max: 2 }],
+        text: 'Start: Close up to 4. OH: Pull 1~2. Range 1~4',
       }),
     ][i % 3],
   },
@@ -104,7 +105,8 @@ export const ENEMY_TYPES = {
       intent({
         name: 'Piston Jab', range: [1, 2], power: 4, priority: 4,
         stunImmune: true, armor: 1,
-        text: 'Stun Immune, Armor 1',
+        start: [{ k: 'close', min: 0, max: 3 }],
+        text: 'Stun Immune, Armor 1. Start: Close up to 3',
       }),
       intent({
         name: 'Shove', range: [1, 1], power: 3, priority: 3,

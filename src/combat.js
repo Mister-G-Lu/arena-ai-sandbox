@@ -181,11 +181,19 @@ function applyEffect(s, actor, target, eff, pick, log) {
       log(`${target.name} is stunned by the attack's rider (Guard does not apply).`);
       return;
     case 'move': {
-      // Move n in either direction, chosen by the actor.
+      // "Move n" is toward OR away from the target — the actor chooses.
+      // dir +1 = toward the target, -1 = away. Default away for a fighter
+      // that wants distance; the solver enumerates both.
       const n = pick(eff, 'move');
-      const dir = (pick(eff, 'moveDir') ?? 1) >= 0 ? 1 : -1;
-      const m = step(s, actor, n, dir) || step(s, actor, n, -dir);
-      if (m) log(`${name} moves ${m}.`);
+      if (n <= 0) return;
+      const wantDir = pick(eff, 'moveDir');
+      const dir = (wantDir === undefined ? -1 : wantDir) >= 0 ? 1 : -1;
+      const toward = target ? towardDir(actor.space, target.space) : 1;
+      // Move as far as we can in the CHOSEN direction. Never silently flip:
+      // at the board edge "away" used to fall back to "toward", which walked
+      // a fleeing sniper straight back into melee.
+      const m = step(s, actor, n, dir * toward);
+      if (m) log(`${name} moves ${m} to space ${actor.space}.`);
       return;
     }
     case 'teleport': {
@@ -377,8 +385,16 @@ export function playerAttack(char, baseId, styleId) {
 
 export const canUseFinisher = (s) => s.force >= s.player.life;
 
-const clampPick = (eff, want) =>
-  Math.max(eff.min ?? 0, Math.min(eff.max ?? 0, want === undefined ? (eff.max ?? 0) : want));
+const clampPick = (eff, want) => {
+  // Effects with no declared range (teleport's destination, direction flags)
+  // are free-form: pass the requested value straight through. Clamping them
+  // to a non-existent max silently forced every teleport to space 1.
+  if (eff.min === undefined && eff.max === undefined) return want;
+  return Math.max(eff.min ?? 0, Math.min(eff.max ?? 0, want === undefined ? (eff.max ?? 0) : want));
+};
+
+/** Picks that are choices, not magnitudes, and must not be clamped. */
+const DIRECTION_KEYS = new Set(['moveDir', 'dodgeDir', 'teleport']);
 
 // ------------------------------------------------------------------ ante
 
@@ -493,7 +509,9 @@ export function resolveBeat(s, play) {
   ].sort((a, b) => b.priority - a.priority || (a.kind === 'player' ? -1 : 1));
 
   const pickFor = (entry) => (eff, key) =>
-    entry.kind === 'player' ? clampPick(eff, play.picks?.[key]) : clampPick(eff, undefined);
+    entry.kind === 'player'
+      ? (DIRECTION_KEYS.has(key) ? play.picks?.[key] : clampPick(eff, play.picks?.[key]))
+      : (DIRECTION_KEYS.has(key) ? undefined : clampPick(eff, undefined));
 
   const targetOf = (entry) => {
     if (entry.kind === 'enemy') return s.player;
@@ -532,52 +550,64 @@ export function resolveBeat(s, play) {
       log(`${actor.name} is stunned and cannot activate.`);
       continue;
     }
-    if (a.noDamage || a.noHit || !a.range) continue;   // cannot hit anything
-
-    const pool = entry.kind === 'enemy' ? [s.player] : s.enemies.filter((e) => e.life > 0);
-    const myKey = actor.uid ?? 'player';
-    // A fixed (*) range ignores range modifiers, Gunner's shell included.
-    const rb = a.rangeFixed ? 0 : (actor.rangeBonus || 0);
-    const lo = Math.max(0, a.range[0] - Math.max(0, -rb));
-    const hi = a.range[1] + Math.max(0, rb);
-    const reachable = pool.filter((t) => {
-      // A fighter that dodged past us this beat cannot be hit by us at all.
-      if (t.dodging && t.dodging.has(myKey)) return false;
-      const d = Math.abs(actor.space - t.space);
-      return d >= lo && d <= hi;
-    });
-    let victims;
-    if (a.hitAll) victims = reachable;
-    else {
-      const primary = targetOf(entry);
-      victims = primary && reachable.includes(primary) ? [primary] : reachable.slice(0, 1);
-    }
-    if (!victims.length) {
-      const dodgedUs = pool.some((t) => t.dodging && t.dodging.has(myKey));
-      if (dodgedUs) {
-        log(`${actor.name} swings at empty air — dodged.`);
+    // The attack itself. A non-damaging pair (Reload, Dodge) or a whiff
+    // simply skips this part — but NOT the After Activating band below.
+    // Getting that wrong silently deleted Reload's teleport.
+    const canHit = !a.noDamage && !a.noHit && !!a.range;
+    if (canHit) {
+      const pool = entry.kind === 'enemy' ? [s.player] : s.enemies.filter((e) => e.life > 0);
+      const myKey = actor.uid ?? 'player';
+      // A fixed (*) range ignores range modifiers, Gunner's shell included.
+      const rb = a.rangeFixed ? 0 : (actor.rangeBonus || 0);
+      const lo = Math.max(0, a.range[0] - Math.max(0, -rb));
+      const hi = a.range[1] + Math.max(0, rb);
+      const reachable = pool.filter((t) => {
+        // A fighter that dodged past us this beat cannot be hit by us at all.
+        if (t.dodging && t.dodging.has(myKey)) return false;
+        const d = Math.abs(actor.space - t.space);
+        return d >= lo && d <= hi;
+      });
+      let victims;
+      if (a.hitAll) victims = reachable;
+      else {
+        const primary = targetOf(entry);
+        victims = primary && reachable.includes(primary) ? [primary] : reachable.slice(0, 1);
+      }
+      if (!victims.length) {
+        const dodgedUs = pool.some((t) => t.dodging && t.dodging.has(myKey));
+        if (dodgedUs) {
+          log(`${actor.name} swings at empty air — dodged.`);
+        } else {
+          const d = pool.length ? Math.abs(actor.space - pool[0].space) : '-';
+          log(`${actor.name} whiffs — nothing in range (nearest ${d}).`);
+        }
       } else {
-        const d = pool.length ? Math.abs(actor.space - pool[0].space) : '-';
-        log(`${actor.name} whiffs — nothing in range (nearest ${d}).`);
+        for (const v of victims) {
+          // ON HIT resolves BEFORE damage is dealt. This is the official
+          // order, and it is load-bearing: effects like "spend Ammo for +2
+          // Power" or Feedback Field's "+2 Power per damage absorbed" must be
+          // able to raise Power before that Power is applied.
+          for (const eff of a.hit) applyEffect(s, actor, v, eff, pickFor(entry), log);
+
+          const power = (a.power ?? 0) + (actor.powerBonus || 0);
+          const dealt = dealDamage(s, actor, v, power, a, play, log);
+
+          // ON DAMAGE only fires if damage actually got through.
+          if (dealt > 0 && v.life > 0 && !s.over) {
+            for (const eff of a.damage || [])
+              applyEffect(s, actor, v, eff, pickFor(entry), log);
+          }
+        }
+        checkEnd(s, log);
       }
-      continue;
     }
 
-    for (const v of victims) {
-      // ON HIT resolves BEFORE damage is dealt. This is the official order,
-      // and it is load-bearing: effects like "spend Ammo for +2 Power" or
-      // Feedback Field's "+2 Power per damage absorbed" must be able to raise
-      // Power before that Power is applied.
-      for (const eff of a.hit) applyEffect(s, actor, v, eff, pickFor(entry), log);
-
-      const power = (a.power ?? 0) + (actor.powerBonus || 0);
-      const dealt = dealDamage(s, actor, v, power, a, play, log);
-
-      // ON DAMAGE only fires if damage actually got through.
-      if (dealt > 0 && v.life > 0 && !s.over) {
-        for (const eff of a.damage || [])
-          applyEffect(s, actor, v, eff, pickFor(entry), log);
-      }
+    // (4d) AFTER ACTIVATING. Welded to the activation, so a stun cancels it —
+    // but a whiff or a non-damaging pair does NOT. This is what makes
+    // Reload's teleport and Sniper's repositioning actually work.
+    if (!s.over && !actor.stunned && actor.life > 0) {
+      for (const eff of a.after || [])
+        applyEffect(s, actor, targetOf(entry), eff, pickFor(entry), log);
     }
     checkEnd(s, log);
   }
@@ -694,6 +724,13 @@ export function projectedSpace(s, actor, atk, targetSpace) {
     const dir = towardDir(from, targetSpace);
     if (eff.k === 'advance' || eff.k === 'close') from += dir * (eff.max ?? 0);
     if (eff.k === 'retreat') from -= dir * (eff.max ?? 0);
+    // A fighter can never move onto or through the target: approaching
+    // movement stops adjacent. Without this the projection reported
+    // distance 0 and the "will hit you" warning silently went false.
+    if ((eff.k === 'advance' || eff.k === 'close')
+        && (from === targetSpace || Math.sign(targetSpace - from) !== Math.sign(targetSpace - actor.space))) {
+      from = targetSpace - dir;
+    }
   }
   return Math.max(1, Math.min(ARENA_SIZE, from));
 }

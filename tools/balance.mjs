@@ -15,6 +15,19 @@ import {
 const RUNS = Number(process.argv[2] || 200);
 
 /** Ante options: fungible -> on/off; unique -> each available shell, or none. */
+/**
+ * What one token is worth. Cadenza's 3 Shields are irreplaceable within a
+ * run, so hoarding is correct. Rukyuk's 6 shells are refundable with a single
+ * Reload, and a shell he never fires is worth nothing at all — a flat penalty
+ * made the solver hoard ammo and whiff on purpose.
+ */
+function tokenValue(s) {
+  const spec = s.tokenSpec;
+  if (!spec) return 0;
+  if (!spec.requiredOrMiss) return 2.0;          // Shields: precious
+  return s.player.tokenPool.length <= 1 ? 1.2 : 0.15;   // Ammo: use it
+}
+
 /** The distance band a character wants to fight at. */
 function preferredBand(char) {
   return char.id === 'rukyuk' ? [3, 5] : [1, 2];
@@ -46,12 +59,22 @@ export function solve(s, hand) {
       // enumerate a few movement choices
       let pickSets = [{}];
       if (atk.noDamage) pickSets = [{ dodgeDir: 1 }, { dodgeDir: -1 }];
+      // movement direction is a real choice: toward or away from the target
+      const hasMove = [...(atk.start||[]), ...(atk.after||[]), ...(atk.end||[])]
+        .some((e) => e.k === 'move');
+      if (hasMove) pickSets = pickSets.flatMap((b) => [
+        { ...b, moveDir: -1 }, { ...b, moveDir: 1 },
+      ]);
+      // teleport destination: try every space
+      const hasTeleport = [...(atk.after||[]), ...(atk.start||[])].some((e) => e.k === 'teleport');
+      if (hasTeleport) pickSets = pickSets.flatMap((b) =>
+        [1, 2, 3, 4, 5, 6, 7].map((t) => ({ ...b, teleport: t })));
       for (const eff of [...(atk.start || []), ...atk.before, ...atk.after, ...(atk.end || []), ...atk.hit]) {
         if ((eff.min ?? 0) === (eff.max ?? 0)) continue;
         const next = [];
         for (const base of pickSets)
           for (let v = eff.min; v <= eff.max; v++) next.push({ ...base, [eff.k]: v });
-        pickSets = next.slice(0, 16);
+        pickSets = next.slice(0, 40);
       }
       for (const picks of pickSets) {
         for (const targetUid of targets) {
@@ -77,7 +100,7 @@ export function solve(s, hand) {
             const score =
               dealt * 1.0 - taken * 1.7 + kills * 5 +
               (sim.victory ? 30 : 0) - (sim.over && !sim.victory ? 60 : 0) -
-              tokensSpent * 2.0 + posScore;
+              tokensSpent * tokenValue(s) + posScore;
             if (!best || score > best.score)
               best = { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal', score };
           }

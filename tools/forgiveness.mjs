@@ -27,10 +27,14 @@ function bestPlay(s, hand) {
     const isFin = hand.finishers.includes(b);
     for (const st of isFin ? [null] : hand.styles) {
       for (const targetUid of targets) {
-       for (const picks of (b === 'dodge'
-            ? [{dodgeMove:1,dodgeDir:1},{dodgeMove:2,dodgeDir:1},{dodgeMove:3,dodgeDir:1},
-               {dodgeMove:1,dodgeDir:-1},{dodgeMove:2,dodgeDir:-1},{dodgeMove:3,dodgeDir:-1}]
-            : [undefined])) {
+       const atkP = playerAttack(s.char, b, st);
+       let pickList = [undefined];
+       if (b === 'dodge') pickList = [{dodgeMove:1,dodgeDir:1},{dodgeMove:2,dodgeDir:1},{dodgeMove:3,dodgeDir:1},
+               {dodgeMove:1,dodgeDir:-1},{dodgeMove:2,dodgeDir:-1},{dodgeMove:3,dodgeDir:-1}];
+       else if (b === 'reload') pickList = [1,2,3,4,5,6,7].map((t)=>({teleport:t, move:0}));
+       else if ([...(atkP.after||[])].some((e)=>e.k==='move'))
+         pickList = [{moveDir:-1},{moveDir:1}];
+       for (const picks of pickList) {
         for (const ante of anteOptions(s)) {
           const sim = clone(s);
           resolveBeat(sim, { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal' });
