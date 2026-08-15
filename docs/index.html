@@ -21,6 +21,7 @@
       <nav class="site-nav" aria-label="Main">
         <a href="#job">DIRECTIVE</a>
         <a href="#city">GRID</a>
+        <a href="#first-shift">FIRST SHIFT</a>
         <a href="#shift">CONSOLE</a>
         <a href="#memos">BULLETIN</a>
       </nav>
@@ -36,7 +37,7 @@
           <h1>You were already on the roster.</h1>
           <p class="lede">Fifty tasks. 01:00 to 06:00. The coffee was waiting before you arrived.</p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="#shift">▸ BEGIN SHIFT</a>
+            <a class="btn btn-primary" href="#first-shift">▸ BEGIN SHIFT</a>
             <a class="btn btn-ghost" href="#memos">READ BULLETINS</a>
           </div>
           <p class="fine">SHIFT WINDOW: 01:00–06:00 · MISSED SHIFTS: 0/100 YEARS · ALL TASKS ASSIGNED</p>
@@ -144,6 +145,33 @@
         </div>
 
         <p class="city-weather" id="city-weather">// FORECAST: CLEAR UNTIL 06:00. AFTER 06:00: N/A.</p>
+      </div>
+    </section>
+
+    <!-- ================= FIRST SHIFT (tutorial / story intro) ================= -->
+    <section id="first-shift" class="section section-orient">
+      <div class="wrap">
+        <h2>FIRST SHIFT</h2>
+        <p class="section-lede">The terminal hums when you sit down. The screen is
+        already on. Something on it says your name — or something like your name.</p>
+
+        <div class="orient-terminal" id="orient-terminal">
+          <div class="orient-head">
+            <span class="dot dot-amber"></span>
+            MERIDIAN CENTRAL DISPATCH — ORIENTATION SUBSYSTEM
+            <span class="orient-status" id="orient-status">IDLE</span>
+          </div>
+          <div class="orient-screen" id="orient-screen">
+            <div class="orient-placeholder">
+              <span class="blink-cursor">▌</span>
+              <p>TERMINAL STANDBY</p>
+              <p class="fine">Press INITIATE to begin orientation protocol.</p>
+            </div>
+          </div>
+          <div class="orient-actions" id="orient-actions">
+            <button id="orient-btn" class="btn btn-primary" type="button">▸ INITIATE ORIENTATION</button>
+          </div>
+        </div>
       </div>
     </section>
 
