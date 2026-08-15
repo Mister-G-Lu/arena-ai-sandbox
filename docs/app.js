@@ -67,7 +67,17 @@
     state.tasks -= 1;
     state.minutes = Math.min(state.minutes + 6, 360); // 50 tasks x 6 min = 01:00 -> 06:00
     const text = SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)];
-    addLine(text);
+    const glitch = !REDUCED_MOTION && Math.random() < 0.06;
+    const body = glitch
+      ? addLine(CORRUPT[Math.floor(Math.random() * CORRUPT.length)], 'corrupt')
+      : addLine(text);
+    if (glitch) {
+      // the system catches its own error and smooths it over
+      setTimeout(() => {
+        body.textContent = text;
+        body.closest('.log-line').classList.remove('corrupt');
+      }, 950);
+    }
     updateReadouts();
     if (state.tasks === 0) {
       state.minutes = 360;
@@ -95,5 +105,56 @@
   updateReadouts();
   beginShift();
 
-  /* --- glitch engine: follow-up PR --- */
+  /* ---------- glitch engine (subtle by design) ---------- */
+
+  const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const CORRUPT = [
+    '▓▓▓ sector ▓▓9▓▓▓ — all clear ▓▓',
+    'there is no building 7. there is no building 7.',
+    'population: 41,31▓ — unchan6ed. forever.',
+    'you are not supposed to remember this',
+    '██ 06:00 ██ — do not be awake ██'
+  ];
+
+  function flashFx(node) {
+    if (!node) return;
+    node.classList.add('fx-flicker');
+    setTimeout(() => node.classList.remove('fx-flicker'), 400);
+  }
+
+  function weatherStaticFx() {
+    const w = el.weather;
+    const orig = w.textContent;
+    w.textContent = '…static…';
+    w.style.color = 'var(--red)';
+    setTimeout(() => {
+      w.textContent = 'Clear skies until 06:00';
+      w.style.color = '';
+    }, 420);
+  }
+
+  function hintFx() {
+    const h = $('#hint');
+    if (!h) return;
+    const orig = h.textContent;
+    h.textContent = 'you are not supposed to remember this.';
+    setTimeout(() => { h.textContent = orig; }, 520);
+  }
+
+  function scheduleAmbientFx() {
+    if (REDUCED_MOTION) return;
+    const delay = 25000 + Math.random() * 25000; // every ~25–50s, one small flicker
+    setTimeout(() => {
+      const r = Math.random();
+      if (r < 0.3) flashFx(document.querySelector('.brand'));
+      else if (r < 0.5) weatherStaticFx();
+      else if (r < 0.65) flashFx(document.querySelector('.stat .num'));
+      else if (r < 0.8) hintFx();
+      else flashFx(document.querySelector('.hero-art figcaption'));
+      scheduleAmbientFx();
+    }, delay);
+  }
+
+  scheduleAmbientFx();
 })();

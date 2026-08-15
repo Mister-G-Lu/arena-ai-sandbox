@@ -387,4 +387,22 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 10px; }
   html { scroll-behavior: auto; }
 }
 
-/* --- glitch fx (added in follow-up PR) --- */
+/* ---------- glitch fx (subtle: rare, brief, self-correcting) ---------- */
+
+.log-line.corrupt {
+  color: var(--red);
+  text-shadow: 0 0 10px rgba(255, 111, 111, 0.45);
+}
+
+.fx-flicker { animation: fx-flicker 150ms steps(2) 2; }
+
+@keyframes fx-flicker {
+  0%, 100% { transform: none; opacity: 1; }
+  25% {
+    transform: translateX(-2px) skewX(-4deg);
+    opacity: 0.55;
+    text-shadow: 2px 0 var(--red), -2px 0 var(--teal);
+  }
+  50% { transform: translateX(2px); opacity: 0.9; }
+  75% { transform: translateX(-1px); opacity: 0.7; }
+}
