@@ -120,7 +120,7 @@ export const ENEMY_TYPES = {
   },
 
   warden: {
-    id: 'warden', name: 'Warden', glyph: 'W', life: 26, tier: 'boss',
+    id: 'warden', name: 'Warden', glyph: 'W', life: 30, tier: 'boss',
     blurb: 'The Warden of the Seven Spaces. It answers everything you try.',
     // Reactive boss: reads your position and picks the intent that hurts most.
     pattern: (self, i, ctx) => {
@@ -176,6 +176,7 @@ export function makeEnemy(typeId, space, uid) {
     damageTakenThisBeat: 0,
     damageSoakedThisBeat: 0,
     powerBonus: 0,
+    dodging: new Set(),
     patternIndex: 0,
     intent: null,
   };

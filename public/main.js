@@ -13,7 +13,8 @@ const SCREENS = ['select', 'combat', 'reward', 'end'];
 const show = (n) => SCREENS.forEach((s) => $(`screen-${s}`).classList.toggle('hidden', s !== n));
 
 let run, state, sel = { base: null, style: null, finisher: null },
-    targetUid = null, ante = false, logMark = 0, shieldPolicy = 'ask';
+    targetUid = null, ante = false, logMark = 0,
+    dodge = { n: 2, dir: 1 };   // Dodge's chosen distance and direction
 
 // ============================================================ character select
 
@@ -52,6 +53,7 @@ function startNode() {
   state.force = run.force || 0;
   sel = { base: null, style: null, finisher: null };
   targetUid = null; ante = false; logMark = 0;
+  dodge = { n: 2, dir: 1 };
   $('log').innerHTML = '';
   $('enc-name').textContent = enc.name;
   $('enc-blurb').textContent = enc.blurb;
@@ -68,6 +70,28 @@ function chosenAttack() {
   return null;
 }
 const ready = () => !!(sel.finisher || (sel.base && sel.style));
+const isDodge = () => sel.base === 'dodge' && !sel.finisher;
+const currentPicks = () => (isDodge() ? { dodgeMove: dodge.n, dodgeDir: dodge.dir } : undefined);
+
+/** Where a dodge would land, and who it would slip past. */
+function dodgePlan() {
+  const from = state.player.space;
+  let dest = from + dodge.dir * dodge.n;
+  let legal = dest >= 1 && dest <= ARENA_SIZE
+    && !state.enemies.some((e) => e.life > 0 && e.space === dest);
+  if (!legal) {
+    const alt = from - dodge.dir * dodge.n;
+    if (alt >= 1 && alt <= ARENA_SIZE
+        && !state.enemies.some((e) => e.life > 0 && e.space === alt)) {
+      dest = alt; legal = true;
+    }
+  }
+  const lo = Math.min(from, dest), hi = Math.max(from, dest);
+  const passed = legal
+    ? state.enemies.filter((e) => e.life > 0 && e.space > lo && e.space < hi)
+    : [];
+  return { from, dest, legal, passed };
+}
 
 function render() {
   const p = state.player;
@@ -81,6 +105,7 @@ function render() {
 
   renderTokens();
   renderAnte();
+  renderDodge();
   renderIntents();
   renderBoard();
   renderPreview();
@@ -120,6 +145,36 @@ function renderAnte() {
   if (b) b.onclick = () => { ante = !ante; render(); };
 }
 
+function renderDodge() {
+  const row = $('dodgerow');
+  if (!isDodge()) { row.className = 'dodgerow hidden'; row.innerHTML = ''; return; }
+  const plan = dodgePlan();
+  row.className = 'dodgerow';
+  const btn = (label, on, fn) =>
+    `<button class="dodgebtn ${on ? 'on' : ''}" data-act="${fn}">${label}</button>`;
+  row.innerHTML = `
+    <span class="dlabel">DODGE</span>
+    ${btn('&larr; left', dodge.dir === -1, 'dir:-1')}
+    ${btn('right &rarr;', dodge.dir === 1, 'dir:1')}
+    <span class="dsep"></span>
+    ${[1, 2, 3].map((n) => btn(String(n), dodge.n === n, `n:${n}`)).join('')}
+    <span class="dnote">
+      ${plan.legal
+        ? `Space ${plan.from} &rarr; <b>${plan.dest}</b>. ` +
+          (plan.passed.length
+            ? `<b class="ok">Slips past ${plan.passed.map((e) => e.name).join(' and ')} — you dodge their attacks entirely.</b>`
+            : 'Passes nobody — no attacks dodged.')
+        : '<b class="bad">Blocked — nowhere to land.</b>'}
+    </span>`;
+  for (const b of row.querySelectorAll('.dodgebtn')) {
+    b.onclick = () => {
+      const [k, v] = b.dataset.act.split(':');
+      if (k === 'dir') dodge.dir = Number(v); else dodge.n = Number(v);
+      render();
+    };
+  }
+}
+
 function renderIntents() {
   const box = $('intents');
   box.innerHTML = '';
@@ -155,6 +210,8 @@ function renderBoard() {
   const tgt = state.enemies.find((e) => e.uid === targetUid && e.life > 0) || nearestEnemy(state);
   const myFrom = atk && tgt ? projectedSpace(state, state.player, atk, tgt.space) : state.player.space;
   const mine = atk ? threatSpaces(myFrom, atk) : [];
+  const plan = isDodge() ? dodgePlan() : null;
+  const dodgedIds = new Set(plan && plan.legal ? plan.passed.map((e) => e.uid) : []);
 
   const theirs = new Set();
   for (const e of state.enemies) {
@@ -165,16 +222,23 @@ function renderBoard() {
 
   for (let i = 1; i <= ARENA_SIZE; i++) {
     const d = document.createElement('div');
-    const t = mine.includes(i), dg = theirs.has(i);
+    const t = mine.includes(i);
+    // an intent we are dodging no longer endangers us
+    const dg = theirs.has(i) && !(plan && plan.legal && plan.passed.length && i === plan.dest);
     d.className = 'space' + (t && dg ? ' both' : t ? ' threat' : dg ? ' danger' : '');
+    if (plan && plan.legal && i === plan.dest) d.classList.add('dodgedest');
     d.innerHTML = `<span class="idx">${i}</span>`;
+    if (plan && plan.legal && i === plan.dest && i !== state.player.space) {
+      d.innerHTML += `<span class="ghost">${state.char.name.slice(0, 3).toUpperCase()}</span>`;
+    }
     if (state.player.space === i) {
       d.innerHTML += `<div class="token you${ante ? ' immune' : ''}">${state.char.name.slice(0, 3).toUpperCase()}</div>`;
     }
     const e = state.enemies.find((x) => x.life > 0 && x.space === i);
     if (e) {
       const el = document.createElement('div');
-      el.className = `token foe${targetUid === e.uid ? ' target' : ''}`;
+      el.className = `token foe${targetUid === e.uid ? ' target' : ''}` +
+        (dodgedIds.has(e.uid) ? ' dodged' : '');
       el.textContent = e.glyph;
       el.innerHTML += `<span class="mini">${Math.max(0, e.life)}</span>`;
       el.onclick = () => { targetUid = e.uid; render(); };
@@ -198,10 +262,13 @@ function renderPreview() {
   const hits = dist !== null && dist >= atk.range[0] && dist <= atk.range[1] && !atk.isDash;
   const pri = atk.priority + (state.player.priorityBonusNext || 0);
 
-  // what gets through to me, given this attack's Soak
+  // what gets through to me, given this attack's Soak and any dodge
+  const plan = isDodge() ? dodgePlan() : null;
+  const dodged = new Set(plan && plan.legal ? plan.passed.map((e) => e.uid) : []);
   let incoming = 0, stunRisk = false;
   for (const e of state.enemies) {
-    if (e.life <= 0 || !intentThreatens(state, e)) continue;
+    if (e.life <= 0 || dodged.has(e.uid)) continue;
+    if (!intentThreatens(state, e)) continue;
     const dmg = Math.max(0, e.intent.power - atk.soak);
     incoming += dmg;
     const immune = atk.stunImmune || ante;
@@ -211,14 +278,21 @@ function renderPreview() {
 
   $('preview').innerHTML = `
     <span class="pname">${atk.name}</span>
-    <span class="stat"><i>RANGE</i> ${atk.range[0]}~${atk.range[1]}</span>
-    <span class="stat"><i>POWER</i> ${atk.power}</span>
+    ${atk.noDamage
+      ? '<span class="stat"><i>POWER</i> N/A</span>'
+      : `<span class="stat"><i>RANGE</i> ${atk.range[0]}~${atk.range[1]}</span>
+         <span class="stat"><i>POWER</i> ${atk.power}</span>`}
     <span class="stat"><i>PRIORITY</i> ${pri}</span>
     ${atk.soak ? `<span class="soakpill">SOAK ${atk.soak}</span>` : ''}
     ${atk.stunGuard ? `<span class="sgpill">STUN GUARD ${atk.stunGuard}</span>` : ''}
     ${(atk.stunImmune || ante) ? `<span class="immpill">STUN IMMUNE</span>` : ''}
     <div class="verdict ${hits ? 'good' : 'bad'}">
-      ${atk.isDash ? 'Dash deals no damage — pure repositioning.'
+      ${atk.noDamage
+        ? (plan && plan.legal
+            ? (plan.passed.length
+                ? `Dodge to space ${plan.dest}, slipping past ${plan.passed.map((e) => e.name).join(' and ')}.`
+                : `Dodge to space ${plan.dest}. Deals no damage.`)
+            : 'Dodge is blocked — nowhere to land.')
         : tgt ? (hits ? `Connects with ${tgt.name} at distance ${dist}.`
                       : `Will NOT reach ${tgt.name} (distance ${dist}).`)
               : 'No target.'}
@@ -248,7 +322,9 @@ function renderHand() {
   for (const id of h.bases) {
     const c = B[id];
     rowB.appendChild(cardEl(c, sel.base === id && !sel.finisher,
-      `R ${c.range[0]}~${c.range[1]} · POW ${c.power} · PRI ${c.priority}`,
+      c.noDamage
+        ? `POW N/A · PRI ${c.priority}`
+        : `R ${c.range[0]}~${c.range[1]} · POW ${c.power} · PRI ${c.priority}`,
       () => { sel.base = sel.base === id ? null : id; sel.finisher = null; render(); }));
   }
 
@@ -320,25 +396,27 @@ $('btn-resolve').onclick = () => {
 
   // Reactive shields: ask only when it actually matters, so the prompt stays
   // meaningful instead of nagging every beat.
-  const policy = decideShieldPolicy(baseId, styleId);
-  finishBeat(baseId, styleId, policy);
+  const picks = currentPicks();
+  const policy = decideShieldPolicy(baseId, styleId, picks);
+  finishBeat(baseId, styleId, policy, picks);
 };
 
 /**
  * Preview the beat with shields OFF. If that would be lethal and we have a
  * token, ask the player. Otherwise resolve directly.
  */
-function decideShieldPolicy(baseId, styleId) {
+function decideShieldPolicy(baseId, styleId, picks) {
   if (!state.char.tokens || state.player.tokens <= 0) return 'never';
   const sim = {
     ...state, log: [],
-    player: { ...state.player }, enemies: state.enemies.map((e) => ({ ...e })),
+    player: { ...state.player, dodging: new Set() },
+    enemies: state.enemies.map((e) => ({ ...e, dodging: new Set() })),
   };
-  resolveBeat(sim, { baseId, styleId, targetUid, ante, autoShield: 'never' });
+  resolveBeat(sim, { baseId, styleId, picks, targetUid, ante, autoShield: 'never' });
   return sim.player.life <= 0 ? 'ask' : 'never';
 }
 
-function finishBeat(baseId, styleId, policy) {
+function finishBeat(baseId, styleId, policy, picks) {
   if (policy === 'ask') {
     $('shield-text').textContent =
       `This beat would be lethal. Spend a Shield to negate the blow entirely? ` +
@@ -346,19 +424,19 @@ function finishBeat(baseId, styleId, policy) {
     $('shield-modal').classList.remove('hidden');
     $('shield-yes').onclick = () => {
       $('shield-modal').classList.add('hidden');
-      commit(baseId, styleId, 'lethal');
+      commit(baseId, styleId, 'lethal', picks);
     };
     $('shield-no').onclick = () => {
       $('shield-modal').classList.add('hidden');
-      commit(baseId, styleId, 'never');
+      commit(baseId, styleId, 'never', picks);
     };
     return;
   }
-  commit(baseId, styleId, policy);
+  commit(baseId, styleId, policy, picks);
 }
 
-function commit(baseId, styleId, autoShield) {
-  resolveBeat(state, { baseId, styleId, targetUid, ante, autoShield });
+function commit(baseId, styleId, autoShield, picks) {
+  resolveBeat(state, { baseId, styleId, picks, targetUid, ante, autoShield });
   cyclePlay(run, baseId, styleId);
   run.force = state.force;
   sel = { base: null, style: null, finisher: null };

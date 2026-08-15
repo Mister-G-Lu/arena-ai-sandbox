@@ -18,8 +18,8 @@ const CHAR = process.argv[3] || 'cadenza';
 const clone = (s) => ({
   ...s,
   log: [],
-  player: { ...s.player },
-  enemies: s.enemies.map((e) => ({ ...e })),
+  player: { ...s.player, dodging: new Set() },
+  enemies: s.enemies.map((e) => ({ ...e, dodging: new Set() })),
 });
 
 /** Greedy one-ply solver over the full option space including the ante. */
@@ -36,7 +36,8 @@ export function solve(s, hand) {
       const atk = playerAttack(s.char, b, st);
       // enumerate a few movement choices
       let pickSets = [{}];
-      for (const eff of [...atk.before, ...atk.after, ...atk.hit]) {
+      if (atk.noDamage) pickSets = [{ dodgeDir: 1 }, { dodgeDir: -1 }];
+      for (const eff of [...(atk.start || []), ...atk.before, ...atk.after, ...atk.hit]) {
         if ((eff.min ?? 0) === (eff.max ?? 0)) continue;
         const next = [];
         for (const base of pickSets)

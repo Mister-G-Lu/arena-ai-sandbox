@@ -1,4 +1,8 @@
 // Characters own a set of Styles and a unique Base (plus Finishers).
+//
+// In BattleCON almost every fighter has the same starting life; only a single
+// outlier differs. We model that as a shared constant rather than a per-
+// character field, so a new character cannot silently drift off-spec.
 // Everyone shares the Universal Bases.
 //
 // Stat notation follows the spec sheet:
@@ -11,6 +15,8 @@
 //   EoB "End of Beat"        -> after
 
 // ------------------------------------------------------------- universal bases
+
+export const STARTING_LIFE = 20;
 
 export const UNIVERSAL_BASES = [
   {
@@ -38,10 +44,10 @@ export const UNIVERSAL_BASES = [
     text: 'OH: Push 1~2',
   },
   {
-    id: 'dash', name: 'Dash', range: [0, 0], power: 0, priority: 9,
-    isDash: true,
-    after: [{ k: 'dashMove', min: 1, max: 3 }],
-    text: 'EoB: Move 1~3, may pass through enemies. Deals no damage.',
+    id: 'dodge', name: 'Dodge', range: [0, 0], power: null, priority: 3,
+    noDamage: true,
+    start: [{ k: 'dodgeMove', min: 1, max: 3 }],
+    text: 'Start: Move 1~3. You dodge all attacks from enemies you move past.',
   },
 ];
 
@@ -51,7 +57,7 @@ export const CADENZA = {
   id: 'cadenza',
   name: 'Cadenza',
   epithet: 'Clockwork Knight',
-  life: 20,
+  life: STARTING_LIFE,
   blurb:
     'An armoured automaton that shrugs off hits and answers with crushing ' +
     'blows. Forgiving: Soak keeps chip damage from stunning you, and three ' +
@@ -131,10 +137,11 @@ export const DRIFTER = {
   id: 'drifter',
   name: 'Drifter',
   epithet: 'Nameless Duelist',
-  life: 16,
+  life: STARTING_LIFE,
   blurb:
-    'No armour, no tokens, no safety net. Wins by never being where the ' +
-    'attack lands, and by striking first.',
+    'Same 20 life as anyone, but no Soak, no tokens and no safety net. ' +
+    'Every point of damage lands in full, and almost any hit will stun. ' +
+    'Wins by never being where the attack lands.',
   primer: [
     'You have no Soak — almost any hit will stun you.',
     'Priority is your defence: strike first and they never act.',
@@ -162,8 +169,8 @@ export const DRIFTER = {
   bases: [
     {
       id: 'parry', name: 'Parry', range: [1, 2], power: 1, priority: 7,
-      soak: 2, stunGuard: 4,
-      text: 'Soak 2, Stun Guard 4.',
+      stunGuard: 3,
+      text: 'Stun Guard 3. No Soak — you still take the damage.',
     },
   ],
 
@@ -213,14 +220,17 @@ export function combine(base, style) {
     baseId: base.id,
     styleId: s.id || null,
     range: [rangeLo, rangeHi],
-    power: Math.max(0, base.power + s.dPower),
+    // A "no damage" base (Dodge) can never deal damage, whatever the Style says.
+    power: base.noDamage ? null : Math.max(0, base.power + s.dPower),
+    noDamage: !!base.noDamage,
     priority: base.priority + s.dPriority,
     soak: (base.soak || 0) + (s.soak || 0),
     stunGuard: (base.stunGuard || 0) + (s.stunGuard || 0),
     stunImmune: !!base.stunImmune || !!s.stunImmune,
     pierceStunGuard: !!base.pierceStunGuard || !!s.pierceStunGuard,
-    isDash: !!base.isDash,
+
     isFinisher: !!base.isFinisher,
+    start: [...(s.start || []), ...(base.start || [])],
     before: [...(s.before || []), ...(base.before || [])],
     hit: [...(base.hit || []), ...(s.hit || [])],
     after: [...(base.after || []), ...(s.after || [])],

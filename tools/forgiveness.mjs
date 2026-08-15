@@ -9,7 +9,7 @@ import { newRun, resetPiles, currentHand, cyclePlay, currentEncounter,
 import { mulberry32 } from '../src/rng.js';
 
 const RUNS = Number(process.argv[2] || 60);
-const clone = (s) => ({ ...s, log: [], player: { ...s.player }, enemies: s.enemies.map((e) => ({ ...e })) });
+const clone = (s) => ({ ...s, log: [], player: { ...s.player, dodging: new Set() }, enemies: s.enemies.map((e) => ({ ...e, dodging: new Set() })) });
 
 function bestPlay(s, hand) {
   let best = null;
@@ -19,16 +19,21 @@ function bestPlay(s, hand) {
     const isFin = hand.finishers.includes(b);
     for (const st of isFin ? [null] : hand.styles) {
       for (const targetUid of targets) {
+       for (const picks of (b === 'dodge'
+            ? [{dodgeMove:1,dodgeDir:1},{dodgeMove:2,dodgeDir:1},{dodgeMove:3,dodgeDir:1},
+               {dodgeMove:1,dodgeDir:-1},{dodgeMove:2,dodgeDir:-1},{dodgeMove:3,dodgeDir:-1}]
+            : [undefined])) {
         for (const ante of s.player.tokens > 0 ? [false, true] : [false]) {
           const sim = clone(s);
-          resolveBeat(sim, { baseId: b, styleId: st, targetUid, ante, autoShield: 'lethal' });
+          resolveBeat(sim, { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal' });
           const dealt = s.enemies.reduce((a, e, i) => a + (e.life - sim.enemies[i].life), 0);
           const taken = s.player.life - sim.player.life;
           const kills = sim.enemies.filter((e, i) => e.life <= 0 && s.enemies[i].life > 0).length;
           const score = dealt - taken * 1.7 + kills * 5 + (sim.victory ? 30 : 0)
                       - (sim.over && !sim.victory ? 60 : 0) - (s.player.tokens - sim.player.tokens) * 2.5;
-          if (!best || score > best.score) best = { baseId: b, styleId: st, targetUid, ante, autoShield: 'lethal', score };
+          if (!best || score > best.score) best = { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal', score };
         }
+       }
       }
     }
   }
@@ -59,8 +64,11 @@ function run1(charId, errRate, seed, rng) {
   return run;
 }
 
-console.log(`\nforgiveness curve — clear rate vs. mistake rate (${RUNS} runs/point)\n`);
-console.log('  err%   cadenza              drifter');
+console.log(`\nforgiveness curve (${RUNS} runs/point)`);
+console.log(`Bars are FULL-RUN clear rate (the ceiling).`);
+console.log(`Numbers in brackets are AVG ENCOUNTERS CLEARED — the floor, and`);
+console.log(`the real measure of forgiveness: how far a sloppy player still gets.\n`);
+console.log('  err%   cadenza                    drifter');
 for (const err of [0, 0.1, 0.2, 0.3, 0.4, 0.5]) {
   const out = {};
   for (const c of ['cadenza', 'drifter']) {
@@ -73,4 +81,18 @@ for (const err of [0, 0.1, 0.2, 0.3, 0.4, 0.5]) {
   const bar = (o) => '#'.repeat(Math.round(o.rate * 12)).padEnd(12, '.');
   console.log(`  ${(err * 100).toFixed(0).padStart(3)}%   ${bar(out.cadenza)} ${fmt(out.cadenza)}   ${bar(out.drifter)} ${fmt(out.drifter)}`);
 }
+
+// Summarise the floor gap at high error rates, which is the design claim.
+let cadFloor = 0, driFloor = 0, n = 0;
+for (const err of [0.3, 0.4, 0.5]) {
+  for (const c of ['cadenza', 'drifter']) {
+    const rng = mulberry32(4242);
+    let cl = 0;
+    for (let i = 1; i <= RUNS; i++) cl += run1(c, err, i * 7919, rng).cleared;
+    if (c === 'cadenza') cadFloor += cl / RUNS; else driFloor += cl / RUNS;
+  }
+  n++;
+}
+console.log(`\n  floor (avg encounters cleared at 30-50% error):`);
+console.log(`    cadenza ${(cadFloor / n).toFixed(2)}   drifter ${(driFloor / n).toFixed(2)}`);
 console.log();

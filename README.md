@@ -24,6 +24,16 @@ node tools/forgiveness.mjs   # clear rate vs. player mistake rate
 
 ## Core rules
 
+**Setup.** Every character starts with the same **20 life** (`STARTING_LIFE` in
+`src/characters.js` — a single constant, because in BattleCON only one fighter
+in the roster deviates). The two sides open on the **3rd and 5th tiles**, two
+spaces apart and symmetric about the centre of the seven-space arena.
+
+```
+  1     2     3     4     5     6     7
+              YOU        FOE
+```
+
 **Damage** `= max(0, Power − Soak)`
 
 **The stun rule.** Any damage stuns the target — cancelling their entire
@@ -36,9 +46,29 @@ Soak therefore does double duty: it blunts damage *and*, by shrinking the
 number, makes your Stun Guard more likely to hold. This is why Cadenza feels
 armoured rather than merely tanky.
 
-**Beat structure.** Ante → reveal → activate in **Priority** order. "Before
-Activating" fires immediately before *that fighter's own* activation, not as a
-global band — which is what lets Press read damage it has already absorbed.
+**Beat structure.** Ante → reveal → **Start** → activate in **Priority** order
+→ End of Beat.
+
+- **Start** effects resolve before *any* activation. Dodge lives here, which is
+  what makes it pre-emptive: you reposition before the fastest enemy swings.
+- **Before Activating** fires immediately before *that fighter's own*
+  activation, not as a global band — which is what lets Press read damage it
+  has already absorbed.
+
+**Clash.** On equal Priority the **player acts first**. Encounters are
+one-versus-many, so a mutual re-pick would stall constantly; the player-first
+tie is easier to read off the intent list and is the generous reading.
+
+### Dodge
+
+**Dodge** — Priority 3, Power N/A (can *never* deal damage, whatever Style you
+attach). *Start: Move 1~3. You dodge all attacks from enemies you move past.*
+
+It is the pure defensive option: pick a direction and a distance, slip **past**
+an enemy, and every attack that enemy makes this beat cannot touch you —
+regardless of range, Priority, or how hard it hits. Enemies you *don't* pass
+still connect normally, so the choice is which threat to erase. The board
+previews the landing tile, and any enemy you'd slip past is crossed out.
 
 ## Characters
 
@@ -58,6 +88,9 @@ Life 20, 3 Shield tokens.
 | **Clockwork** (+0/+3/−3) | Soak 3 |
 | **Grapnel** (+2~4/+0/+0) | OH: Pull target up to 3 |
 
+Universal bases (shared by all characters): Strike, Shot, Drive, Burst, Grasp,
+**Dodge**.
+
 **Press** (1~2/1/0) — Stun Guard 6. BA: +1 Power for each point of damage you
 took this beat.
 
@@ -66,8 +99,10 @@ took this beat.
 **Feedback Field** (1~2/1/0) Soak 5, OH: +2 Power per damage soaked.
 
 ### Drifter · Nameless Duelist · *Hard*
-Life 16, no tokens. No Soak, no safety net — Priority is the only defence.
-Included as a contrast case, and to prove the character layer is general.
+Life 20, no tokens. Same health as anyone — the difficulty is entirely in the
+kit. No Soak anywhere, so every point of damage lands in full and almost any
+hit stuns; Priority and footwork are the only defence. Included as a contrast
+case, and to prove the character layer is general.
 
 ## Is Cadenza actually forgiving?
 
@@ -76,28 +111,38 @@ That was the design brief, so it gets measured rather than asserted.
 decisions into random legal plays — a direct model of a player making mistakes.
 
 ```
-  err%   cadenza              drifter
-    0%   ###########.  90% (6.9/7)   ###########.  95% (6.8/7)
-   10%   #######.....  60% (6.5/7)   #########...  73% (6.0/7)
-   20%   #####.......  40% (6.2/7)   ####........  35% (4.3/7)
-   30%   ##..........  13% (5.5/7)   #...........   5% (3.0/7)
-   40%   #...........  10% (4.8/7)   ............   3% (2.5/7)
-   50%   ............   0% (3.9/7)   ............   0% (1.9/7)
+  err%   cadenza                    drifter
+    0%   ############  96% (7.0/7)   ############ 100% (7.0/7)
+   10%   ########....  70% (6.7/7)   ###########.  88% (6.8/7)
+   20%   ######......  50% (6.4/7)   ########....  68% (6.2/7)
+   30%   ##..........  14% (5.6/7)   ####........  32% (5.2/7)
+   40%   #...........   6% (5.0/7)   #...........  10% (4.3/7)
+   50%   #...........   6% (4.8/7)   ............   0% (3.3/7)
+
+  floor (avg encounters cleared at 30-50% error):
+    cadenza 5.13   drifter 4.01
 ```
 
-Read the **encounters cleared** column, not the clear rate: at a 30% mistake
-rate Cadenza still reaches 5.5 of 7 while the Drifter collapses to 3.0. The
-Drifter is marginally *better* at 0% error and much worse everywhere else —
-which is the precise signature of an easy character. Cadenza raises the floor,
-not the ceiling.
+Read the **encounters cleared** figure, not the clear rate. The Drifter has the
+higher *ceiling* — it clears 100% under perfect play, where Cadenza sits at 96%
+— but the lower *floor*: under sloppy play (30–50% mistakes) Cadenza averages
+**5.13** encounters to the Drifter's **4.01**. That gap is the whole point.
+Cadenza raises the floor, not the ceiling, which is exactly what a starter
+character should do.
+
+Note this only became a fair comparison once life was a shared constant. The
+Drifter used to be "hard" partly because it had 16 life; with everyone at 20,
+difficulty has to be expressed in the kit, so its Parry lost its Soak. Better
+design pressure — a character should be hard because of how it plays, not
+because of a smaller number.
 
 Supporting telemetry (`npm run balance`), per run:
 
 | | Cadenza | Drifter |
 | --- | --- | --- |
-| beats spent stunned | **1.56** | 3.77 |
-| shields spent | 3.26 | — |
-| avg beats per encounter | 4.3 | 6.8 |
+| beats spent stunned | **1.39** | 3.6 |
+| shields spent | 3.07 | — |
+| avg beats per encounter | 4.3 | 6.5 |
 
 Cadenza is stunned less than half as often, and kills faster.
 
@@ -132,7 +177,7 @@ Guard", so those exist as answers to Cadenza specifically:
 
 | Path | What |
 | --- | --- |
-| `src/characters.js` | Characters, styles, bases, finishers, `combine()`. |
+| `src/characters.js` | Characters, styles, bases, finishers, `combine()`, `STARTING_LIFE`. |
 | `src/enemies.js` | Enemy types and telegraph patterns. |
 | `src/combat.js` | Beat resolution: ante, priority, soak, the stun rule. |
 | `src/run.js` | Gauntlet, hands, cooldowns, upgrades. |
@@ -141,7 +186,7 @@ Guard", so those exist as answers to Cadenza specifically:
 | `tools/forgiveness.mjs` | Clear rate vs. mistake rate. |
 | `public/` | Browser client. No build step, no dependencies. |
 
-## Two bugs the tests caught
+## Three bugs the tests caught
 
 Worth recording, because both were design errors rather than typos:
 
@@ -152,6 +197,10 @@ Worth recording, because both were design errors rather than typos:
 2. **`OH: Stun` bypassed Stun Immunity.** Anteing a Shield did nothing against
    the Brute's Stomp or the Warden's Sunder — exactly the attacks it exists to
    answer. Cadenza's whole ante was dead against its intended targets.
+3. **Dodge as an End-of-Beat effect would have been useless.** Putting the move
+   in the Start band is what lets it beat a Priority 6 attacker; the test
+   `'Dodge resolves in the Start band'` pins that by dodging a Stalker that is
+   explicitly faster.
 
 ## Extending
 

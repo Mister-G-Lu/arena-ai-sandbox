@@ -1,7 +1,12 @@
 // The roguelite layer: pick a character, run a gauntlet, earn cards.
 
-import { CHARACTER_BY_ID, UNIVERSAL_BASES } from './characters.js';
+import { CHARACTER_BY_ID, UNIVERSAL_BASES, STARTING_LIFE } from './characters.js';
 import { mulberry32, shuffle } from './rng.js';
+
+// Standard opening: the two fighters face off on the 3rd and 5th tiles,
+// two spaces apart, symmetric about the centre of the seven-space arena.
+export const PLAYER_START = 3;
+export const ENEMY_START = 5;
 
 export const HAND_BASES = 4;
 export const HAND_STYLES = 3;
@@ -10,45 +15,45 @@ export const COOLDOWN = 1;   // a played card sits out this many beats
 export const ENCOUNTERS = [
   {
     name: 'The Threshold',
-    blurb: 'A single husk. Learn to read a telegraph.',
-    playerSpace: 2,
-    enemies: [{ type: 'husk', space: 6 }],
+    blurb: 'A single husk, two spaces away. Learn to read a telegraph.',
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'husk', space: ENEMY_START }],
   },
   {
     name: 'Two Blades',
-    blurb: 'Enemies on both sides — do not get sandwiched.',
-    playerSpace: 4,
-    enemies: [{ type: 'stalker', space: 1 }, { type: 'husk', space: 7 }],
+    blurb: 'A second blade circles behind you. Do not get sandwiched.',
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'stalker', space: ENEMY_START }, { type: 'husk', space: 7 }],
   },
   {
     name: 'The Long Hall',
-    blurb: 'An archer that punishes standing still.',
-    playerSpace: 3,
-    enemies: [{ type: 'archer', space: 7 }, { type: 'husk', space: 5 }],
+    blurb: 'An archer holds the far end and punishes standing still.',
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'archer', space: 7 }, { type: 'husk', space: ENEMY_START }],
   },
   {
     name: 'Ironclad',
     blurb: 'A brute that braces, then punishes.',
-    playerSpace: 2,
-    enemies: [{ type: 'brute', space: 6 }],
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'brute', space: ENEMY_START }],
   },
   {
     name: 'The Foundry',
     blurb: 'Stun Immune. Locking it down is not an option.',
-    playerSpace: 2,
-    enemies: [{ type: 'automaton', space: 5 }, { type: 'husk', space: 7 }],
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'automaton', space: ENEMY_START }, { type: 'husk', space: 7 }],
   },
   {
     name: 'Crossfire',
     blurb: 'Three enemies, two directions.',
-    playerSpace: 4,
-    enemies: [{ type: 'archer', space: 1 }, { type: 'stalker', space: 6 }, { type: 'husk', space: 7 }],
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'archer', space: 1 }, { type: 'stalker', space: ENEMY_START }, { type: 'husk', space: 7 }],
   },
   {
     name: 'The Warden',
     blurb: 'It has been waiting at the end of the hall.',
-    playerSpace: 1,
-    enemies: [{ type: 'warden', space: 5 }],
+    playerSpace: PLAYER_START,
+    enemies: [{ type: 'warden', space: ENEMY_START }],
   },
 ];
 

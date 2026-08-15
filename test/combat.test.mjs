@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  CADENZA, DRIFTER, UNIVERSAL_BASES, combine, baseLibrary, styleLibrary,
+  CADENZA, DRIFTER, CHARACTERS, UNIVERSAL_BASES, STARTING_LIFE,
+  combine, baseLibrary, styleLibrary,
 } from '../src/characters.js';
 import {
   ARENA_SIZE, startEncounter, resolveBeat, anteShield, playerAttack,
@@ -9,7 +10,8 @@ import {
 } from '../src/combat.js';
 import { telegraph } from '../src/enemies.js';
 import {
-  newRun, resetPiles, currentHand, cyclePlay, rewardOptions, takeReward, ENCOUNTERS,
+  newRun, resetPiles, currentHand, cyclePlay, rewardOptions, takeReward,
+  ENCOUNTERS, PLAYER_START, ENEMY_START,
 } from '../src/run.js';
 
 const B = baseLibrary(CADENZA);
@@ -74,7 +76,7 @@ test('damage stuns by default', () => {
   // Shot P3, no stun guard on the Husk -> it gets stunned and never swings
   resolveBeat(s, { baseId: 'shot', styleId: 'battery', autoShield: 'never' });
   assert.ok(s.enemies[0].stunned, 'husk was stunned by damage');
-  assert.equal(s.player.life, 20, 'stunned enemy dealt no damage');
+  assert.equal(s.player.life, STARTING_LIFE, 'stunned enemy dealt no damage');
 });
 
 test('Stun Guard >= damage prevents the stun but not the damage', () => {
@@ -94,7 +96,7 @@ test('Soak reduces damage to zero and so prevents the stun entirely', () => {
   telegraph(s);
   // Clockwork Press: Soak 3, SG 6, priority -3 so the husk hits first.
   resolveBeat(s, { baseId: 'press', styleId: 'clockwork', autoShield: 'never' });
-  assert.equal(s.player.life, 20 - 2, '5 power - 3 soak = 2 damage');
+  assert.equal(s.player.life, STARTING_LIFE - 2, '5 power - 3 soak = 2 damage');
   assert.ok(!s.player.stunned, 'Stun Guard 6 held against 2 damage');
 });
 
@@ -145,7 +147,7 @@ test("policy 'never' lets the hit through — shields are a choice", () => {
   telegraph(s);
   resolveBeat(s, { baseId: 'press', styleId: 'mechanical', autoShield: 'never' });
   assert.equal(s.player.tokens, 3, 'no shield spent');
-  assert.ok(s.player.life < 20);
+  assert.ok(s.player.life < STARTING_LIFE);
 });
 
 test('shields are finite and carry between encounters', () => {
@@ -212,7 +214,7 @@ test('Feedback Field converts soaked damage into Power', () => {
 
 test('Force accumulates and caps at 10', () => {
   const s = mkState([{ type: 'husk', space: 7 }]);
-  for (let i = 0; i < 14; i++) resolveBeat(s, { baseId: 'dash', styleId: 'battery', autoShield: 'never' });
+  for (let i = 0; i < 14; i++) resolveBeat(s, { baseId: 'dodge', styleId: 'battery', autoShield: 'never' });
   assert.ok(s.force <= 10);
 });
 
@@ -221,7 +223,7 @@ test('Force accumulates and caps at 10', () => {
 test('fighters never share a space and never leave the board', () => {
   const plays = [
     ['press', 'clockwork'], ['strike', 'hydraulic'], ['shot', 'grapnel'],
-    ['drive', 'mechanical'], ['burst', 'battery'], ['dash', 'hydraulic'],
+    ['drive', 'mechanical'], ['burst', 'battery'], ['dodge', 'hydraulic'],
     ['grasp', 'grapnel'],
   ];
   for (let seed = 0; seed < 30; seed++) {
@@ -246,11 +248,71 @@ test('Grapnel pull cannot drag a target through another fighter', () => {
   assert.equal(new Set(live).size, live.length);
 });
 
-test('Dash deals no damage', () => {
+// ==================================================== Dodge
+
+test('Dodge can never deal damage, whatever Style is attached', () => {
   const s = mkState([{ type: 'husk', space: 2 }]);
   const before = s.enemies[0].life;
-  resolveBeat(s, { baseId: 'dash', styleId: 'hydraulic', autoShield: 'never' });
+  // Clockwork is +3 Power; Dodge must still deal nothing.
+  resolveBeat(s, { baseId: 'dodge', styleId: 'clockwork', picks: { dodgeMove: 1 }, autoShield: 'never' });
   assert.equal(s.enemies[0].life, before);
+  const a = playerAttack(CADENZA, 'dodge', 'clockwork');
+  assert.equal(a.power, null, 'power is N/A, not a number');
+  assert.ok(a.noDamage);
+});
+
+test('Dodge base priority is 3', () => {
+  const B = baseLibrary(CADENZA);
+  assert.equal(B.dodge.priority, 3);
+  assert.equal(combine(B.dodge, styleLibrary(CADENZA).battery).priority, 2);  // 3 - 1
+});
+
+test('moving PAST an enemy dodges all of its attacks that beat', () => {
+  const s = mkState([{ type: 'husk', space: 5 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 1;   // Heavy Swing, power 5, range 1
+  telegraph(s);
+  // Move 3: 3 -> 6, passing through space 5 where the husk stands.
+  resolveBeat(s, { baseId: 'dodge', styleId: 'battery', picks: { dodgeMove: 3 }, autoShield: 'never' });
+  assert.equal(s.player.space, 6, 'passed through and landed beyond');
+  assert.equal(s.player.life, STARTING_LIFE, 'the dodged attack could not connect');
+  assert.match(s.log.join('\n'), /dodged/);
+});
+
+test('dodging is per-enemy: one you slip past misses, one you do not still hits', () => {
+  // Husk at 2 (we pass it), archer at 7 (we do not).
+  const s = mkState([{ type: 'husk', space: 2 }, { type: 'archer', space: 7 }], { playerSpace: 1 });
+  s.enemies[0].patternIndex = 1;   // Heavy Swing range 1
+  s.enemies[1].patternIndex = 0;   // Loose Arrow range 3~6
+  telegraph(s);
+  // 1 -> 3, passing space 2. Archer at 7 is then 4 away: still in its band.
+  resolveBeat(s, { baseId: 'dodge', styleId: 'battery', picks: { dodgeMove: 2 }, autoShield: 'never' });
+  const log = s.log.join('\n');
+  assert.match(log, /Husk swings at empty air/);
+  assert.ok(s.player.life < STARTING_LIFE, 'the archer we never passed still connects');
+});
+
+test('a dodge that passes nobody grants no protection', () => {
+  const s = mkState([{ type: 'husk', space: 5 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 0;   // Shamble: advances then hits at range 1
+  telegraph(s);
+  // Retreat away: 3 -> 1, passing nobody.
+  resolveBeat(s, { baseId: 'dodge', styleId: 'battery', picks: { dodgeMove: 2, dodgeDir: -1 }, autoShield: 'never' });
+  assert.ok(!/dodged/.test(s.log.join('\n')) || s.player.space === 1);
+});
+
+test('Dodge resolves in the Start band, before any activation', () => {
+  // The stalker is FASTER than Dodge (Dart In, Pri 6 vs Dodge Pri 3), but
+  // Start effects still happen first, so the dodge protects us anyway.
+  const s = mkState([{ type: 'stalker', space: 5 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 1;   // Slash, priority 5, range 1
+  telegraph(s);
+  assert.ok(s.enemies[0].intent.priority > 3, 'enemy really is faster');
+  resolveBeat(s, { baseId: 'dodge', styleId: null, picks: { dodgeMove: 3 }, autoShield: 'never' });
+  assert.equal(s.player.life, STARTING_LIFE, 'faster attacker was still dodged');
+});
+
+test('threatSpaces is empty for Dodge — it threatens nothing', () => {
+  assert.deepEqual(threatSpaces(1, playerAttack(CADENZA, 'dodge', 'hydraulic')), []);
 });
 
 // ==================================================== telegraphing
@@ -272,7 +334,7 @@ test('the telegraphed intent is what actually resolves', () => {
   telegraph(s);
   const promised = s.enemies[0].intent;
   const before = s.player.life;
-  resolveBeat(s, { baseId: 'dash', styleId: 'grapnel', autoShield: 'never' });
+  resolveBeat(s, { baseId: 'dodge', styleId: 'grapnel', picks: { dodgeMove: 1 }, autoShield: 'never' });
   assert.equal(before - s.player.life, promised.power, 'no soak, so damage == promised power');
 });
 
@@ -292,8 +354,7 @@ test('intentThreatens accounts for telegraphed movement', () => {
   assert.equal(intentThreatens(s, s.enemies[0]), false);
 });
 
-test('threatSpaces excludes Dash, which cannot hit anything', () => {
-  assert.deepEqual(threatSpaces(1, playerAttack(CADENZA, 'dash', 'hydraulic')), []);
+test('threatSpaces marks exactly the reachable spaces', () => {
   assert.deepEqual(threatSpaces(1, playerAttack(CADENZA, 'shot', 'grapnel')), [4, 5, 6, 7]);
 });
 
@@ -312,7 +373,7 @@ test('the Drifter is a distinct character with its own kit', () => {
   const own = new Set(DRIFTER.styles.map((s) => s.id));
   for (const id of currentHand(run).styles) assert.ok(own.has(id));
   assert.equal(run.char.tokens, null, 'no tokens');
-  assert.equal(run.life, 16);
+  assert.equal(run.life, STARTING_LIFE);
 });
 
 test('played cards cycle out of hand', () => {
@@ -348,4 +409,51 @@ test('a scripted run through every encounter stays consistent', () => {
       assert.ok(s.player.tokens >= 0 && s.player.tokens <= 3);
     }
   }
+});
+
+// ==================================================== constants & setup
+
+test('every character starts at the shared STARTING_LIFE constant', () => {
+  assert.equal(STARTING_LIFE, 20);
+  for (const c of CHARACTERS) {
+    assert.equal(c.life, STARTING_LIFE, `${c.name} is off-spec`);
+    assert.equal(newRun(c.id, 1).life, STARTING_LIFE);
+  }
+});
+
+test('fighters open on the 3rd and 5th tiles', () => {
+  assert.equal(PLAYER_START, 3);
+  assert.equal(ENEMY_START, 5);
+  for (const enc of ENCOUNTERS) {
+    assert.equal(enc.playerSpace, PLAYER_START, `${enc.name} player start`);
+    assert.ok(
+      enc.enemies.some((e) => e.space === ENEMY_START),
+      `${enc.name} has no enemy on the 5th tile`
+    );
+  }
+});
+
+test('the opening board is exactly two spaces apart', () => {
+  const run = newRun('cadenza', 1);
+  resetPiles(run);
+  const s = startEncounter(run, ENCOUNTERS[0]);
+  assert.equal(s.player.space, 3);
+  assert.equal(s.enemies[0].space, 5);
+  assert.equal(Math.abs(s.player.space - s.enemies[0].space), 2);
+});
+
+test('clash: on equal Priority the player acts first', () => {
+  // Husk Shamble is Priority 2. Build a player attack that is also 2.
+  const s = mkState([{ type: 'husk', space: 2 }], { playerSpace: 1 });
+  s.enemies[0].patternIndex = 0;
+  telegraph(s);
+  assert.equal(s.enemies[0].intent.priority, 2);
+  // Hydraulic Burst: base priority 1 + 0 ... use Press+Hydraulic: 0 - 1 = -1.
+  // Grasp (pri 5) + Clockwork (-3) = 2 -> a genuine clash.
+  const atk = playerAttack(CADENZA, 'grasp', 'clockwork');
+  assert.equal(atk.priority, 2, 'set up a real tie');
+  s.enemies[0].life = 2;   // player-first means this dies before it swings
+  resolveBeat(s, { baseId: 'grasp', styleId: 'clockwork', autoShield: 'never' });
+  assert.ok(s.enemies[0].life <= 0, 'player resolved first and killed it');
+  assert.equal(s.player.life, STARTING_LIFE, 'so it never got to swing');
 });
