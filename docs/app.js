@@ -9,18 +9,21 @@
   const MAX_TASKS = 50;
 
   const SNIPPETS = [
-    'Roll call — VANTABLACK, Sector 9: roads quiet, stars out, all clear.',
-    'Ticket filed — streetlight 4-B, Building 4. Crew already en route. Everyone\u2019s friendly tonight.',
-    'Break room — coffee fresh. As always. You didn\u2019t even have to brew it.',
-    'Weather desk — clear skies until 06:00. Not a cloud in the world.',
-    'Route check — all trucks on schedule. On-time performance: 100.0%.',
-    'Radio check — night crew confirmed. The city is in good hands.',
-    'Inventory — pens counted: 41,312. A nice, even number.',
-    'Memo board — nothing new. The day crew sends their regards.',
-    'Window check — streetlights all on. The city glows like it\u2019s glad you\u2019re here.',
-    'Attendance log — you: present. As always.',
-    'Population chart — 41,312, holding steady. Everyone accounted for.',
-    'Roof report — antennas clear. Reception: perfect.'
+    'S9 ROLL CALL — roads clear. stars: nominal. status: green.',
+    'STREETLIGHT 4-B — ticket filed. crew dispatched. no follow-up required.',
+    'BREAK ROOM — coffee: warm. pot: full. you did not brew this.',
+    'WEATHER — clear. no change expected. no change permitted.',
+    'ROUTE SCAN — all trucks on schedule. deviation: 0.00%.',
+    'RADIO — night crew: confirmed. signal: strong. no anomalies.',
+    'INVENTORY — count: 41,312. previous count: 41,312. match: confirmed.',
+    'MEMO BOARD — empty. day crew left nothing. as expected.',
+    'WINDOW CHK — streetlights: active. grid: stable. city: compliant.',
+    'ATTENDANCE — you: PRESENT. record: unbroken. do not break it.',
+    'POPULATION — 41,312. delta: 0. all accounted for. all always accounted for.',
+    'ROOF SCAN — antennas: clear. signal: optimal. something: listening.',
+    'DISPATCH LOG — sector 7: quiet. sector 7 is always quiet.',
+    'ELEVATOR CHK — floors 1-11: normal. floor 12: does not exist.',
+    'CLOCK SYNC — 01:00 confirmed. time is moving correctly. do not question the time.'
   ];
 
   const el = {
@@ -55,11 +58,11 @@
     el.day.textContent = state.day;
     el.clock.textContent = clockStr();
     el.tasks.textContent = state.tasks;
-    el.weather.textContent = 'Clear skies until 06:00';
+    el.weather.textContent = 'CLEAR UNTIL 06:00';
   }
 
   function beginShift() {
-    addLine('Tuesday. The coffee is already warm.', 'system');
+    addLine('SHIFT INITIALIZED // COFFEE: WARM // QUOTA: 50 // EXECUTE TASKS.', 'system');
   }
 
   function performTask() {
@@ -82,7 +85,7 @@
     if (state.tasks === 0) {
       state.minutes = 360;
       updateReadouts();
-      addLine('SHIFT COMPLETE. The city thanks you. See you tomorrow, Operator.', 'system');
+      addLine('SHIFT COMPLETE // QUOTA MET // 06:00 REACHED. REPORT TO BREAK ROOM. DO NOT LOOK OUTSIDE.', 'system');
       el.taskBtn.disabled = true;
       el.taskBtn.hidden = true;
       el.nextBtn.hidden = false;
@@ -110,11 +113,13 @@
   const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const CORRUPT = [
-    '▓▓▓ sector ▓▓9▓▓▓ — all clear ▓▓',
-    'there is no building 7. there is no building 7.',
-    'population: 41,31▓ — unchan6ed. forever.',
-    'you are not supposed to remember this',
-    '██ 06:00 ██ — do not be awake ██'
+    '▓▓▓ S9 ▓▓▓ all clear ▓▓▓ you were not here yesterday ▓▓▓',
+    'building 7 does not exist. building 7 does not exist. you know this.',
+    'population: 41,31▓ — unchanged. forever. unchanged.',
+    'OPERATOR: you are not supposed to remember this shift.',
+    '██ 06:00 ██ DO NOT BE AWAKE ██ DO NOT ██',
+    'ERROR: the coffee was warm before you arrived. it was warm before the building existed.',
+    '▓▓ ATTENDANCE ██ 100% ██ it was 100% before you were hired ▓▓'
   ];
 
   function flashFx(node) {
@@ -125,11 +130,10 @@
 
   function weatherStaticFx() {
     const w = el.weather;
-    const orig = w.textContent;
-    w.textContent = '…static…';
+    w.textContent = '▓▓▓ DO NOT LOOK OUTSIDE ▓▓▓';
     w.style.color = 'var(--red)';
     setTimeout(() => {
-      w.textContent = 'Clear skies until 06:00';
+      w.textContent = 'CLEAR UNTIL 06:00';
       w.style.color = '';
     }, 420);
   }
@@ -138,7 +142,7 @@
     const h = $('#hint');
     if (!h) return;
     const orig = h.textContent;
-    h.textContent = 'you are not supposed to remember this.';
+    h.textContent = 'CONNECTION ANOMALY — OPERATOR WAS NEVER HIRED';
     setTimeout(() => { h.textContent = orig; }, 520);
   }
 
