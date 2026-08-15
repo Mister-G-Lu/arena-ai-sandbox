@@ -14,23 +14,53 @@
   <script defer src="app.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="brand" href="#top">FALSE<span class="brand-reality">//</span>REALITY</a>
-      <span class="brand-sub">MERIDIAN DISPATCH TERMINAL — v0.41.312</span>
-      <nav class="site-nav" aria-label="Main">
-        <a href="#job">DIRECTIVE</a>
-        <a href="#city">GRID</a>
-        <a href="#first-shift">FIRST SHIFT</a>
-        <a href="#shift">CONSOLE</a>
-        <a href="#memos">BULLETIN</a>
-      </nav>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a class="brand" href="#home">FALSE<span class="brand-reality">//</span>REALITY</a>
+      <span class="brand-sub">v0.41.312</span>
     </div>
-  </header>
+    <nav class="sidebar-nav" aria-label="Main">
+      <a href="#home" data-page="home" class="nav-link active">
+        <span class="nav-icon">⌂</span>
+        <span class="nav-label">HOME</span>
+      </a>
+      <a href="#directive" data-page="directive" class="nav-link">
+        <span class="nav-icon">▸</span>
+        <span class="nav-label">DIRECTIVE</span>
+      </a>
+      <a href="#grid" data-page="grid" class="nav-link">
+        <span class="nav-icon">◫</span>
+        <span class="nav-label">GRID</span>
+      </a>
+      <a href="#first-shift" data-page="first-shift" class="nav-link">
+        <span class="nav-icon">◈</span>
+        <span class="nav-label">FIRST SHIFT</span>
+      </a>
+      <a href="#console" data-page="console" class="nav-link">
+        <span class="nav-icon">▣</span>
+        <span class="nav-label">CONSOLE</span>
+      </a>
+      <a href="#bulletin" data-page="bulletin" class="nav-link">
+        <span class="nav-icon">▤</span>
+        <span class="nav-label">BULLETIN</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-status">
+        <span class="status-dot"></span>
+        <span class="status-text">LINK ACTIVE</span>
+      </div>
+    </div>
+  </aside>
+
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <main id="top">
     <!-- ================= HERO ================= -->
-    <section class="hero">
+    <section class="hero page" id="page-home" data-page="home">
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <p class="eyebrow">// CENTRAL DISPATCH — SECTOR 0 //</p>
@@ -38,7 +68,7 @@
           <p class="lede">Fifty tasks. 01:00 to 06:00. The coffee was waiting before you arrived.</p>
           <div class="cta-row">
             <a class="btn btn-primary" href="#first-shift">▸ BEGIN SHIFT</a>
-            <a class="btn btn-ghost" href="#memos">READ BULLETINS</a>
+            <a class="btn btn-ghost" href="#bulletin">READ BULLETINS</a>
           </div>
           <p class="fine">SHIFT WINDOW: 01:00–06:00 · MISSED SHIFTS: 0/100 YEARS · ALL TASKS ASSIGNED</p>
         </div>
@@ -90,7 +120,7 @@
     </section>
 
     <!-- ================= DIRECTIVE ================= -->
-    <section id="job" class="section">
+    <section id="page-directive" data-page="directive" class="section page">
       <div class="wrap">
         <h2>DIRECTIVE</h2>
         <p class="section-lede">Your shift is pre-configured. Fifty tasks. The same
@@ -131,7 +161,7 @@
     </section>
 
     <!-- ================= GRID ================= -->
-    <section id="city" class="section section-alt">
+    <section id="page-grid" data-page="grid" class="section section-alt page">
       <div class="wrap">
         <h2>MERIDIAN GRID</h2>
         <p class="section-lede">The city is a number. The number has not changed.
@@ -149,7 +179,7 @@
     </section>
 
     <!-- ================= FIRST SHIFT (tutorial / story intro) ================= -->
-    <section id="first-shift" class="section section-orient">
+    <section id="page-first-shift" data-page="first-shift" class="section section-orient page">
       <div class="wrap">
         <h2>FIRST SHIFT</h2>
         <p class="section-lede">The terminal hums when you sit down. The screen is
@@ -176,7 +206,7 @@
     </section>
 
     <!-- ================= CONSOLE ================= -->
-    <section id="shift" class="section">
+    <section id="page-console" data-page="console" class="section page">
       <div class="wrap">
         <h2>OPERATOR CONSOLE</h2>
         <p class="section-lede">Build 0.41.312. You are logged in. You have always been
@@ -208,7 +238,7 @@
     </section>
 
     <!-- ================= BULLETIN ================= -->
-    <section id="memos" class="section section-alt">
+    <section id="page-bulletin" data-page="bulletin" class="section section-alt page">
       <div class="wrap">
         <h2>BULLETIN BOARD</h2>
         <p class="section-lede">Posted for all personnel. Acknowledged. Not to be

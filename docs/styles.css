@@ -1,5 +1,6 @@
 /* FALSE REALITY — site skeleton
-   Terminal dispatch aesthetic. The system is watching. */
+   Terminal dispatch aesthetic. The system is watching.
+   Left-sidebar layout with hash-based page routing. */
 
 :root {
   --bg: #0a0f1e;
@@ -19,6 +20,7 @@
   --font-body: 'Space Grotesk', sans-serif;
   --font-mono: 'Share Tech Mono', ui-monospace, 'SF Mono', monospace;
   --radius: 14px;
+  --sidebar-w: 220px;
 }
 
 * { box-sizing: border-box; }
@@ -42,51 +44,196 @@ body {
 
 a { color: inherit; }
 
-/* ---------- header ---------- */
+/* ====================================================================
+   SIDEBAR NAVIGATION
+   ==================================================================== */
 
-.site-header {
-  position: sticky;
+.sidebar {
+  position: fixed;
   top: 0;
-  z-index: 50;
-  background: rgba(10, 15, 30, 0.78);
-  backdrop-filter: blur(10px);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: rgba(8, 12, 24, 0.95);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid var(--line-soft);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 24px 20px 20px;
   border-bottom: 1px solid var(--line-soft);
 }
 
-.header-inner { display: flex; align-items: center; gap: 24px; height: 64px; }
-
-.brand {
+.sidebar-brand .brand {
   font-family: var(--font-display);
   font-weight: 900;
-  letter-spacing: 0.14em;
-  font-size: 1.05rem;
+  letter-spacing: 0.1em;
+  font-size: 0.95rem;
   text-decoration: none;
   white-space: nowrap;
+  display: block;
 }
-.brand .brand-reality { color: var(--amber); margin: 0 0.15em; }
+.sidebar-brand .brand .brand-reality { color: var(--amber); margin: 0 0.1em; }
 
-.brand-sub {
+.sidebar-brand .brand-sub {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   color: var(--faint);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-left: 1px solid var(--line);
-  padding-left: 14px;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+  display: block;
 }
 
-.site-nav { margin-left: auto; display: flex; gap: 18px; }
-.site-nav a {
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
   font-family: var(--font-mono);
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
+  color: var(--faint);
+  text-decoration: none;
   text-transform: uppercase;
+  position: relative;
+  transition: all 0.2s ease;
+  border-left: 2px solid transparent;
 }
-.site-nav a:hover { color: var(--teal); }
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+.nav-link.active {
+  color: var(--teal);
+  border-left-color: var(--teal);
+  background: rgba(87, 214, 195, 0.05);
+}
+.nav-link.active .nav-icon {
+  text-shadow: 0 0 8px rgba(87, 214, 195, 0.4);
+}
 
-/* ---------- hero ---------- */
+.nav-icon {
+  font-size: 0.85rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.nav-label {
+  white-space: nowrap;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.sidebar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+  animation: dot-pulse-sidebar 3s ease-in-out infinite;
+}
+@keyframes dot-pulse-sidebar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.status-text {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--faint);
+  letter-spacing: 0.1em;
+}
+
+/* ---------- mobile hamburger ---------- */
+
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  background: rgba(8, 12, 24, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0;
+}
+.mobile-menu-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--teal);
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+.mobile-menu-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(3px, 4px); }
+.mobile-menu-toggle.open span:nth-child(2) { opacity: 0; }
+.mobile-menu-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(4px, -5px); }
+
+/* ====================================================================
+   MAIN CONTENT AREA (offset for sidebar)
+   ==================================================================== */
+
+main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+
+/* ====================================================================
+   PAGE ROUTING — only .page.active is visible
+   ==================================================================== */
+
+.page {
+  display: none;
+  opacity: 0;
+}
+.page.active {
+  display: block;
+  animation: page-enter 0.35s ease forwards;
+}
+.page.page-exit {
+  display: block;
+  animation: page-leave 0.2s ease forwards;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes page-leave {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ====================================================================
+   HERO (Home page)
+   ==================================================================== */
 
 .hero { padding: 84px 0 96px; }
 
@@ -175,14 +322,14 @@ h1 {
   93.1%, 100% { opacity: 0; }
 }
 
-/* ---------- sections ---------- */
+/* ====================================================================
+   SECTIONS (shared)
+   ==================================================================== */
 
 .section { padding: 72px 0; }
 
 .section-alt {
   background: rgba(14, 22, 40, 0.55);
-  border-top: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
 }
 
 h2 {
@@ -328,7 +475,9 @@ h2 {
   opacity: 0.85;
 }
 
-/* ---------- console ---------- */
+/* ====================================================================
+   CONSOLE
+   ==================================================================== */
 
 .console {
   margin-top: 12px;
@@ -403,7 +552,9 @@ h2 {
 
 .console-note { margin-top: 14px; }
 
-/* ---------- first shift (orientation / tutorial) ---------- */
+/* ====================================================================
+   FIRST SHIFT (orientation / tutorial)
+   ==================================================================== */
 
 .section-orient {
   background:
@@ -415,8 +566,6 @@ h2 {
       rgba(87, 214, 195, 0.015) 2px,
       rgba(87, 214, 195, 0.015) 4px
     );
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
   position: relative;
 }
 .section-orient::before {
@@ -671,7 +820,9 @@ h2 {
 }
 .memo p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
 
-/* ---------- footer ---------- */
+/* ====================================================================
+   FOOTER
+   ==================================================================== */
 
 .site-footer {
   border-top: 1px solid var(--line-soft);
@@ -682,15 +833,47 @@ h2 {
 .site-footer p { margin: 0 0 6px; }
 .footer-sub { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; }
 
-/* ---------- responsive ---------- */
+/* ====================================================================
+   RESPONSIVE
+   ==================================================================== */
 
 @media (max-width: 860px) {
-  .hero { padding: 56px 0 64px; }
+  :root { --sidebar-w: 0px; }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    width: 240px;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  main {
+    margin-left: 0;
+    padding-top: 0;
+  }
+
+  .hero { padding: 80px 0 64px; }
   .hero-grid { grid-template-columns: 1fr; gap: 36px; }
-  .brand-sub { display: none; }
-  .site-nav { gap: 12px; }
   .readouts { grid-template-columns: repeat(2, 1fr); }
   .readout:nth-child(2) { border-right: none; }
+
+  /* overlay when sidebar open on mobile */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+  }
+  .sidebar-overlay.show {
+    display: block;
+  }
 }
 
 /* ---------- reduced motion ---------- */
@@ -698,9 +881,12 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
   html { scroll-behavior: auto; }
+  .page.active { opacity: 1; }
 }
 
-/* ---------- glitch fx (subtle: rare, brief, self-correcting) ---------- */
+/* ====================================================================
+   GLITCH FX
+   ==================================================================== */
 
 .log-line.corrupt {
   color: var(--red);

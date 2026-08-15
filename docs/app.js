@@ -480,7 +480,7 @@ Fifty tasks await.
         complete.className = 'orient-complete';
         complete.innerHTML = `
           <span class="orient-arrow">↓</span>
-          <a class="btn btn-primary" href="#shift" style="font-family:var(--font-mono);letter-spacing:0.1em;font-size:0.85rem;">▸ BEGIN YOUR SHIFT</a>
+          <a class="btn btn-primary" href="#console" style="font-family:var(--font-mono);letter-spacing:0.1em;font-size:0.85rem;">▸ BEGIN YOUR SHIFT</a>
         `;
         screen.appendChild(complete);
         scrollScreen();
@@ -510,4 +510,150 @@ Fifty tasks await.
   btn.onclick = () => {
     runBootSequence();
   };
+})();
+
+/* ---------- ROUTER — hash-based page navigation ---------- */
+(() => {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  const pages = {
+    home: $('#page-home'),
+    directive: $('#page-directive'),
+    grid: $('#page-grid'),
+    'first-shift': $('#page-first-shift'),
+    console: $('#page-console'),
+    bulletin: $('#page-bulletin')
+  };
+
+  const navLinks = $$('.nav-link');
+  const sidebar = $('.sidebar');
+  const menuToggle = $('.mobile-menu-toggle');
+  const overlay = $('.sidebar-overlay');
+
+  let currentPage = 'home';
+
+  /* ---------- page routing ---------- */
+
+  function navigateTo(pageName) {
+    // Validate page
+    if (!pages[pageName]) {
+      pageName = 'home';
+    }
+
+    // Skip if already on this page
+    if (currentPage === pageName) {
+      // Still update hash if needed
+      if (window.location.hash !== '#' + pageName) {
+        window.location.hash = pageName;
+      }
+      return;
+    }
+
+    const oldPage = pages[currentPage];
+    const newPage = pages[pageName];
+
+    if (!newPage) return;
+
+    // Animate out old page
+    if (oldPage) {
+      oldPage.classList.add('page-exit');
+      setTimeout(() => {
+        oldPage.classList.remove('active', 'page-exit');
+      }, 200);
+    }
+
+    // Animate in new page
+    setTimeout(() => {
+      newPage.classList.add('active');
+      // Scroll to top of page
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 200);
+
+    // Update nav links
+    navLinks.forEach(link => {
+      if (link.dataset.page === pageName) {
+        link.classList.add('active');
+      } else {
+        link.classList.remove('active');
+      }
+    });
+
+    // Update hash
+    if (window.location.hash !== '#' + pageName) {
+      history.pushState(null, '', '#' + pageName);
+    }
+
+    currentPage = pageName;
+
+    // Close mobile menu if open
+    closeMobileMenu();
+  }
+
+  /* ---------- mobile menu ---------- */
+
+  function openMobileMenu() {
+    sidebar.classList.add('open');
+    menuToggle.classList.add('open');
+    overlay.classList.add('show');
+  }
+
+  function closeMobileMenu() {
+    sidebar.classList.remove('open');
+    menuToggle.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+
+  function toggleMobileMenu() {
+    if (sidebar.classList.contains('open')) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  }
+
+  /* ---------- event listeners ---------- */
+
+  // Nav link clicks
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const pageName = link.dataset.page;
+      navigateTo(pageName);
+    });
+  });
+
+  // Mobile menu toggle
+  if (menuToggle) {
+    menuToggle.addEventListener('click', toggleMobileMenu);
+  }
+
+  // Overlay click closes menu
+  if (overlay) {
+    overlay.addEventListener('click', closeMobileMenu);
+  }
+
+  // Hash change (back/forward buttons)
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.slice(1);
+    navigateTo(hash);
+  });
+
+  // Initial route
+  const initialHash = window.location.hash.slice(1);
+  if (initialHash && pages[initialHash]) {
+    currentPage = initialHash;
+    pages[initialHash].classList.add('active');
+    navLinks.forEach(link => {
+      if (link.dataset.page === initialHash) {
+        link.classList.add('active');
+      }
+    });
+  } else {
+    // Default to home
+    pages.home.classList.add('active');
+    history.replaceState(null, '', '#home');
+  }
 })();
