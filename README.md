@@ -52,6 +52,8 @@ Project: `ltawgurvhffikilulyfj` · URL: `https://ltawgurvhffikilulyfj.supabase.c
 
 Personnel on the site is the operator-facing surface: request a reinstatement token, merge a conflicting file, read the File (Attention omitted), export / import the logbook, terminate.
 
+Phase 2 (server-authoritative actions) is staged in [`supabase/0002_actions.sql`](supabase/0002_actions.sql) and documented in [`design/server-authoritative-actions.md`](design/server-authoritative-actions.md). Do not apply it until Phase 1 has been lived-in.
+
 ## Working method
 
 Small PRs into `main`, in commit order. Design first when the design is the change; site PRs stay reviewable.
