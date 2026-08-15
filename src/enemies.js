@@ -5,10 +5,13 @@
 // resolves both sides through one code path.
 
 export function intent({
-  name, range, att, spd, before = [], hit = [], after = [],
-  guard = 0, hitAll = false, text = '', tag = '',
+  name, range, power, priority, before = [], hit = [], after = [],
+  soak = 0, stunGuard = 0, stunImmune = false, hitAll = false, text = '', tag = '',
 }) {
-  return { name, range, att, spd, before, hit, after, guard, hitAll, text, tag };
+  return {
+    name, range, power, priority, before, hit, after,
+    soak, stunGuard, stunImmune, hitAll, text, tag,
+  };
 }
 
 // -------------------------------------------------------------- enemy types
@@ -20,12 +23,12 @@ export const ENEMY_TYPES = {
     // Cycles predictably: shamble -> swing -> shamble ...
     pattern: (self, i) => [
       intent({
-        name: 'Shamble', range: [1, 1], att: 2, spd: 2,
+        name: 'Shamble', range: [1, 1], power: 2, priority: 2,
         before: [{ k: 'advance', min: 1, max: 2 }],
         text: 'Before: Advance 1~2',
       }),
       intent({
-        name: 'Heavy Swing', range: [1, 1], att: 5, spd: 1,
+        name: 'Heavy Swing', range: [1, 1], power: 5, priority: 1,
         text: 'A wide, slow blow.',
       }),
     ][i % 2],
@@ -36,16 +39,16 @@ export const ENEMY_TYPES = {
     blurb: 'Fast, fragile, and always trying to stay at knife range.',
     pattern: (self, i) => [
       intent({
-        name: 'Dart In', range: [1, 2], att: 3, spd: 6,
+        name: 'Dart In', range: [1, 2], power: 3, priority: 6,
         before: [{ k: 'close', min: 0, max: 3 }],
         text: 'Before: Close up to 3',
       }),
       intent({
-        name: 'Slash', range: [1, 1], att: 4, spd: 5,
+        name: 'Slash', range: [1, 1], power: 4, priority: 5,
         text: 'Quick and clean.',
       }),
       intent({
-        name: 'Fade', range: [1, 3], att: 2, spd: 7,
+        name: 'Fade', range: [1, 3], power: 2, priority: 7,
         after: [{ k: 'retreat', min: 1, max: 2 }],
         text: 'After: Retreat 1~2',
       }),
@@ -57,16 +60,16 @@ export const ENEMY_TYPES = {
     blurb: 'Deadly at range, helpless up close. Punishes you for standing still.',
     pattern: (self, i) => [
       intent({
-        name: 'Loose Arrow', range: [3, 6], att: 4, spd: 3,
+        name: 'Loose Arrow', range: [3, 6], power: 4, priority: 3,
         text: 'Only reaches distant targets.',
       }),
       intent({
-        name: 'Backstep Shot', range: [2, 5], att: 3, spd: 4,
+        name: 'Backstep Shot', range: [2, 5], power: 3, priority: 4,
         before: [{ k: 'retreat', min: 1, max: 1 }],
         text: 'Before: Retreat 1',
       }),
       intent({
-        name: 'Point Blank', range: [1, 2], att: 3, spd: 2,
+        name: 'Point Blank', range: [1, 2], power: 3, priority: 2,
         text: 'Cornered — it shoots from the hip.',
       }),
     ][i % 3],
@@ -77,18 +80,41 @@ export const ENEMY_TYPES = {
     blurb: 'Armoured and patient. Guards, then punishes.',
     pattern: (self, i) => [
       intent({
-        name: 'Brace', range: [1, 1], att: 2, spd: 2, guard: 4,
+        name: 'Brace', range: [1, 1], power: 2, priority: 2, stunGuard: 4, soak: 2,
         text: 'Gains 4 Guard this turn.',
       }),
       intent({
-        name: 'Hammerfall', range: [1, 2], att: 7, spd: 1,
+        name: 'Hammerfall', range: [1, 2], power: 7, priority: 1,
         hit: [{ k: 'push', min: 1, max: 2 }],
         text: 'Hit: Push 1~2',
       }),
       intent({
-        name: 'Stomp', range: [1, 2], att: 4, spd: 3,
-        hit: [{ k: 'stagger' }],
-        text: 'Hit: Stagger (cancels your attack)',
+        name: 'Stomp', range: [1, 2], power: 4, priority: 3,
+        hit: [{ k: 'stun' }],
+        text: 'OH: Stun',
+      }),
+    ][i % 3],
+  },
+
+  automaton: {
+    id: 'automaton', name: 'Automaton', glyph: 'X', life: 12, tier: 'elite',
+    blurb: 'Stun Immune. You cannot lock it down — you have to out-position it.',
+    pattern: (self, i) => [
+      intent({
+        name: 'Piston Jab', range: [1, 2], power: 4, priority: 4,
+        stunImmune: true, soak: 1,
+        text: 'Stun Immune, Soak 1',
+      }),
+      intent({
+        name: 'Shove', range: [1, 1], power: 3, priority: 3,
+        stunImmune: true,
+        hit: [{ k: 'push', min: 2, max: 3 }],
+        text: 'Stun Immune. OH: Push 2~3',
+      }),
+      intent({
+        name: 'Overclock', range: [1, 2], power: 6, priority: 1,
+        stunImmune: true,
+        text: 'Stun Immune. Winds up and swings hard.',
       }),
     ][i % 3],
   },
@@ -102,28 +128,29 @@ export const ENEMY_TYPES = {
       const phase2 = self.life <= 13;
       if (i % 4 === 3) {
         return intent({
-          name: 'Sunder', range: [1, 3], att: phase2 ? 8 : 6, spd: 2,
-          hit: [{ k: 'stagger' }],
+          name: 'Sunder', range: [1, 3], power: phase2 ? 8 : 6, priority: 2,
+          hit: [{ k: 'stun' }],
+          stunImmune: true,
           tag: 'danger',
-          text: 'Hit: Stagger. The big one — do not be standing there.',
+          text: 'OH: Stun. The big one — do not be standing there.',
         });
       }
       if (d <= 2) {
         return intent({
-          name: 'Backhand', range: [1, 2], att: phase2 ? 6 : 4, spd: 5,
+          name: 'Backhand', range: [1, 2], power: phase2 ? 6 : 4, priority: 5,
           hit: [{ k: 'push', min: 2, max: 2 }],
           text: 'Hit: Push 2',
         });
       }
       if (d >= 5) {
         return intent({
-          name: 'Chain Pull', range: [3, 6], att: 3, spd: 4,
+          name: 'Chain Pull', range: [3, 6], power: 3, priority: 4,
           hit: [{ k: 'pull', min: 2, max: 3 }],
           text: 'Hit: Pull 2~3',
         });
       }
       return intent({
-        name: 'Advancing Cut', range: [2, 3], att: phase2 ? 6 : 5, spd: 3,
+        name: 'Advancing Cut', range: [2, 3], power: phase2 ? 6 : 5, priority: 3,
         before: [{ k: 'advance', min: 0, max: 1 }],
         text: 'Before: Advance 0~1',
       });
@@ -142,8 +169,13 @@ export function makeEnemy(typeId, space, uid) {
     life: t.life,
     maxLife: t.life,
     space,
-    guard: 0,
-    staggered: false,
+    soak: 0,
+    stunGuard: 0,
+    stunImmune: false,
+    stunned: false,
+    damageTakenThisBeat: 0,
+    damageSoakedThisBeat: 0,
+    powerBonus: 0,
     patternIndex: 0,
     intent: null,
   };

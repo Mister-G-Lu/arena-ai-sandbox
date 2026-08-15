@@ -7,49 +7,54 @@
 <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-
 <div id="app">
-  <!-- ============ TITLE ============ -->
-  <section id="screen-title" class="screen">
-    <div class="title-card">
-      <h1>Seven-Space<br><span>Gauntlet</span></h1>
-      <p class="tag">A roguelite duel on a seven-space line.</p>
-      <ul class="rules">
-        <li>Combine a <b>Base</b> and a <b>Style</b> into one attack each turn.</li>
-        <li>Enemies <b>telegraph everything</b> — range, damage, speed, movement.</li>
-        <li>Nothing is hidden. Every death is a puzzle you misread.</li>
-      </ul>
-      <button id="btn-start" class="big">Begin the run</button>
+
+  <!-- ================= CHARACTER SELECT ================= -->
+  <section id="screen-select" class="screen">
+    <div class="wide-card">
+      <h1>Seven-Space<span>Gauntlet</span></h1>
+      <p class="tag">Choose your fighter.</p>
+      <div class="charpick" id="charpick"></div>
     </div>
   </section>
 
-  <!-- ============ COMBAT ============ -->
+  <!-- ================= COMBAT ================= -->
   <section id="screen-combat" class="screen hidden">
     <header class="hud">
-      <div class="hud-left">
-        <div class="enc-name" id="enc-name">The Threshold</div>
+      <div>
+        <div class="enc-name" id="enc-name"></div>
         <div class="enc-blurb" id="enc-blurb"></div>
       </div>
       <div class="hud-right">
         <div class="pips" id="node-pips"></div>
-        <div class="lifewrap">
-          <span class="lifelabel">LIFE</span>
-          <div class="lifebar"><span id="life-fill"></span></div>
-          <span class="lifenum" id="life-num">20/20</span>
+        <div class="meters">
+          <div class="meter">
+            <span class="mlabel">LIFE</span>
+            <div class="bar"><span id="life-fill"></span></div>
+            <span class="mnum" id="life-num"></span>
+          </div>
+          <div class="meter">
+            <span class="mlabel">FORCE</span>
+            <div class="bar force"><span id="force-fill"></span></div>
+            <span class="mnum" id="force-num"></span>
+          </div>
         </div>
+        <div class="tokens" id="tokens"></div>
       </div>
     </header>
 
     <div class="intents" id="intents"></div>
-
     <div class="board" id="board"></div>
 
-    <div class="preview" id="preview">Choose a Base and a Style.</div>
+    <div class="anterow" id="anterow"></div>
+    <div class="preview" id="preview"></div>
 
     <div class="handzone">
       <div class="handcol">
         <h3>Bases</h3>
         <div class="row" id="hand-bases"></div>
+        <h3 id="fin-head" class="fin-head">Finishers</h3>
+        <div class="row" id="hand-finishers"></div>
       </div>
       <div class="handcol">
         <h3>Styles</h3>
@@ -59,7 +64,7 @@
 
     <div class="actionbar">
       <div class="targetsel" id="targetsel"></div>
-      <button id="btn-resolve" disabled>Resolve turn</button>
+      <button id="btn-resolve" disabled>Resolve beat</button>
     </div>
 
     <details class="logbox">
@@ -68,26 +73,38 @@
     </details>
   </section>
 
-  <!-- ============ REWARD ============ -->
+  <!-- ================= SHIELD PROMPT ================= -->
+  <div id="shield-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Raise a Shield?</h3>
+      <p id="shield-text"></p>
+      <div class="modal-btns">
+        <button id="shield-yes">Use Shield (Guard 9001)</button>
+        <button id="shield-no" class="ghost">Take the hit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REWARD ================= -->
   <section id="screen-reward" class="screen hidden">
-    <div class="title-card">
+    <div class="wide-card">
       <h2 class="won">Encounter cleared</h2>
-      <p class="tag" id="reward-sub">Choose your spoils.</p>
+      <p class="tag" id="reward-sub"></p>
       <div class="rewards" id="rewards"></div>
     </div>
   </section>
 
-  <!-- ============ END ============ -->
+  <!-- ================= END ================= -->
   <section id="screen-end" class="screen hidden">
-    <div class="title-card">
-      <h2 id="end-title">The run ends</h2>
+    <div class="wide-card">
+      <h2 id="end-title"></h2>
       <p class="tag" id="end-sub"></p>
       <div class="deckdump" id="end-deck"></div>
       <button id="btn-again" class="big">Run again</button>
     </div>
   </section>
-</div>
 
+</div>
 <script type="module" src="./main.js"></script>
 </body>
 </html>

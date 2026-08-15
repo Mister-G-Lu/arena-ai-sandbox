@@ -1,28 +1,35 @@
-// Combat resolution for one encounter: the player versus 1..3 enemies on a
-// 7-space line. Enemies telegraph intents; the player's play and every intent
-// resolve through the same pipeline, ordered by Spd.
+// Beat resolution on a 7-space line: one player versus 1..3 enemies.
+//
+// BEAT STRUCTURE
+//   1. Ante      — spend tokens (Cadenza: Shield -> Stun Immunity)
+//   2. Reveal    — Style + Base combine; enemies' intents are already public
+//   3. Before    — BA effects, in Priority order
+//   4. Activate  — attacks resolve in Priority order
+//   5. End       — EoB effects, tokens recover, intents re-telegraph
+//
+// DAMAGE AND STUN (the core rule)
+//   damage = max(0, power - soak)
+//   Any damage stuns the target UNLESS
+//     • the target is Stun Immune, or
+//     • the target's Stun Guard >= damage dealt
+//   A stunned fighter does not activate: no attack, no EoB.
+//   Soak therefore does double duty — it blunts damage AND prevents stuns.
 
-import { BASE_BY_ID, STYLE_BY_ID, combine } from './cards.js';
+import { combine, baseLibrary, styleLibrary } from './characters.js';
 import { makeEnemy, telegraph } from './enemies.js';
 import { mulberry32 } from './rng.js';
 
 export const ARENA_SIZE = 7;
+export const MAX_FORCE = 10;
 
 // ------------------------------------------------------------- board helpers
 
 const inBoard = (n) => n >= 1 && n <= ARENA_SIZE;
+const living = (s) => [s.player, ...s.enemies.filter((e) => e.life > 0)];
+const occupiedBy = (s, space, except) =>
+  living(s).find((a) => a !== except && a.space === space);
 
-const occupants = (s) => [s.player, ...s.enemies.filter((e) => e.life > 0)];
-
-function occupiedBy(s, space, except) {
-  return occupants(s).find((a) => a !== except && a.space === space);
-}
-
-/**
- * Move `actor` `amount` spaces in `dir` (+1/-1 along the board).
- * Blocked by other fighters: you stop before them, you never share a space.
- * Returns spaces actually moved.
- */
+/** Step `amount` spaces in `dir`, blocked by other fighters. */
 function step(s, actor, amount, dir) {
   let moved = 0;
   for (let i = 0; i < amount; i++) {
@@ -34,18 +41,23 @@ function step(s, actor, amount, dir) {
   return moved;
 }
 
+/** Move ignoring occupancy en route; must land on an empty space. */
+function phaseMove(s, actor, amount, dir) {
+  const dest = actor.space + dir * amount;
+  if (!inBoard(dest) || occupiedBy(s, dest, actor)) return 0;
+  const moved = Math.abs(dest - actor.space);
+  actor.space = dest;
+  return moved;
+}
+
 const towardDir = (from, to) => (to > from ? 1 : -1);
 
-/** Nearest living enemy to the player (ties break toward the lower space). */
 export function nearestEnemy(s) {
   const alive = s.enemies.filter((e) => e.life > 0);
   if (!alive.length) return null;
   return alive.reduce((best, e) =>
-    Math.abs(e.space - s.player.space) < Math.abs(best.space - s.player.space) ? e : best
-  );
+    Math.abs(e.space - s.player.space) < Math.abs(best.space - s.player.space) ? e : best);
 }
-
-export const distanceBetween = (a, b) => Math.abs(a.space - b.space);
 
 // ----------------------------------------------------------------- effects
 
@@ -72,6 +84,13 @@ function applyEffect(s, actor, target, eff, pick, log) {
       if (m) log(`${name} closes ${m}.`);
       return;
     }
+    case 'dashMove': {
+      const n = pick(eff, 'dashMove');
+      const dir = pick(eff, 'dashDir') >= 0 ? 1 : -1;
+      const m = phaseMove(s, actor, n, dir) || phaseMove(s, actor, n, -dir);
+      if (m) log(`${name} dashes ${m}.`);
+      return;
+    }
     case 'jumpPast': {
       if (!target) return;
       const dir = towardDir(actor.space, target.space);
@@ -84,7 +103,6 @@ function applyEffect(s, actor, target, eff, pick, log) {
           return;
         }
       }
-      log(`${name} has nowhere to vault to.`);
       return;
     }
     case 'push': {
@@ -99,9 +117,9 @@ function applyEffect(s, actor, target, eff, pick, log) {
       if (m) log(`${target.name} is pulled ${m}.`);
       return;
     }
-    case 'guardUp':
-      actor.guard += eff.amount;
-      log(`${name} gains ${eff.amount} Guard.`);
+    case 'soakUp':
+      actor.soak += eff.amount;
+      log(`${name} gains Soak ${eff.amount}.`);
       return;
     case 'heal': {
       const before = actor.life;
@@ -109,11 +127,38 @@ function applyEffect(s, actor, target, eff, pick, log) {
       if (actor.life > before) log(`${name} heals ${actor.life - before}.`);
       return;
     }
-    case 'stagger':
+    case 'stun':
       if (!target) return;
-      target.staggered = true;
-      log(`${target.name} is staggered — their attack is cancelled.`);
+      // An explicit "OH: Stun" rider still respects Stun Immunity — that is
+      // the whole point of anteing a Shield.
+      if (target.stunImmune) {
+        log(`${target.name} is Stun Immune and shrugs off the stun.`);
+        return;
+      }
+      target.stunned = true;
+      log(`${target.name} is stunned.`);
       return;
+    case 'priorityBonus':
+      actor.priorityBonusNext = (actor.priorityBonusNext || 0) + eff.amount;
+      log(`${name} will have +${eff.amount} Priority next beat.`);
+      return;
+    // --- Cadenza's conditional power boosts -------------------------------
+    case 'powerPerDamageTaken': {
+      const bonus = (actor.damageTakenThisBeat || 0) * eff.amount;
+      if (bonus) {
+        actor.powerBonus = (actor.powerBonus || 0) + bonus;
+        log(`${name} channels the blow: +${bonus} Power.`);
+      }
+      return;
+    }
+    case 'powerPerDamageSoaked': {
+      const bonus = (actor.damageSoakedThisBeat || 0) * eff.amount;
+      if (bonus) {
+        actor.powerBonus = (actor.powerBonus || 0) + bonus;
+        log(`${name} vents the impact: +${bonus} Power.`);
+      }
+      return;
+    }
     default:
       return;
   }
@@ -122,66 +167,122 @@ function applyEffect(s, actor, target, eff, pick, log) {
 // -------------------------------------------------------------- encounter
 
 export function startEncounter(run, encounter) {
+  const char = run.char;
   const s = {
     rng: mulberry32(run.seed + run.node * 977),
-    turn: 1,
+    beat: 1,
     over: false,
     victory: false,
     log: [],
+    char,
+    encounter,
+    force: run.force ?? 0,
+    // pending reactive prompt: { attackerName, damage, kills }
+    pendingShield: null,
     player: {
-      name: 'You',
+      name: char.name,
       isPlayer: true,
       life: run.life,
-      maxLife: run.maxLife,
+      maxLife: char.life,
       space: encounter.playerSpace ?? 1,
-      guard: 0,
-      staggered: false,
+      soak: 0,
+      stunGuard: 0,
+      stunImmune: false,
+      stunned: false,
+      tokens: char.tokens ? run.tokens ?? char.tokens.start : 0,
+      antedStunImmunity: false,
+      damageTakenThisBeat: 0,
+      damageSoakedThisBeat: 0,
+      powerBonus: 0,
+      priorityBonusNext: 0,
+      priorityBonus: 0,
     },
     enemies: encounter.enemies.map((e, i) => makeEnemy(e.type, e.space, i)),
-    encounter,
   };
   telegraph(s);
   s.log.push(`— ${encounter.name} —`);
   return s;
 }
 
-/** Every attack the player could make from their current deck. */
-export function playerAttack(baseId, styleId) {
-  return combine(BASE_BY_ID[baseId], STYLE_BY_ID[styleId]);
+export function playerAttack(char, baseId, styleId) {
+  const B = baseLibrary(char);
+  const S = styleLibrary(char);
+  return combine(B[baseId], styleId ? S[styleId] : null);
 }
 
+export const canUseFinisher = (s) => s.force >= s.player.life;
+
 const clampPick = (eff, want) =>
-  Math.max(eff.min, Math.min(eff.max, want === undefined ? eff.max : want));
+  Math.max(eff.min ?? 0, Math.min(eff.max ?? 0, want === undefined ? (eff.max ?? 0) : want));
+
+// ------------------------------------------------------------------ ante
+
+/** Ante phase: spend a Shield for Stun Immunity this beat. */
+export function anteShield(s, spend) {
+  const p = s.player;
+  p.antedStunImmunity = false;
+  if (spend && p.tokens > 0) {
+    p.tokens--;
+    p.antedStunImmunity = true;
+    s.log.push(`${p.name} antes a Shield — Stun Immunity this beat. (${p.tokens} left)`);
+  }
+  return s;
+}
+
+// ------------------------------------------------------------- the beat
 
 /**
- * Resolve one full turn.
- * play: { baseId, styleId, picks?, targetUid? }
+ * Resolve one beat.
+ * play: { baseId, styleId, picks?, targetUid?, ante?, autoShield? }
+ *   autoShield: 'always' | 'lethal' | 'never'  (reactive Shield policy)
  */
-export function resolveTurn(s, play) {
+export function resolveBeat(s, play) {
   if (s.over) return s;
   const log = (m) => s.log.push(m);
-  const atk = playerAttack(play.baseId, play.styleId);
-  const pickPlayer = (eff, key) => clampPick(eff, play.picks?.[key]);
-  const pickEnemy = (eff) => eff.max;
+  const p = s.player;
+  const atk = playerAttack(s.char, play.baseId, play.styleId);
 
-  log(`— Turn ${s.turn} —`);
-  log(`You: ${atk.name} (Rng ${atk.range[0]}~${atk.range[1]}, Att ${atk.att}, Spd ${atk.spd})`);
+  log(`— Beat ${s.beat} —`);
+  anteShield(s, !!play.ante);
 
-  s.player.guard = atk.guard;
-  s.player.staggered = false;
+  // reset per-beat state
+  p.soak = atk.soak;
+  p.stunGuard = atk.stunGuard;
+  p.stunImmune = atk.stunImmune || p.antedStunImmunity;
+  p.stunned = false;
+  p.damageTakenThisBeat = 0;
+  p.damageSoakedThisBeat = 0;
+  p.powerBonus = 0;
+  p.priorityBonus = p.priorityBonusNext || 0;
+  p.priorityBonusNext = 0;
+  p.shieldsUsedThisBeat = 0;
+
   for (const e of s.enemies) {
-    e.guard = e.intent?.guard || 0;
-    e.staggered = false;
+    if (e.life <= 0) continue;
+    const i = e.intent;
+    e.soak = i.soak || 0;
+    e.stunGuard = i.stunGuard || 0;
+    e.stunImmune = !!i.stunImmune;
+    e.stunned = false;
+    e.damageTakenThisBeat = 0;
+    e.damageSoakedThisBeat = 0;
+    e.powerBonus = 0;
   }
 
-  // Build the initiative order. Ties: the player acts first (a small,
-  // legible bias — the telegraph already tells you the numbers).
-  const actors = [
-    { kind: 'player', actor: s.player, atk, pick: pickPlayer },
-    ...s.enemies
-      .filter((e) => e.life > 0 && e.intent)
-      .map((e) => ({ kind: 'enemy', actor: e, atk: e.intent, pick: pickEnemy })),
-  ].sort((a, b) => b.atk.spd - a.atk.spd || (a.kind === 'player' ? -1 : 1));
+  const pPriority = atk.priority + p.priorityBonus;
+  log(`${p.name}: ${atk.name} — R ${atk.range[0]}~${atk.range[1]} / P ${atk.power} / Pri ${pPriority}` +
+    `${atk.soak ? ` / Soak ${atk.soak}` : ''}${atk.stunGuard ? ` / SG ${atk.stunGuard}` : ''}` +
+    `${p.stunImmune ? ' / STUN IMMUNE' : ''}`);
+
+  // ---- initiative: higher Priority first; player wins ties
+  const order = [
+    { kind: 'player', actor: p, atk, priority: pPriority },
+    ...s.enemies.filter((e) => e.life > 0 && e.intent)
+      .map((e) => ({ kind: 'enemy', actor: e, atk: e.intent, priority: e.intent.priority })),
+  ].sort((a, b) => b.priority - a.priority || (a.kind === 'player' ? -1 : 1));
+
+  const pickFor = (entry) => (eff, key) =>
+    entry.kind === 'player' ? clampPick(eff, play.picks?.[key]) : clampPick(eff, undefined);
 
   const targetOf = (entry) => {
     if (entry.kind === 'enemy') return s.player;
@@ -189,96 +290,152 @@ export function resolveTurn(s, play) {
     return chosen || nearestEnemy(s);
   };
 
-  for (const entry of actors) {
+  // ---- ACTIVATION, in Priority order.
+  // "Before Activating" fires immediately before that fighter's own
+  // activation — NOT as a global band. This matters: Press reads the damage
+  // you took earlier in the beat, which only exists if faster fighters have
+  // already swung.
+  for (const entry of order) {
     if (s.over) break;
-    const { actor, atk: a, pick } = entry;
+    const { actor, atk: a } = entry;
     if (actor.life <= 0) continue;
-
-    // BEFORE
-    if (!actor.staggered) {
-      for (const eff of a.before) applyEffect(s, actor, targetOf(entry), eff, pick, log);
-    }
-    if (actor.staggered) {
+    if (actor.stunned) {
+      log(`${actor.name} is stunned and cannot activate.`);
       continue;
     }
 
-    // HIT — resolve once, or twice for repeating attacks
-    const swings = a.repeat ? 2 : 1;
-    for (let sw = 0; sw < swings; sw++) {
-      if (actor.life <= 0 || s.over) break;
-      const pool = entry.kind === 'enemy'
-        ? [s.player]
-        : s.enemies.filter((e) => e.life > 0);
-      const inRangeTargets = pool.filter((t) => {
-        const d = Math.abs(actor.space - t.space);
-        return d >= a.range[0] && d <= a.range[1];
-      });
-      let victims;
-      if (a.hitAll) victims = inRangeTargets;
-      else {
-        const primary = targetOf(entry);
-        victims = primary && inRangeTargets.includes(primary)
-          ? [primary]
-          : inRangeTargets.slice(0, 1);
-      }
-      if (!victims.length) {
-        if (sw === 0) {
-          const d = pool.length ? Math.abs(actor.space - pool[0].space) : '-';
-          log(`${actor.name} misses — nothing in range (nearest ${d}).`);
-        }
-        break;
-      }
-      for (const v of victims) {
-        const guard = a.ignoreGuard ? 0 : v.guard;
-        const dmg = Math.max(0, a.att - guard);
-        v.life -= dmg;
-        log(
-          `${actor.name} hits ${v.name} for ${dmg}` +
-          `${guard ? ` (${guard} Guard absorbed)` : ''}. ` +
-          `${v.name}: ${Math.max(0, v.life)} life.`
-        );
-        for (const eff of a.hit) applyEffect(s, actor, v, eff, pick, log);
-        if (v.life <= 0 && !v.isPlayer) log(`${v.name} is destroyed.`);
-      }
-      checkEnd(s, log);
+    // BA band for this fighter
+    for (const eff of a.before)
+      applyEffect(s, actor, targetOf(entry), eff, pickFor(entry), log);
+
+    // being stunned during your own BA still cancels you
+    if (actor.stunned) {
+      log(`${actor.name} is stunned and cannot activate.`);
+      continue;
+    }
+    if (a.isDash) continue;   // Dash deals no damage
+
+    const pool = entry.kind === 'enemy' ? [s.player] : s.enemies.filter((e) => e.life > 0);
+    const reachable = pool.filter((t) => {
+      const d = Math.abs(actor.space - t.space);
+      return d >= a.range[0] && d <= a.range[1];
+    });
+    let victims;
+    if (a.hitAll) victims = reachable;
+    else {
+      const primary = targetOf(entry);
+      victims = primary && reachable.includes(primary) ? [primary] : reachable.slice(0, 1);
+    }
+    if (!victims.length) {
+      const d = pool.length ? Math.abs(actor.space - pool[0].space) : '-';
+      log(`${actor.name} whiffs — nothing in range (nearest ${d}).`);
+      continue;
     }
 
-    // AFTER
-    if (!s.over && !actor.staggered && actor.life > 0) {
-      for (const eff of a.after) applyEffect(s, actor, targetOf(entry), eff, pick, log);
+    for (const v of victims) {
+      const power = a.power + (actor.powerBonus || 0);
+      dealDamage(s, actor, v, power, a, play, log);
+      if (v.life > 0 && !s.over) {
+        for (const eff of a.hit) applyEffect(s, actor, v, eff, pickFor(entry), log);
+      }
     }
     checkEnd(s, log);
   }
 
-  // advance enemy patterns and re-telegraph
-  for (const e of s.enemies) {
-    if (e.life > 0) e.patternIndex++;
+  // ---- END OF BEAT band
+  for (const entry of order) {
+    if (s.over) break;
+    if (entry.actor.life <= 0 || entry.actor.stunned) continue;
+    for (const eff of entry.atk.after)
+      applyEffect(s, entry.actor, targetOf(entry), eff, pickFor(entry), log);
   }
-  telegraph(s);
 
-  s.turn++;
+  // ---- cleanup
+  for (const e of s.enemies) if (e.life > 0) e.patternIndex++;
+  telegraph(s);
+  s.force = Math.min(MAX_FORCE, s.force + 1);
+  s.beat++;
   checkEnd(s, log);
   return s;
+}
+
+/**
+ * Apply damage with Soak, reactive Shields, and the stun rule.
+ */
+function dealDamage(s, attacker, victim, power, a, play, log) {
+  // Reactive Shield: "Whenever you are hit, you may use a Shield" -> Guard 9001.
+  if (victim.isPlayer && victim.tokens > 0 && s.char.tokens) {
+    const raw = Math.max(0, power - victim.soak);
+    const policy = play.autoShield || 'lethal';
+    const wants =
+      policy === 'always' ? raw > 0 :
+      policy === 'lethal' ? raw >= victim.life :
+      false;
+    if (wants) {
+      victim.tokens--;
+      victim.shieldsUsedThisBeat = (victim.shieldsUsedThisBeat || 0) + 1;
+      log(`${victim.name} raises a Shield — Guard 9001 absorbs ${attacker.name}'s blow entirely. (${victim.tokens} left)`);
+      victim.damageSoakedThisBeat += raw;
+      return;
+    }
+  }
+
+  const soak = victim.soak || 0;
+  const dmg = Math.max(0, power - soak);
+  const soaked = Math.min(soak, power);
+  victim.damageSoakedThisBeat += soaked;
+
+  if (dmg <= 0) {
+    log(`${attacker.name} hits ${victim.name} but Soak ${soak} absorbs all ${power}.`);
+    return;
+  }
+
+  victim.life -= dmg;
+  victim.damageTakenThisBeat += dmg;
+  log(`${attacker.name} hits ${victim.name} for ${dmg}` +
+    `${soaked ? ` (Soak ${soaked} absorbed)` : ''}. ${victim.name}: ${Math.max(0, victim.life)} life.`);
+
+  if (victim.life <= 0) {
+    if (!victim.isPlayer) log(`${victim.name} is destroyed.`);
+    return;
+  }
+
+  // ---- the stun rule
+  if (a.pierceStunGuard) {
+    if (!victim.stunImmune) {
+      victim.stunned = true;
+      log(`${victim.name} is stunned — Stun Guard pierced.`);
+    } else log(`${victim.name} is Stun Immune and shrugs it off.`);
+    return;
+  }
+  if (victim.stunImmune) {
+    log(`${victim.name} is Stun Immune and keeps coming.`);
+    return;
+  }
+  if ((victim.stunGuard || 0) >= dmg) {
+    log(`${victim.name}'s Stun Guard ${victim.stunGuard} holds against ${dmg}.`);
+    return;
+  }
+  victim.stunned = true;
+  log(`${victim.name} is STUNNED — their activation is cancelled.`);
 }
 
 function checkEnd(s, log) {
   if (s.over) return;
   if (s.player.life <= 0) {
-    s.over = true;
-    s.victory = false;
-    log('You fall. The run ends here.');
+    s.over = true; s.victory = false;
+    log(`${s.player.name} falls. The run ends here.`);
   } else if (s.enemies.every((e) => e.life <= 0)) {
-    s.over = true;
-    s.victory = true;
+    s.over = true; s.victory = true;
     log('Encounter cleared!');
   }
 }
 
 // ------------------------------------------------------------ UI helpers
 
-/** Which spaces a given attack would threaten from `space`. */
 export function threatSpaces(space, atk) {
   const out = [];
+  if (atk.isDash || atk.power <= 0) return out;
   for (let i = 1; i <= ARENA_SIZE; i++) {
     const d = Math.abs(i - space);
     if (d >= atk.range[0] && d <= atk.range[1]) out.push(i);
@@ -286,19 +443,32 @@ export function threatSpaces(space, atk) {
   return out;
 }
 
-/**
- * Would this enemy intent connect with the player right now, ignoring any
- * movement the player is about to make? Powers the "INCOMING" warning.
- */
+/** Where an actor ends up after its telegraphed BA movement. */
+export function projectedSpace(s, actor, atk, targetSpace) {
+  let from = actor.space;
+  for (const eff of atk.before) {
+    const dir = towardDir(from, targetSpace);
+    if (eff.k === 'advance' || eff.k === 'close') from += dir * (eff.max ?? 0);
+    if (eff.k === 'retreat') from -= dir * (eff.max ?? 0);
+  }
+  return Math.max(1, Math.min(ARENA_SIZE, from));
+}
+
 export function intentThreatens(s, enemy) {
   if (!enemy.intent || enemy.life <= 0) return false;
-  let from = enemy.space;
-  for (const eff of enemy.intent.before) {
-    const dir = towardDir(from, s.player.space);
-    if (eff.k === 'advance' || eff.k === 'close') from += dir * eff.max;
-    if (eff.k === 'retreat') from -= dir * eff.max;
-  }
-  from = Math.max(1, Math.min(ARENA_SIZE, from));
+  const from = projectedSpace(s, enemy, enemy.intent, s.player.space);
   const d = Math.abs(from - s.player.space);
   return d >= enemy.intent.range[0] && d <= enemy.intent.range[1];
+}
+
+/** Worst-case incoming damage this beat, for the "will I survive" readout. */
+export function incomingDamage(s, myAtk) {
+  let total = 0;
+  const myPriority = myAtk.priority + (s.player.priorityBonus || 0);
+  for (const e of s.enemies) {
+    if (e.life <= 0 || !intentThreatens(s, e)) continue;
+    // if we out-prioritise and would kill it, assume it never lands
+    total += Math.max(0, e.intent.power - (myAtk.soak || 0));
+  }
+  return { total, myPriority };
 }

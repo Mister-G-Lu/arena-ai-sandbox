@@ -1,7 +1,7 @@
-import { BASE_BY_ID, STYLE_BY_ID } from '../src/cards.js';
+import { CHARACTERS, baseLibrary, styleLibrary } from '../src/characters.js';
 import {
-  ARENA_SIZE, startEncounter, resolveTurn, playerAttack,
-  threatSpaces, intentThreatens, nearestEnemy,
+  ARENA_SIZE, MAX_FORCE, startEncounter, resolveBeat, playerAttack,
+  threatSpaces, intentThreatens, nearestEnemy, canUseFinisher, projectedSpace,
 } from '../src/combat.js';
 import {
   newRun, resetPiles, currentHand, cyclePlay, currentEncounter,
@@ -9,16 +9,39 @@ import {
 } from '../src/run.js';
 
 const $ = (id) => document.getElementById(id);
-const screens = ['title', 'combat', 'reward', 'end'];
-const show = (name) => screens.forEach((s) =>
-  $(`screen-${s}`).classList.toggle('hidden', s !== name));
+const SCREENS = ['select', 'combat', 'reward', 'end'];
+const show = (n) => SCREENS.forEach((s) => $(`screen-${s}`).classList.toggle('hidden', s !== n));
 
-let run, state, selBase = null, selStyle = null, targetUid = null, logMark = 0;
+let run, state, sel = { base: null, style: null, finisher: null },
+    targetUid = null, ante = false, logMark = 0, shieldPolicy = 'ask';
 
-// ------------------------------------------------------------- run control
+// ============================================================ character select
 
-function beginRun() {
-  run = newRun();
+function renderSelect() {
+  const box = $('charpick');
+  box.innerHTML = '';
+  for (const c of CHARACTERS) {
+    const el = document.createElement('div');
+    el.className = 'charcard';
+    el.innerHTML = `
+      <div class="charhead">
+        <span class="charname">${c.name}</span>
+        <span class="charepi">${c.epithet}</span>
+        <span class="chardiff ${c.difficulty.toLowerCase()}">${c.difficulty}</span>
+      </div>
+      <div class="charstats">Life ${c.life}${c.tokens ? ` · ${c.tokens.max} ${c.tokens.name} tokens` : ' · no tokens'}</div>
+      <div class="charblurb">${c.blurb}</div>
+      <ul class="charprimer">${c.primer.map((p) => `<li>${p}</li>`).join('')}</ul>`;
+    el.onclick = () => beginRun(c.id);
+    box.appendChild(el);
+  }
+  show('select');
+}
+
+// ============================================================ run flow
+
+function beginRun(charId) {
+  run = newRun(charId);
   startNode();
 }
 
@@ -26,9 +49,9 @@ function startNode() {
   const enc = currentEncounter(run);
   resetPiles(run);
   state = startEncounter(run, enc);
-  selBase = selStyle = null;
-  targetUid = null;
-  logMark = 0;
+  state.force = run.force || 0;
+  sel = { base: null, style: null, finisher: null };
+  targetUid = null; ante = false; logMark = 0;
   $('log').innerHTML = '';
   $('enc-name').textContent = enc.name;
   $('enc-blurb').textContent = enc.blurb;
@@ -37,24 +60,64 @@ function startNode() {
   render();
 }
 
-// --------------------------------------------------------------- rendering
+// ============================================================ render
+
+function chosenAttack() {
+  if (sel.finisher) return playerAttack(state.char, sel.finisher, null);
+  if (sel.base) return playerAttack(state.char, sel.base, sel.style);
+  return null;
+}
+const ready = () => !!(sel.finisher || (sel.base && sel.style));
 
 function render() {
   const p = state.player;
   $('life-fill').style.width = `${Math.max(0, p.life) / p.maxLife * 100}%`;
   $('life-num').textContent = `${Math.max(0, p.life)}/${p.maxLife}`;
+  $('force-fill').style.width = `${state.force / MAX_FORCE * 100}%`;
+  $('force-num').textContent = `${state.force}/${MAX_FORCE}`;
 
-  const pips = ENCOUNTERS.map((_, i) =>
+  $('node-pips').innerHTML = ENCOUNTERS.map((_, i) =>
     `<span class="pip ${i < run.node ? 'done' : i === run.node ? 'now' : ''}"></span>`).join('');
-  $('node-pips').innerHTML = pips;
 
+  renderTokens();
+  renderAnte();
   renderIntents();
   renderBoard();
   renderPreview();
   renderHand();
   renderTargets();
+  $('btn-resolve').disabled = !ready() || state.over;
+}
 
-  $('btn-resolve').disabled = !(selBase && selStyle) || state.over;
+function renderTokens() {
+  const box = $('tokens');
+  const t = state.char.tokens;
+  if (!t) { box.innerHTML = ''; return; }
+  let html = `<span class="tlabel">${t.name.toUpperCase()}</span>`;
+  for (let i = 0; i < t.max; i++)
+    html += `<span class="shield ${i < state.player.tokens ? '' : 'spent'}"></span>`;
+  box.innerHTML = html;
+}
+
+function renderAnte() {
+  const row = $('anterow');
+  const t = state.char.tokens;
+  if (!t) { row.innerHTML = ''; row.className = 'anterow'; return; }
+  const have = state.player.tokens;
+  row.className = 'anterow' + (ante ? ' on' : '');
+  row.innerHTML = `
+    <button class="antebtn ${ante ? 'on' : ''}" id="btn-ante" ${have ? '' : 'disabled'}>
+      ${ante ? '✓ Shield anted' : 'Ante a Shield'}
+    </button>
+    <span class="antenote">
+      ${ante
+        ? '<b>Stun Immunity this beat</b> — nothing can cancel your attack.'
+        : have
+          ? `Spend 1 of ${have} for <b>Stun Immunity</b>, or hold it to negate a hit reactively.`
+          : 'No Shields left — you are relying on Soak now.'}
+    </span>`;
+  const b = $('btn-ante');
+  if (b) b.onclick = () => { ante = !ante; render(); };
 }
 
 function renderIntents() {
@@ -66,15 +129,21 @@ function renderIntents() {
     const i = e.intent;
     const div = document.createElement('div');
     div.className = `intent ${dead ? 'dead' : ''} ${inc ? 'incoming' : ''}`;
-    const fx = [...i.before, ...i.hit, ...i.after].length ? i.text : '';
-    div.innerHTML = `
-      <span class="who">${e.name} <span class="hp">${Math.max(0, e.life)}/${e.maxLife}</span></span>
-      ${dead ? '<span class="fx">destroyed</span>' : `
+    if (dead) {
+      div.innerHTML = `<span class="who">${e.name}</span><span class="fx">destroyed</span>`;
+    } else {
+      const pills =
+        (i.soak ? `<span class="soakpill">SOAK ${i.soak}</span>` : '') +
+        (i.stunGuard ? `<span class="sgpill">SG ${i.stunGuard}</span>` : '') +
+        (i.stunImmune ? `<span class="immpill">STUN IMMUNE</span>` : '');
+      div.innerHTML = `
+        <span class="who">${e.name} <span class="hp">${Math.max(0, e.life)}/${e.maxLife}</span></span>
         <span class="move">${i.name}</span>
-        <span class="nums">R <b>${i.range[0]}~${i.range[1]}</b> &nbsp; ATT <b>${i.att}</b> &nbsp; SPD <b>${i.spd}</b>${i.guard ? ` &nbsp; GRD <b>${i.guard}</b>` : ''}</span>
-        <span class="fx">${fx}</span>
-        <span class="${inc ? 'warn' : 'safe'}">${inc ? '⚠ WILL HIT YOU' : 'out of reach'}</span>
-      `}`;
+        <span class="nums">R <b>${i.range[0]}~${i.range[1]}</b> · POW <b>${i.power}</b> · PRI <b>${i.priority}</b></span>
+        ${pills}
+        <span class="fx">${i.text || ''}</span>
+        <span class="${inc ? 'warn' : 'safe'}">${inc ? '⚠ WILL HIT YOU' : 'out of reach'}</span>`;
+    }
     box.appendChild(div);
   }
 }
@@ -82,19 +151,15 @@ function renderIntents() {
 function renderBoard() {
   const board = $('board');
   board.innerHTML = '';
-  const atk = selBase && selStyle ? playerAttack(selBase, selStyle) : null;
-  const mine = atk ? threatSpaces(state.player.space, atk) : [];
-  // spaces enemies will threaten, accounting for their telegraphed movement
+  const atk = chosenAttack();
+  const tgt = state.enemies.find((e) => e.uid === targetUid && e.life > 0) || nearestEnemy(state);
+  const myFrom = atk && tgt ? projectedSpace(state, state.player, atk, tgt.space) : state.player.space;
+  const mine = atk ? threatSpaces(myFrom, atk) : [];
+
   const theirs = new Set();
   for (const e of state.enemies) {
     if (e.life <= 0) continue;
-    let from = e.space;
-    for (const eff of e.intent.before) {
-      const dir = state.player.space > from ? 1 : -1;
-      if (eff.k === 'advance' || eff.k === 'close') from += dir * eff.max;
-      if (eff.k === 'retreat') from -= dir * eff.max;
-    }
-    from = Math.max(1, Math.min(ARENA_SIZE, from));
+    const from = projectedSpace(state, e, e.intent, state.player.space);
     for (const sp of threatSpaces(from, e.intent)) theirs.add(sp);
   }
 
@@ -104,13 +169,12 @@ function renderBoard() {
     d.className = 'space' + (t && dg ? ' both' : t ? ' threat' : dg ? ' danger' : '');
     d.innerHTML = `<span class="idx">${i}</span>`;
     if (state.player.space === i) {
-      d.innerHTML += `<div class="token you">YOU</div>`;
+      d.innerHTML += `<div class="token you${ante ? ' immune' : ''}">${state.char.name.slice(0, 3).toUpperCase()}</div>`;
     }
     const e = state.enemies.find((x) => x.life > 0 && x.space === i);
     if (e) {
-      const sel = targetUid === e.uid ? ' target' : '';
       const el = document.createElement('div');
-      el.className = `token foe${sel}`;
+      el.className = `token foe${targetUid === e.uid ? ' target' : ''}`;
       el.textContent = e.glyph;
       el.innerHTML += `<span class="mini">${Math.max(0, e.life)}</span>`;
       el.onclick = () => { targetUid = e.uid; render(); };
@@ -121,78 +185,117 @@ function renderBoard() {
 }
 
 function renderPreview() {
-  if (!(selBase && selStyle)) {
-    $('preview').innerHTML = 'Choose a Base and a Style.';
+  const atk = chosenAttack();
+  if (!atk) {
+    $('preview').innerHTML = sel.base
+      ? 'Now pick a <b>Style</b> to combine with it.'
+      : 'Choose a <b>Base</b> and a <b>Style</b>.';
     return;
   }
-  const a = playerAttack(selBase, selStyle);
   const tgt = state.enemies.find((e) => e.uid === targetUid && e.life > 0) || nearestEnemy(state);
-  // will it connect, after my own telegraphed movement?
-  let from = state.player.space;
-  if (tgt) {
-    for (const eff of a.before) {
-      const dir = tgt.space > from ? 1 : -1;
-      if (eff.k === 'advance' || eff.k === 'close') from += dir * eff.max;
-      if (eff.k === 'retreat') from -= dir * eff.max;
-    }
-    from = Math.max(1, Math.min(ARENA_SIZE, from));
-  }
+  const from = tgt ? projectedSpace(state, state.player, atk, tgt.space) : state.player.space;
   const dist = tgt ? Math.abs(from - tgt.space) : null;
-  const hits = dist !== null && dist >= a.range[0] && dist <= a.range[1];
-  const faster = state.enemies
-    .filter((e) => e.life > 0)
-    .filter((e) => e.intent.spd > a.spd).length;
+  const hits = dist !== null && dist >= atk.range[0] && dist <= atk.range[1] && !atk.isDash;
+  const pri = atk.priority + (state.player.priorityBonusNext || 0);
+
+  // what gets through to me, given this attack's Soak
+  let incoming = 0, stunRisk = false;
+  for (const e of state.enemies) {
+    if (e.life <= 0 || !intentThreatens(state, e)) continue;
+    const dmg = Math.max(0, e.intent.power - atk.soak);
+    incoming += dmg;
+    const immune = atk.stunImmune || ante;
+    if (dmg > 0 && !immune && atk.stunGuard < dmg) stunRisk = true;
+  }
+  const faster = state.enemies.filter((e) => e.life > 0 && e.intent.priority > pri).length;
 
   $('preview').innerHTML = `
-    <span class="pname">${a.name}</span>
-    <span class="stat"><i>RANGE</i> ${a.range[0]}~${a.range[1]}</span>
-    <span class="stat"><i>ATT</i> ${a.att}</span>
-    <span class="stat"><i>SPD</i> ${a.spd}</span>
-    ${a.guard ? `<span class="stat"><i>GUARD</i> ${a.guard}</span>` : ''}
+    <span class="pname">${atk.name}</span>
+    <span class="stat"><i>RANGE</i> ${atk.range[0]}~${atk.range[1]}</span>
+    <span class="stat"><i>POWER</i> ${atk.power}</span>
+    <span class="stat"><i>PRIORITY</i> ${pri}</span>
+    ${atk.soak ? `<span class="soakpill">SOAK ${atk.soak}</span>` : ''}
+    ${atk.stunGuard ? `<span class="sgpill">STUN GUARD ${atk.stunGuard}</span>` : ''}
+    ${(atk.stunImmune || ante) ? `<span class="immpill">STUN IMMUNE</span>` : ''}
     <div class="verdict ${hits ? 'good' : 'bad'}">
-      ${tgt ? (hits
-        ? `Connects with ${tgt.name} at distance ${dist}.`
-        : `Will NOT reach ${tgt.name} (distance ${dist}).`) : 'No target.'}
-      ${faster ? ` ${faster} enemy attack${faster > 1 ? 's' : ''} resolve${faster > 1 ? '' : 's'} before yours.` : ' You strike first.'}
+      ${atk.isDash ? 'Dash deals no damage — pure repositioning.'
+        : tgt ? (hits ? `Connects with ${tgt.name} at distance ${dist}.`
+                      : `Will NOT reach ${tgt.name} (distance ${dist}).`)
+              : 'No target.'}
     </div>
-    <div class="verdict" style="color:var(--dim2)">${a.text}</div>`;
-}
-
-function renderHand() {
-  const h = currentHand(run);
-  drawRow('hand-bases', h.bases.map((id) => BASE_BY_ID[id]), 'base');
-  drawRow('hand-styles', h.styles.map((id) => STYLE_BY_ID[id]), 'style');
+    <div class="verdict" style="color:${incoming ? (stunRisk ? 'var(--danger)' : 'var(--dim)') : 'var(--green)'}">
+      ${incoming
+        ? `Incoming ${incoming} damage after Soak. ${stunRisk
+            ? '⚠ Enough to STUN you — your attack would be cancelled.'
+            : 'Not enough to stun you.'}`
+        : 'Nothing reaches you this beat.'}
+      ${faster ? ` ${faster} enemy act${faster > 1 ? '' : 's'} before you.` : ' You act first.'}
+    </div>
+    <div class="verdict" style="color:var(--dim2)">${atk.text}</div>`;
 }
 
 const fmt = (n) => (n >= 0 ? `+${n}` : `${n}`);
+const highlight = (t) => (t || '')
+  .replace(/Soak (\d+)/g, '<span class="kw">Soak $1</span>')
+  .replace(/Stun Guard (\d+)/g, '<span class="kw">Stun Guard $1</span>')
+  .replace(/Stun Immunity/g, '<span class="kw">Stun Immunity</span>');
 
-function drawRow(elId, cards, kind) {
-  const row = $(elId);
-  row.innerHTML = '';
-  for (const c of cards) {
-    const sel = kind === 'base' ? selBase === c.id : selStyle === c.id;
-    const el = document.createElement('div');
-    el.className = 'card' + (sel ? ' sel' : '');
-    const stats = kind === 'base'
-      ? `R ${c.range[0]}~${c.range[1]} · ATT ${c.att} · SPD ${c.spd}${c.guard ? ` · GRD ${c.guard}` : ''}`
-      : `R +${c.dRange[0]}~${c.dRange[1]} · ATT ${fmt(c.dAtt)} · SPD ${fmt(c.dSpd)}${c.dGuard ? ` · GRD ${fmt(c.dGuard)}` : ''}`;
-    el.innerHTML = `<div class="cname">${c.name}</div>
-      <div class="cstats">${stats}</div>
-      <div class="ctext">${c.text}</div>`;
-    el.onclick = () => {
-      if (kind === 'base') selBase = sel ? null : c.id;
-      else selStyle = sel ? null : c.id;
-      render();
-    };
-    row.appendChild(el);
+function renderHand() {
+  const h = currentHand(run);
+  const B = baseLibrary(state.char), S = styleLibrary(state.char);
+
+  const rowB = $('hand-bases'); rowB.innerHTML = '';
+  for (const id of h.bases) {
+    const c = B[id];
+    rowB.appendChild(cardEl(c, sel.base === id && !sel.finisher,
+      `R ${c.range[0]}~${c.range[1]} · POW ${c.power} · PRI ${c.priority}`,
+      () => { sel.base = sel.base === id ? null : id; sel.finisher = null; render(); }));
   }
+
+  const rowS = $('hand-styles'); rowS.innerHTML = '';
+  for (const id of h.styles) {
+    const c = S[id];
+    rowS.appendChild(cardEl(c, sel.style === id,
+      `R ${fmt(c.dRange[0])}~${fmt(c.dRange[1])} · POW ${fmt(c.dPower)} · PRI ${fmt(c.dPriority)}`,
+      () => { sel.style = sel.style === id ? null : id; render(); },
+      sel.finisher ? 'locked' : ''));
+  }
+
+  const rowF = $('hand-finishers'); rowF.innerHTML = '';
+  const unlocked = canUseFinisher(state);
+  for (const id of h.finishers) {
+    const c = B[id];
+    const el = cardEl(c, sel.finisher === id,
+      `R ${c.range[0]}~${c.range[1]} · POW ${c.power} · PRI ${c.priority}`,
+      unlocked ? () => {
+        sel.finisher = sel.finisher === id ? null : id;
+        if (sel.finisher) { sel.base = null; sel.style = null; }
+        render();
+      } : null,
+      `finisher${unlocked ? '' : ' locked'}`);
+    if (!unlocked) {
+      const need = state.player.life - state.force;
+      el.innerHTML += `<div class="lockmsg">Needs Force ≥ Life — ${need} more Force (or take some damage).</div>`;
+    }
+    rowF.appendChild(el);
+  }
+}
+
+function cardEl(c, selected, stats, onClick, extra = '') {
+  const el = document.createElement('div');
+  el.className = `card ${selected ? 'sel' : ''} ${extra}`;
+  el.innerHTML = `<div class="cname">${c.name}</div>
+    <div class="cstats">${stats}</div>
+    <div class="ctext">${highlight(c.text)}</div>`;
+  if (onClick) el.onclick = onClick;
+  return el;
 }
 
 function renderTargets() {
   const alive = state.enemies.filter((e) => e.life > 0);
   if (alive.length <= 1) { $('targetsel').innerHTML = ''; return; }
   const t = alive.find((e) => e.uid === targetUid) || nearestEnemy(state);
-  $('targetsel').innerHTML = `Target: <b>${t ? t.name : '—'}</b> · click an enemy on the board to switch`;
+  $('targetsel').innerHTML = `Target: <b>${t ? t.name : '—'}</b> · click an enemy to switch`;
 }
 
 function paintLog() {
@@ -200,7 +303,7 @@ function paintLog() {
   for (const line of state.log.slice(logMark)) {
     const d = document.createElement('div');
     if (line.startsWith('—')) d.className = 'turn';
-    if (/cleared|falls?|fall\b|destroyed/i.test(line)) d.className = 'big';
+    if (/cleared|falls|destroyed|STUNNED|Shield/.test(line)) d.className = 'big';
     d.textContent = line;
     box.appendChild(d);
   }
@@ -208,26 +311,67 @@ function paintLog() {
   box.scrollTop = box.scrollHeight;
 }
 
-// ---------------------------------------------------------------- actions
+// ============================================================ resolve
 
 $('btn-resolve').onclick = () => {
-  if (!(selBase && selStyle) || state.over) return;
-  const b = selBase, s = selStyle;
-  resolveTurn(state, { baseId: b, styleId: s, targetUid });
-  cyclePlay(run, b, s);
-  selBase = selStyle = null;
-  if (state.enemies.every((e) => e.uid !== targetUid || e.life <= 0)) targetUid = null;
-  paintLog();
-  render();
-  if (state.over) setTimeout(() => finishEncounter(), 550);
+  if (!ready() || state.over) return;
+  const baseId = sel.finisher || sel.base;
+  const styleId = sel.finisher ? null : sel.style;
+
+  // Reactive shields: ask only when it actually matters, so the prompt stays
+  // meaningful instead of nagging every beat.
+  const policy = decideShieldPolicy(baseId, styleId);
+  finishBeat(baseId, styleId, policy);
 };
 
-function finishEncounter() {
-  if (!state.victory) {
-    loseRun(run);
-    return endScreen();
+/**
+ * Preview the beat with shields OFF. If that would be lethal and we have a
+ * token, ask the player. Otherwise resolve directly.
+ */
+function decideShieldPolicy(baseId, styleId) {
+  if (!state.char.tokens || state.player.tokens <= 0) return 'never';
+  const sim = {
+    ...state, log: [],
+    player: { ...state.player }, enemies: state.enemies.map((e) => ({ ...e })),
+  };
+  resolveBeat(sim, { baseId, styleId, targetUid, ante, autoShield: 'never' });
+  return sim.player.life <= 0 ? 'ask' : 'never';
+}
+
+function finishBeat(baseId, styleId, policy) {
+  if (policy === 'ask') {
+    $('shield-text').textContent =
+      `This beat would be lethal. Spend a Shield to negate the blow entirely? ` +
+      `You have ${state.player.tokens}.`;
+    $('shield-modal').classList.remove('hidden');
+    $('shield-yes').onclick = () => {
+      $('shield-modal').classList.add('hidden');
+      commit(baseId, styleId, 'lethal');
+    };
+    $('shield-no').onclick = () => {
+      $('shield-modal').classList.add('hidden');
+      commit(baseId, styleId, 'never');
+    };
+    return;
   }
-  advance(run, state.player.life);
+  commit(baseId, styleId, policy);
+}
+
+function commit(baseId, styleId, autoShield) {
+  resolveBeat(state, { baseId, styleId, targetUid, ante, autoShield });
+  cyclePlay(run, baseId, styleId);
+  run.force = state.force;
+  sel = { base: null, style: null, finisher: null };
+  ante = false;
+  if (!state.enemies.some((e) => e.uid === targetUid && e.life > 0)) targetUid = null;
+  paintLog();
+  render();
+  if (state.over) setTimeout(endEncounter, 600);
+}
+
+function endEncounter() {
+  if (!state.victory) { loseRun(run); return endScreen(); }
+  advance(run, state);
   if (run.over) return endScreen();
   showRewards();
 }
@@ -236,24 +380,14 @@ function showRewards() {
   const box = $('rewards');
   box.innerHTML = '';
   $('reward-sub').textContent =
-    `${run.cleared} of ${ENCOUNTERS.length} cleared · ${run.life} life · next: ${currentEncounter(run).name}`;
+    `${run.cleared} of ${ENCOUNTERS.length} cleared · ${run.life} life · ` +
+    `${run.tokens} shields · next: ${currentEncounter(run).name}`;
   for (const opt of rewardOptions(run)) {
     const el = document.createElement('div');
     el.className = 'reward';
-    if (opt.kind === 'heal') {
-      el.innerHTML = `<div class="rkind">Recover</div>
-        <div class="rname">Bind your wounds</div>
-        <div class="rstats">Heal ${opt.amount} (currently ${run.life}/${run.maxLife})</div>`;
-    } else {
-      const c = opt.card;
-      const stats = opt.kind === 'base'
-        ? `R ${c.range[0]}~${c.range[1]} · ATT ${c.att} · SPD ${c.spd}`
-        : `R +${c.dRange[0]}~${c.dRange[1]} · ATT ${fmt(c.dAtt)} · SPD ${fmt(c.dSpd)}`;
-      el.innerHTML = `<div class="rkind">New ${opt.kind}</div>
-        <div class="rname">${c.name}</div>
-        <div class="rstats">${stats}</div>
-        <div class="rtext">${c.text}</div>`;
-    }
+    el.innerHTML = `<div class="rkind">Upgrade</div>
+      <div class="rname">${opt.name}</div>
+      <div class="rtext">${opt.text}</div>`;
     el.onclick = () => { takeReward(run, opt); startNode(); };
     box.appendChild(el);
   }
@@ -264,16 +398,14 @@ function endScreen() {
   $('end-title').textContent = run.won ? 'The Warden falls' : 'The run ends';
   $('end-title').className = run.won ? 'won' : '';
   $('end-sub').textContent = run.won
-    ? `You cleared all ${ENCOUNTERS.length} encounters with ${run.life} life remaining.`
-    : `You cleared ${run.cleared} of ${ENCOUNTERS.length} encounters.`;
+    ? `${run.char.name} cleared all ${ENCOUNTERS.length} encounters with ${run.life} life left.`
+    : `${run.char.name} cleared ${run.cleared} of ${ENCOUNTERS.length} encounters.`;
   $('end-deck').innerHTML =
-    `<b>Bases:</b> ${run.deck.bases.map((b) => BASE_BY_ID[b].name).join(', ')}<br>
-     <b>Styles:</b> ${run.deck.styles.map((s) => STYLE_BY_ID[s].name).join(', ')}<br>
+    `<b>Character:</b> ${run.char.name}, ${run.char.epithet}<br>
+     <b>Upgrades:</b> ${(run.takenUpgrades || []).join(', ') || 'none'}<br>
      <b>Seed:</b> ${run.seed}`;
   show('end');
 }
 
-$('btn-start').onclick = beginRun;
-$('btn-again').onclick = beginRun;
-
-show('title');
+$('btn-again').onclick = renderSelect;
+renderSelect();

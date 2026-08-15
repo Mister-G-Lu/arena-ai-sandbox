@@ -1,45 +1,46 @@
-// The roguelite layer: a run is a short gauntlet of encounters, with a card
-// reward after each win. Deck grows, enemies escalate, life carries over.
+// The roguelite layer: pick a character, run a gauntlet, earn cards.
 
-import { BASES, STYLES, REWARD_BASES, REWARD_STYLES, BASE_BY_ID, STYLE_BY_ID } from './cards.js';
+import { CHARACTER_BY_ID, UNIVERSAL_BASES } from './characters.js';
 import { mulberry32, shuffle } from './rng.js';
 
-export const MAX_LIFE = 20;
-export const HAND_SIZE = 4;   // bases and styles drawn each turn
-export const COOLDOWN = 2;    // turns a played card is unavailable
-
-// Starting deck: a lean, readable subset. Rewards widen it.
-const START_BASES = ['drive', 'strike', 'shot', 'sweep', 'grasp', 'parry'];
-const START_STYLES = ['powerful', 'reaching', 'sudden', 'sliding', 'grinding'];
+export const HAND_BASES = 4;
+export const HAND_STYLES = 3;
+export const COOLDOWN = 1;   // a played card sits out this many beats
 
 export const ENCOUNTERS = [
   {
     name: 'The Threshold',
-    blurb: 'A single husk blocks the way.',
+    blurb: 'A single husk. Learn to read a telegraph.',
     playerSpace: 2,
     enemies: [{ type: 'husk', space: 6 }],
   },
   {
     name: 'Two Blades',
-    blurb: 'A stalker and a husk. Do not get sandwiched.',
+    blurb: 'Enemies on both sides — do not get sandwiched.',
     playerSpace: 4,
     enemies: [{ type: 'stalker', space: 1 }, { type: 'husk', space: 7 }],
   },
   {
     name: 'The Long Hall',
-    blurb: 'An archer holds the far end.',
+    blurb: 'An archer that punishes standing still.',
     playerSpace: 3,
     enemies: [{ type: 'archer', space: 7 }, { type: 'husk', space: 5 }],
   },
   {
     name: 'Ironclad',
-    blurb: 'A brute, braced and waiting.',
+    blurb: 'A brute that braces, then punishes.',
     playerSpace: 2,
     enemies: [{ type: 'brute', space: 6 }],
   },
   {
+    name: 'The Foundry',
+    blurb: 'Stun Immune. Locking it down is not an option.',
+    playerSpace: 2,
+    enemies: [{ type: 'automaton', space: 5 }, { type: 'husk', space: 7 }],
+  },
+  {
     name: 'Crossfire',
-    blurb: 'Archer behind, stalker in front.',
+    blurb: 'Three enemies, two directions.',
     playerSpace: 4,
     enemies: [{ type: 'archer', space: 1 }, { type: 'stalker', space: 6 }, { type: 'husk', space: 7 }],
   },
@@ -51,15 +52,22 @@ export const ENCOUNTERS = [
   },
 ];
 
-export function newRun(seed = (Math.random() * 1e9) | 0) {
+export function newRun(charId = 'cadenza', seed = (Math.random() * 1e9) | 0) {
+  const char = CHARACTER_BY_ID[charId];
   return {
     seed,
     rng: mulberry32(seed),
+    charId,
+    char,
     node: 0,
-    life: MAX_LIFE,
-    maxLife: MAX_LIFE,
-    deck: { bases: [...START_BASES], styles: [...START_STYLES] },
-    // draw piles + cooldown queues, rebuilt each encounter
+    life: char.life,
+    tokens: char.tokens ? char.tokens.start : 0,
+    force: 0,
+    // deck = ids the character may draw. Universal bases + unique base(s).
+    deck: {
+      bases: [...UNIVERSAL_BASES.map((b) => b.id), ...char.bases.map((b) => b.id)],
+      styles: char.styles.map((s) => s.id),
+    },
     piles: null,
     cleared: 0,
     over: false,
@@ -69,7 +77,6 @@ export function newRun(seed = (Math.random() * 1e9) | 0) {
 
 export const currentEncounter = (run) => ENCOUNTERS[run.node];
 
-/** Fresh, shuffled draw piles for the start of an encounter. */
 export function resetPiles(run) {
   run.piles = {
     bases: shuffle(run.deck.bases, run.rng),
@@ -81,55 +88,62 @@ export function resetPiles(run) {
 
 export function currentHand(run) {
   return {
-    bases: run.piles.bases.slice(0, HAND_SIZE),
-    styles: run.piles.styles.slice(0, HAND_SIZE),
+    bases: run.piles.bases.slice(0, HAND_BASES),
+    styles: run.piles.styles.slice(0, run.handStyles || HAND_STYLES),
+    finishers: run.char.finishers.map((f) => f.id),
   };
 }
 
-/** Put played cards on cooldown, then recycle expired ones to the bottom. */
 export function cyclePlay(run, baseId, styleId) {
   const p = run.piles;
-  p.bases = p.bases.filter((b) => b !== baseId);
-  p.styles = p.styles.filter((s) => s !== styleId);
-  p.coolBases.push(baseId);
-  p.coolStyles.push(styleId);
-  while (p.coolBases.length > COOLDOWN) p.bases.push(p.coolBases.shift());
-  while (p.coolStyles.length > COOLDOWN) p.styles.push(p.coolStyles.shift());
+  // finishers are not part of the draw piles
+  if (p.bases.includes(baseId)) {
+    p.bases = p.bases.filter((b) => b !== baseId);
+    p.coolBases.push(baseId);
+    while (p.coolBases.length > COOLDOWN) p.bases.push(p.coolBases.shift());
+  }
+  if (styleId && p.styles.includes(styleId)) {
+    p.styles = p.styles.filter((s) => s !== styleId);
+    p.coolStyles.push(styleId);
+    while (p.coolStyles.length > COOLDOWN) p.styles.push(p.coolStyles.shift());
+  }
 }
 
-/** Three reward options after a win: new cards, or heal. */
+// --------------------------------------------------------------- rewards
+// Rewards are run upgrades rather than new cards: a character's card set is
+// its identity, so we boost the chassis instead of diluting it.
+
+export const UPGRADES = [
+  { id: 'plating', name: 'Reinforced Plating', text: '+4 max Life, and heal 4.', apply: (r) => { r.char = { ...r.char, life: r.char.life + 4 }; r.life += 4; } },
+  { id: 'spring', name: 'Spare Spring', text: 'Gain 1 Shield token now (up to max).', apply: (r) => { r.tokens = Math.min(r.char.tokens?.max ?? 0, r.tokens + 1); }, needsTokens: true },
+  { id: 'flywheel', name: 'Flywheel', text: 'Start each encounter with +2 Force.', apply: (r) => { r.forceBonus = (r.forceBonus || 0) + 2; } },
+  { id: 'oil', name: 'Pressure Oil', text: 'Heal 8.', apply: (r) => { r.life = Math.min(r.char.life, r.life + 8); } },
+  { id: 'counterweight', name: 'Counterweight', text: 'Refill Shield tokens to full.', apply: (r) => { r.tokens = r.char.tokens?.max ?? 0; }, needsTokens: true },
+  { id: 'governor', name: 'Governor', text: 'Draw one extra Style each beat.', apply: (r) => { r.extraStyle = true; }, once: true },
+];
+
 export function rewardOptions(run) {
-  const ownedB = new Set(run.deck.bases);
-  const ownedS = new Set(run.deck.styles);
-  const poolB = [...REWARD_BASES, ...BASES].filter((c) => !ownedB.has(c.id));
-  const poolS = [...REWARD_STYLES, ...STYLES].filter((c) => !ownedS.has(c.id));
-  const opts = [];
-  const b = shuffle(poolB, run.rng).slice(0, 2);
-  const s = shuffle(poolS, run.rng).slice(0, 2);
-  if (b[0]) opts.push({ kind: 'base', id: b[0].id, card: b[0] });
-  if (s[0]) opts.push({ kind: 'style', id: s[0].id, card: s[0] });
-  if (b[1] && opts.length < 3) opts.push({ kind: 'base', id: b[1].id, card: b[1] });
-  if (s[1] && opts.length < 3) opts.push({ kind: 'style', id: s[1].id, card: s[1] });
-  opts.length = Math.min(opts.length, 3);
-  opts.push({ kind: 'heal', id: 'heal', amount: 6 });
-  return opts;
+  const pool = UPGRADES.filter((u) => {
+    if (u.needsTokens && !run.char.tokens) return false;
+    if (u.once && run.takenUpgrades?.includes(u.id)) return false;
+    return true;
+  });
+  return shuffle(pool, run.rng).slice(0, 3);
 }
 
 export function takeReward(run, opt) {
-  if (opt.kind === 'base') run.deck.bases.push(opt.id);
-  else if (opt.kind === 'style') run.deck.styles.push(opt.id);
-  else if (opt.kind === 'heal') run.life = Math.min(run.maxLife, run.life + opt.amount);
+  opt.apply(run);
+  run.takenUpgrades = [...(run.takenUpgrades || []), opt.id];
+  if (run.extraStyle) run.handStyles = HAND_STYLES + 1;
 }
 
-/** Advance past a cleared encounter. */
-export function advance(run, lifeRemaining) {
-  run.life = lifeRemaining;
+export function advance(run, endState) {
+  run.life = endState.player.life;
+  run.tokens = endState.player.tokens;
   run.cleared++;
   run.node++;
-  if (run.node >= ENCOUNTERS.length) {
-    run.over = true;
-    run.won = true;
-  }
+  run.force = run.forceBonus || 0;
+  if (run.node >= ENCOUNTERS.length) { run.over = true; run.won = true; }
   return run;
 }
 
@@ -138,5 +152,3 @@ export function loseRun(run) {
   run.won = false;
   return run;
 }
-
-export const cardById = (kind, id) => (kind === 'base' ? BASE_BY_ID[id] : STYLE_BY_ID[id]);
