@@ -1,7 +1,9 @@
-# Draft 04 — FALSE REALITY — Arcs v2: Zones, Rare Death, and the Loom
-### (working title) — revised per feedback: no death treadmill, zone-found resources, endgame tool
+# FALSE REALITY — Arcs: Zones, Rare Death, and the Loom
+### Canonical arc document. Obeys `design/core-design.md` on any conflict.
 
-> **Changed since Draft 03:**
+> **This is the living arcs bible** (promoted from Draft 04). Earlier brainstorms
+> and drafts have been pruned; their decisions live here and in core-design.
+>
 > - Loops are **gone as a player-facing mechanic.** The world still reboots nightly
 >   at 0600 — that's the *fiction* — but the player doesn't replay days. Each shift
 >   is new content; death is a rare, significant event, not a recurring state.
@@ -12,7 +14,6 @@
 >   Salary, a separate mundane economy.
 > - The endgame is **building the Seam Ripper** and **cracking the Loom** — not
 >   surviving a loop, not a number gate.
-> - Full principles: see `docs/core-design.md` (the living bible; this draft obeys it).
 
 ---
 
