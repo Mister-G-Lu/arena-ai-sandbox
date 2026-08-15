@@ -287,3 +287,28 @@ button.ghost{background:transparent; border-color:var(--line); color:var(--dim);
 .bands b.ba{color:var(--you)}
 .bands b.oh{color:var(--gold)}
 .bands b.eob{color:#b294ff}
+
+/* ================= ammo ================= */
+.anterow.ammo{background:#161320; border-color:rgba(178,148,255,.3); align-items:flex-start}
+.anterow.ammo.warn{border-color:rgba(255,77,77,.45); background:#211318}
+.ammorow{display:flex; gap:5px; flex-wrap:wrap; flex:1}
+.ammochip{
+  display:flex; flex-direction:column; align-items:flex-start; gap:1px;
+  padding:5px 8px; border-radius:7px; cursor:pointer; min-width:88px;
+  background:var(--panel2); border:1px solid var(--line); color:var(--ink);
+}
+.ammochip b{font-size:11px; letter-spacing:.05em; color:#b294ff}
+.ammochip span{font-size:9.5px; color:var(--dim2); line-height:1.2}
+.ammochip.on{background:#2a2140; border-color:#b294ff}
+.ammochip.on b{color:#d4c2ff}
+.ammochip.spent{opacity:.28; cursor:not-allowed}
+.ammopip{
+  font-size:8.5px; font-weight:800; letter-spacing:.03em; padding:2px 4px;
+  border-radius:4px; background:rgba(178,148,255,.2); color:#b294ff;
+  border:1px solid rgba(178,148,255,.35);
+}
+.ammopip.spent{background:#161b27; color:#3d4560; border-color:var(--line)}
+.band.od{background:rgba(255,138,76,.16); color:#ff8a4c}
+.band.aa{background:rgba(120,200,255,.14); color:#78c8ff}
+.band.rev{background:rgba(255,107,107,.16); color:var(--foe)}
+.antenote b.bad{color:var(--danger)}

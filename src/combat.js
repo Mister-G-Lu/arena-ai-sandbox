@@ -26,14 +26,15 @@
 //   the tie is both simpler to read and the generous reading.
 //
 // DAMAGE AND STUN (the core rule)
-//   damage = max(0, power - soak)
+//   damage = max(0, power - armor)
 //   Any damage stuns the target UNLESS
 //     • the target is Stun Immune, or
-//     • the target's Stun Guard >= damage dealt
+//     • the target's Guard >= damage dealt
 //   A stunned fighter does not activate: no attack, no EoB.
-//   Soak therefore does double duty — it blunts damage AND prevents stuns.
+//   Armor therefore does double duty — it blunts damage AND prevents stuns.
 
 import { combine, baseLibrary, styleLibrary } from './characters.js';
+import { applyTokenMods, startingPool, TOKEN_BY_ID } from './tokens.js';
 import { makeEnemy, telegraph } from './enemies.js';
 import { mulberry32 } from './rng.js';
 
@@ -157,8 +158,8 @@ function applyEffect(s, actor, target, eff, pick, log) {
       return;
     }
     case 'soakUp':
-      actor.soak += eff.amount;
-      log(`${name} gains Soak ${eff.amount}.`);
+      actor.armor += eff.amount;
+      log(`${name} gains Armor ${eff.amount}.`);
       return;
     case 'heal': {
       const before = actor.life;
@@ -168,7 +169,7 @@ function applyEffect(s, actor, target, eff, pick, log) {
     }
     case 'stun':
       if (!target) return;
-      // An explicit "OH: Stun" rider ignores Stun Guard — Stun Guard only
+      // An explicit "OH: Stun" rider ignores Guard — Guard only
       // protects against the automatic stun that damage causes. Stun Immunity
       // is the only thing that stops it, which is the point of the ante.
       if (target.stunImmune) {
@@ -177,8 +178,77 @@ function applyEffect(s, actor, target, eff, pick, log) {
       }
       if (target.stunned) return;
       target.stunned = true;
-      log(`${target.name} is stunned by the attack's rider (Stun Guard does not apply).`);
+      log(`${target.name} is stunned by the attack's rider (Guard does not apply).`);
       return;
+    case 'move': {
+      // Move n in either direction, chosen by the actor.
+      const n = pick(eff, 'move');
+      const dir = (pick(eff, 'moveDir') ?? 1) >= 0 ? 1 : -1;
+      const m = step(s, actor, n, dir) || step(s, actor, n, -dir);
+      if (m) log(`${name} moves ${m}.`);
+      return;
+    }
+    case 'teleport': {
+      // Reload: teleport to any free space. Prefer maximum distance from the
+      // nearest threat, which is what a sniper actually wants.
+      const want = pick(eff, 'teleport');
+      const free = [];
+      for (let i = 1; i <= ARENA_SIZE; i++) if (!occupiedBy(s, i, actor)) free.push(i);
+      if (!free.length) return;
+      let dest = free.includes(want) ? want : null;
+      if (dest === null) {
+        const foes = living(s).filter((a) => a !== actor);
+        dest = free.reduce((best, i) => {
+          const d = Math.min(...foes.map((f) => Math.abs(f.space - i)));
+          const bd = Math.min(...foes.map((f) => Math.abs(f.space - best)));
+          return d > bd ? i : best;
+        }, free[0]);
+      }
+      actor.space = dest;
+      log(`${name} teleports to space ${dest}.`);
+      return;
+    }
+    case 'regainAllAmmo': {
+      if (!actor.isPlayer || !s.tokenSpec) return;
+      actor.tokenPool = startingPool(s.tokenSpec);
+      log(`${name} reloads — all ${actor.tokenPool.length} shells are back.`);
+      return;
+    }
+    case 'retreatAtRange1': {
+      if (!target) return;
+      if (Math.abs(actor.space - target.space) !== 1) return;
+      const m = step(s, actor, pick(eff, 'retreatAtRange1'), -towardDir(actor.space, target.space));
+      if (m) log(`${name} slips back ${m}.`);
+      return;
+    }
+    case 'spendAmmoForPower': {
+      // Crossfire OH, optional. Spend if we chose to.
+      if (!actor.isPlayer) return;
+      if (!actor.optIns || !actor.optIns.crossfire) return;
+      if (!actor.tokenPool || !actor.tokenPool.length) return;
+      const spent = actor.tokenPool.shift();
+      actor.powerBonus = (actor.powerBonus || 0) + eff.amount;
+      log(`${name} burns a ${TOKEN_BY_ID[spent]?.name || 'shell'} for +${eff.amount} Power.`);
+      return;
+    }
+    case 'spendAmmoForRange': {
+      if (!actor.isPlayer) return;
+      if (!actor.optIns || !actor.optIns.gunner) return;
+      if (!actor.tokenPool || !actor.tokenPool.length) return;
+      const spent = actor.tokenPool.shift();
+      actor.rangeBonus = actor.optIns.gunnerRange ?? 1;
+      log(`${name} burns a ${TOKEN_BY_ID[spent]?.name || 'shell'} to adjust range by ${actor.rangeBonus >= 0 ? '+' : ''}${actor.rangeBonus}.`);
+      return;
+    }
+    case 'spendAllAmmoForPower': {
+      if (!actor.isPlayer || !actor.tokenPool) return;
+      const n = actor.tokenPool.length;
+      if (!n) return;
+      actor.tokenPool = [];
+      actor.powerBonus = (actor.powerBonus || 0) + n * eff.amount;
+      log(`${name} empties the magazine — ${n} shells for +${n * eff.amount} Power.`);
+      return;
+    }
     case 'priorityBonus':
       actor.priorityBonusNext = (actor.priorityBonusNext || 0) + eff.amount;
       log(`${name} will have +${eff.amount} Priority next beat.`);
@@ -192,8 +262,8 @@ function applyEffect(s, actor, target, eff, pick, log) {
       }
       return;
     }
-    case 'powerPerDamageSoaked': {
-      const bonus = (actor.damageSoakedThisBeat || 0) * eff.amount;
+    case 'powerPerDamageArmored': {
+      const bonus = (actor.damageArmoredThisBeat || 0) * eff.amount;
       if (bonus) {
         actor.powerBonus = (actor.powerBonus || 0) + bonus;
         log(`${name} vents the impact: +${bonus} Power.`);
@@ -218,6 +288,7 @@ export function startEncounter(run, encounter) {
     char,
     encounter,
     force: run.force ?? 0,
+    tokenSpec: char.tokens,
     // pending reactive prompt: { attackerName, damage, kills }
     pendingShield: null,
     player: {
@@ -226,14 +297,17 @@ export function startEncounter(run, encounter) {
       life: run.life,
       maxLife: char.life,
       space: encounter.playerSpace ?? 1,
-      soak: 0,
-      stunGuard: 0,
+      armor: 0,
+      guard: 0,
       stunImmune: false,
       stunned: false,
-      tokens: char.tokens ? run.tokens ?? char.tokens.start : 0,
+      tokenPool: run.tokenPool ? [...run.tokenPool] : startingPool(char.tokens),
+      antedTokens: [],
       antedStunImmunity: false,
+      optIns: {},
+      rangeBonus: 0,
       damageTakenThisBeat: 0,
-      damageSoakedThisBeat: 0,
+      damageArmoredThisBeat: 0,
       powerBonus: 0,
       priorityBonusNext: 0,
       priorityBonus: 0,
@@ -241,9 +315,58 @@ export function startEncounter(run, encounter) {
     },
     enemies: encounter.enemies.map((e, i) => makeEnemy(e.type, e.space, i)),
   };
+  // `tokens` is a convenience count over the pool. Writing it (mostly from
+  // tests and the balance harness) trims or refills the pool to match.
+  Object.defineProperty(s.player, 'tokens', {
+    get() { return this.tokenPool.length; },
+    set(n) {
+      const full = startingPool(s.tokenSpec);
+      while (this.tokenPool.length > n) this.tokenPool.pop();
+      while (this.tokenPool.length < n && this.tokenPool.length < full.length) {
+        const missing = full.find((id) => !this.tokenPool.includes(id));
+        this.tokenPool.push(missing ?? full[0]);
+      }
+    },
+    enumerable: false,
+    configurable: true,
+  });
   telegraph(s);
   s.log.push(`— ${encounter.name} —`);
   return s;
+}
+
+/**
+ * Deep-ish copy of a state for lookahead. Rebuilds the `tokens` accessor:
+ * a bare object spread drops it, which silently turns every solver score
+ * into NaN.
+ */
+export function cloneState(s) {
+  const player = {
+    ...s.player,
+    dodging: new Set(s.player.dodging || []),
+    tokenPool: [...(s.player.tokenPool || [])],
+    optIns: { ...(s.player.optIns || {}) },
+  };
+  const copy = {
+    ...s,
+    log: [],
+    player,
+    enemies: s.enemies.map((e) => ({ ...e, dodging: new Set(e.dodging || []) })),
+  };
+  Object.defineProperty(player, 'tokens', {
+    get() { return this.tokenPool.length; },
+    set(n) {
+      const full = startingPool(copy.tokenSpec);
+      while (this.tokenPool.length > n) this.tokenPool.pop();
+      while (this.tokenPool.length < n && this.tokenPool.length < full.length) {
+        const missing = full.find((id) => !this.tokenPool.includes(id));
+        this.tokenPool.push(missing ?? full[0]);
+      }
+    },
+    enumerable: false,
+    configurable: true,
+  });
+  return copy;
 }
 
 export function playerAttack(char, baseId, styleId) {
@@ -259,17 +382,38 @@ const clampPick = (eff, want) =>
 
 // ------------------------------------------------------------------ ante
 
-/** Ante phase: spend a Shield for Stun Immunity this beat. */
-export function anteShield(s, spend) {
+/**
+ * Ante phase. `ante` is either `true` (fungible: spend one) or an array of
+ * token ids (unique: spend those specific shells).
+ */
+export function anteTokens(s, ante) {
   const p = s.player;
+  const spec = s.tokenSpec;
   p.antedStunImmunity = false;
-  if (spend && p.tokens > 0) {
-    p.tokens--;
+  p.antedTokens = [];
+  if (!spec || !ante) return s;
+
+  const wanted = ante === true ? [spec.list[0].id] : [...ante];
+  const spent = [];
+  for (const id of wanted) {
+    const i = p.tokenPool.indexOf(id);
+    if (i >= 0) { p.tokenPool.splice(i, 1); spent.push(id); }
+  }
+  if (!spent.length) return s;
+  p.antedTokens = spent;
+
+  if (spec.ante && spec.ante.stunImmune) {
     p.antedStunImmunity = true;
-    s.log.push(`${p.name} antes a Shield — Stun Immunity this beat. (${p.tokens} left)`);
+    s.log.push(`${p.name} antes a ${spec.name} — Stun Immunity this beat. (${p.tokenPool.length} left)`);
+  } else {
+    const names = spent.map((id) => TOKEN_BY_ID[id]?.name || id).join(', ');
+    s.log.push(`${p.name} loads ${names}. (${p.tokenPool.length} left)`);
   }
   return s;
 }
+
+// kept for older call sites
+export const anteShield = (s, spend) => anteTokens(s, spend ? true : null);
 
 // ------------------------------------------------------------- the beat
 
@@ -285,15 +429,34 @@ export function resolveBeat(s, play) {
   const atk = playerAttack(s.char, play.baseId, play.styleId);
 
   log(`— Beat ${s.beat} —`);
-  anteShield(s, !!play.ante);
+  anteTokens(s, play.ante ?? null);
+  p.optIns = play.optIns || {};
+  p.rangeBonus = 0;
+
+  // (2) REVEAL band. Finishers that negate Ammo do so here: the shell is
+  // still spent, but its effect never applies.
+  const negate = !!atk.negateAmmo;
+  if (negate && p.antedTokens.length) {
+    log(`${atk.name} negates the loaded shell — it is spent regardless.`);
+  }
+  applyTokenMods(atk, p.antedTokens, { negate });
+
+  // Rukyuk's passive: no shell loaded means no Range at all.
+  const spec = s.tokenSpec;
+  if (spec && spec.requiredOrMiss && !atk.noHit && !atk.alwaysHits
+      && p.antedTokens.length === 0) {
+    atk.range = null;
+    atk.noRange = true;
+    log(`${p.name} has no shell loaded — Range becomes N/A and the shot cannot connect.`);
+  }
 
   // reset per-beat state
-  p.soak = atk.soak;
-  p.stunGuard = atk.stunGuard;
+  p.armor = atk.armor;
+  p.guard = atk.guard;
   p.stunImmune = atk.stunImmune || p.antedStunImmunity;
   p.stunned = false;
   p.damageTakenThisBeat = 0;
-  p.damageSoakedThisBeat = 0;
+  p.damageArmoredThisBeat = 0;
   p.powerBonus = 0;
   p.priorityBonus = p.priorityBonusNext || 0;
   p.priorityBonusNext = 0;
@@ -303,21 +466,22 @@ export function resolveBeat(s, play) {
   for (const e of s.enemies) {
     if (e.life <= 0) continue;
     const i = e.intent;
-    e.soak = i.soak || 0;
-    e.stunGuard = i.stunGuard || 0;
+    e.armor = i.armor || 0;
+    e.guard = i.guard || 0;
     e.stunImmune = !!i.stunImmune;
     e.stunned = false;
     e.damageTakenThisBeat = 0;
-    e.damageSoakedThisBeat = 0;
+    e.damageArmoredThisBeat = 0;
     e.powerBonus = 0;
     e.dodging = new Set();
   }
 
   const pPriority = atk.priority + p.priorityBonus;
   log(`${p.name}: ${atk.name} — ` +
-    (atk.noDamage ? `no damage / Pri ${pPriority}`
+    (atk.noDamage || !atk.range
+      ? `no damage / Pri ${pPriority}`
       : `R ${atk.range[0]}~${atk.range[1]} / P ${atk.power} / Pri ${pPriority}`) +
-    `${atk.soak ? ` / Soak ${atk.soak}` : ''}${atk.stunGuard ? ` / SG ${atk.stunGuard}` : ''}` +
+    `${atk.armor ? ` / Armor ${atk.armor}` : ''}${atk.guard ? ` / SG ${atk.guard}` : ''}` +
     `${p.stunImmune ? ' / STUN IMMUNE' : ''}`);
 
   // ---- initiative: higher Priority first. On a tie (a "clash") the player
@@ -368,15 +532,18 @@ export function resolveBeat(s, play) {
       log(`${actor.name} is stunned and cannot activate.`);
       continue;
     }
-    if (a.noDamage) continue;   // Dodge and its kin can never deal damage
+    if (a.noDamage || a.noHit || !a.range) continue;   // cannot hit anything
 
     const pool = entry.kind === 'enemy' ? [s.player] : s.enemies.filter((e) => e.life > 0);
     const myKey = actor.uid ?? 'player';
+    const rb = actor.rangeBonus || 0;
+    const lo = Math.max(0, a.range[0] - Math.max(0, -rb));
+    const hi = a.range[1] + Math.max(0, rb);
     const reachable = pool.filter((t) => {
       // A fighter that dodged past us this beat cannot be hit by us at all.
       if (t.dodging && t.dodging.has(myKey)) return false;
       const d = Math.abs(actor.space - t.space);
-      return d >= a.range[0] && d <= a.range[1];
+      return d >= lo && d <= hi;
     });
     let victims;
     if (a.hitAll) victims = reachable;
@@ -396,10 +563,19 @@ export function resolveBeat(s, play) {
     }
 
     for (const v of victims) {
-      const power = a.power + (actor.powerBonus || 0);
-      dealDamage(s, actor, v, power, a, play, log);
-      if (v.life > 0 && !s.over) {
-        for (const eff of a.hit) applyEffect(s, actor, v, eff, pickFor(entry), log);
+      // ON HIT resolves BEFORE damage is dealt. This is the official order,
+      // and it is load-bearing: effects like "spend Ammo for +2 Power" or
+      // Feedback Field's "+2 Power per damage absorbed" must be able to raise
+      // Power before that Power is applied.
+      for (const eff of a.hit) applyEffect(s, actor, v, eff, pickFor(entry), log);
+
+      const power = (a.power ?? 0) + (actor.powerBonus || 0);
+      const dealt = dealDamage(s, actor, v, power, a, play, log);
+
+      // ON DAMAGE only fires if damage actually got through.
+      if (dealt > 0 && v.life > 0 && !s.over) {
+        for (const eff of a.damage || [])
+          applyEffect(s, actor, v, eff, pickFor(entry), log);
       }
     }
     checkEnd(s, log);
@@ -424,12 +600,12 @@ export function resolveBeat(s, play) {
 }
 
 /**
- * Apply damage with Soak, reactive Shields, and the stun rule.
+ * Apply damage with Armor, reactive Shields, and the stun rule.
  */
 function dealDamage(s, attacker, victim, power, a, play, log) {
   // Reactive Shield: "Whenever you are hit, you may use a Shield" -> Guard 9001.
   if (victim.isPlayer && victim.tokens > 0 && s.char.tokens) {
-    const raw = Math.max(0, power - victim.soak);
+    const raw = Math.max(0, power - victim.armor);
     const policy = play.autoShield || 'lethal';
     const wants =
       policy === 'always' ? raw > 0 :
@@ -439,49 +615,50 @@ function dealDamage(s, attacker, victim, power, a, play, log) {
       victim.tokens--;
       victim.shieldsUsedThisBeat = (victim.shieldsUsedThisBeat || 0) + 1;
       log(`${victim.name} raises a Shield — Guard 9001 absorbs ${attacker.name}'s blow entirely. (${victim.tokens} left)`);
-      victim.damageSoakedThisBeat += raw;
-      return;
+      victim.damageArmoredThisBeat += raw;
+      return 0;
     }
   }
 
-  const soak = victim.soak || 0;
-  const dmg = Math.max(0, power - soak);
-  const soaked = Math.min(soak, power);
-  victim.damageSoakedThisBeat += soaked;
+  const armor = a.ignoreArmor ? 0 : (victim.armor || 0);
+  const dmg = Math.max(0, power - armor);
+  const absorbed = Math.min(armor, power);
+  victim.damageArmoredThisBeat += absorbed;
 
   if (dmg <= 0) {
-    log(`${attacker.name} hits ${victim.name} but Soak ${soak} absorbs all ${power}.`);
-    return;
+    log(`${attacker.name} hits ${victim.name} but Armor ${armor} absorbs all ${power}.`);
+    return 0;
   }
 
   victim.life -= dmg;
   victim.damageTakenThisBeat += dmg;
   log(`${attacker.name} hits ${victim.name} for ${dmg}` +
-    `${soaked ? ` (Soak ${soaked} absorbed)` : ''}. ${victim.name}: ${Math.max(0, victim.life)} life.`);
+    `${absorbed ? ` (Armor ${absorbed} absorbed)` : ''}${a.ignoreArmor && victim.armor ? ' (Armor ignored)' : ''}. ` +
+    `${victim.name}: ${Math.max(0, victim.life)} life.`);
 
   if (victim.life <= 0) {
     if (!victim.isPlayer) log(`${victim.name} is destroyed.`);
-    return;
+    return dmg;
   }
 
   // ---- the stun rule
-  if (a.pierceStunGuard) {
-    if (!victim.stunImmune) {
-      victim.stunned = true;
-      log(`${victim.name} is stunned — Stun Guard pierced.`);
-    } else log(`${victim.name} is Stun Immune and shrugs it off.`);
-    return;
-  }
   if (victim.stunImmune) {
     log(`${victim.name} is Stun Immune and keeps coming.`);
-    return;
+    return dmg;
   }
-  if ((victim.stunGuard || 0) >= dmg) {
-    log(`${victim.name}'s Stun Guard ${victim.stunGuard} holds against ${dmg}.`);
-    return;
+  // Ignore Guard / pierce: Guard does not protect, but Stun Immunity still does.
+  if (a.pierceGuard || a.ignoreGuard) {
+    victim.stunned = true;
+    log(`${victim.name} is STUNNED — Guard ignored.`);
+    return dmg;
+  }
+  if ((victim.guard || 0) >= dmg) {
+    log(`${victim.name}'s Guard ${victim.guard} holds against ${dmg}.`);
+    return dmg;
   }
   victim.stunned = true;
   log(`${victim.name} is STUNNED — their activation is cancelled.`);
+  return dmg;
 }
 
 function checkEnd(s, log) {
@@ -534,7 +711,7 @@ export function incomingDamage(s, myAtk) {
   for (const e of s.enemies) {
     if (e.life <= 0 || !intentThreatens(s, e)) continue;
     // if we out-prioritise and would kill it, assume it never lands
-    total += Math.max(0, e.intent.power - (myAtk.soak || 0));
+    total += Math.max(0, e.intent.power - (myAtk.armor || 0));
   }
   return { total, myPriority };
 }

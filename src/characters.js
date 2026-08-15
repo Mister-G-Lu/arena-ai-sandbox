@@ -10,25 +10,35 @@
 //   Bases:   (range / power / priority) as ABSOLUTES, e.g. Press (1~2/1/0)
 //
 // Timing bands, in resolution order:
+//   Rev   "On Reveal"          -> reveal  (before anything else resolves)
 //   Start "Start of Beat"      -> start   (all fighters, Priority order)
 //   BA    "Before Activating"  -> before  (in that fighter's own slot)
 //         the attack itself
-//   OH    "On Hit"             -> hit
-//   After "After Activating"   -> after   (cancelled if that fighter is stunned)
+//   OH    "On Hit"             -> hit     (resolves BEFORE damage is dealt)
+//   OD    "On Damage"          -> damage  (only if damage actually got through)
+//   AA    "After Activating"   -> after   (cancelled if that fighter is stunned)
 //   EoB   "End of Beat"        -> end     (ALWAYS fires, even when stunned)
 //
-// The After/EoB split matters: a stun cancels a fighter's activation and
+// The AA/EoB split matters: a stun cancels a fighter's activation and
 // everything welded to it, but End of Beat is unconditional.
+//
+// DEFENSIVE KEYWORDS (V4 naming)
+//   Armor N  — subtract N from incoming damage.
+//   Guard N  — you are not stunned unless damage taken exceeds N.
+// These are the same two mechanics older printings called Soak and Stun
+// Guard; we use the V4 names throughout.
 
 // ------------------------------------------------------------- universal bases
+
+import { SHIELD_TOKENS, AMMO_TOKENS } from './tokens.js';
 
 export const STARTING_LIFE = 20;
 
 export const UNIVERSAL_BASES = [
   {
     id: 'strike', name: 'Strike', range: [1, 1], power: 4, priority: 3,
-    stunGuard: 2,
-    text: 'Stun Guard 2',
+    guard: 2,
+    text: 'Guard 2',
   },
   {
     id: 'shot', name: 'Shot', range: [1, 4], power: 3, priority: 3,
@@ -76,17 +86,14 @@ export const CADENZA = {
   ],
   difficulty: 'Easy',
 
-  tokens: {
-    id: 'shield', name: 'Shield', max: 3, start: 3,
-    text: 'Guard 9001. Ante for Stun Immunity, or spend reactively when hit.',
-  },
+  tokens: SHIELD_TOKENS,
 
   styles: [
     {
       id: 'hydraulic', name: 'Hydraulic', dRange: [0, 0], dPower: 2, dPriority: -1,
-      soak: 1,
+      armor: 1,
       before: [{ k: 'advance', min: 1, max: 1 }],
-      text: 'Soak 1. BA: Advance 1',
+      text: 'Armor 1. BA: Advance 1',
     },
     {
       id: 'mechanical', name: 'Mechanical', dRange: [0, 0], dPower: 2, dPriority: -2,
@@ -100,8 +107,8 @@ export const CADENZA = {
     },
     {
       id: 'clockwork', name: 'Clockwork', dRange: [0, 0], dPower: 3, dPriority: -3,
-      soak: 3,
-      text: 'Soak 3',
+      armor: 3,
+      text: 'Armor 3',
     },
     {
       id: 'grapnel', name: 'Grapnel', dRange: [2, 4], dPower: 0, dPriority: 0,
@@ -113,90 +120,114 @@ export const CADENZA = {
   bases: [
     {
       id: 'press', name: 'Press', range: [1, 2], power: 1, priority: 0,
-      stunGuard: 6,
+      guard: 6,
       before: [{ k: 'powerPerDamageTaken', amount: 1 }],
-      text: 'Stun Guard 6. BA: +1 Power for each point of damage you took this beat.',
+      text: 'Guard 6. BA: +1 Power for each point of damage you took this beat.',
     },
   ],
 
   finishers: [
     {
       id: 'rocketPress', name: 'Rocket Press', range: [1, 1], power: 8, priority: 0,
-      soak: 3, stunImmune: true,
+      armor: 3, stunImmune: true,
       before: [{ k: 'advance', min: 2, max: 6 }],
-      text: 'Soak 3, Stun Immunity. BA: Advance at least 2.',
+      text: 'Armor 3, Stun Immunity. BA: Advance at least 2.',
     },
     {
       id: 'feedbackField', name: 'Feedback Field', range: [1, 2], power: 1, priority: 0,
-      soak: 5,
-      hit: [{ k: 'powerPerDamageSoaked', amount: 2 }],
-      text: 'Soak 5. OH: +2 Power for each point of damage you soaked this beat.',
+      armor: 5,
+      hit: [{ k: 'powerPerDamageArmored', amount: 2 }],
+      text: 'Armor 5. OH: +2 Power for each point of damage your Armor absorbed this beat.',
     },
   ],
 };
 
-// -------------------------------------------------------------- The Drifter
-// The original generic pool, kept as a second, harder pick: no tokens, no
-// soak, everything paid for with positioning.
+// ---------------------------------------------------------------- Rukyuk
+// The sniper. Every shot needs a shell: ante an Ammo token or your Range
+// becomes N/A and you simply miss. Six shells, each unique, and the only way
+// to get them back is to spend a whole beat on Reload.
 
-export const DRIFTER = {
-  id: 'drifter',
-  name: 'Drifter',
-  epithet: 'Nameless Duelist',
+export const RUKYUK = {
+  id: 'rukyuk',
+  name: 'Rukyuk',
+  epithet: 'Amberdeen, the Gunslinger',
   life: STARTING_LIFE,
   blurb:
-    'Same 20 life as anyone, but no Soak, no tokens and no safety net. ' +
-    'Every point of damage lands in full, and almost any hit will stun. ' +
-    'Wins by never being where the attack lands.',
+    'A sniper who lives at range 3 to 5 and pays for every shot. Ante an ' +
+    'Ammo token each beat or you cannot hit at all — and when the last shell ' +
+    'is gone, you must spend a beat on Reload to get them back.',
   primer: [
-    'You have no Soak — almost any hit will stun you.',
-    'Priority is your defence: strike first and they never act.',
-    'Sudden and Twisting turn slow bases into pre-emptive strikes.',
+    'Ante an Ammo every beat. With no shell loaded your Range becomes N/A and you miss.',
+    'Six shells, each different: pick the one that solves this beat.',
+    'Reload teleports you anywhere and refills all six — but it cannot hit.',
+    'Stay at range 3~5. Point Blank exists for when that goes wrong.',
   ],
   difficulty: 'Hard',
-  tokens: null,
+
+  tokens: AMMO_TOKENS,
 
   styles: [
-    { id: 'powerful', name: 'Powerful', dRange: [0, 0], dPower: 2, dPriority: -1, text: '+0/+2/-1' },
-    { id: 'reaching', name: 'Reaching', dRange: [0, 2], dPower: -1, dPriority: 0, text: '+0~2/-1/+0' },
-    { id: 'sudden', name: 'Sudden', dRange: [0, 0], dPower: -1, dPriority: 4, text: '+0/-1/+4' },
     {
-      id: 'sliding', name: 'Sliding', dRange: [0, 1], dPower: 0, dPriority: 1,
-      before: [{ k: 'retreat', min: 0, max: 2 }],
-      text: '+0~1/+0/+1. BA: Retreat 0~2',
+      id: 'sniper', name: 'Sniper', dRange: [3, 5], dPower: 1, dPriority: 2, absoluteRange: true,
+      start: [{ k: 'move', min: 0, max: 2 }],
+      after: [{ k: 'move', min: 1, max: 3 }],
+      text: 'Start: Move up to 2 to find your line. AA: Move 1, 2 or 3.',
     },
     {
-      id: 'twisting', name: 'Twisting', dRange: [1, 1], dPower: 0, dPriority: 2,
-      end: [{ k: 'advance', min: 0, max: 1 }],
-      text: '+1/+0/+2. EoB: Advance 0~1',
+      id: 'crossfire', name: 'Crossfire', dRange: [2, 3], dPower: 1, dPriority: -2, absoluteRange: true,
+      armor: 2, guard: 1,
+      hit: [{ k: 'spendAmmoForPower', amount: 2, optional: true }],
+      text: 'Armor 2, Guard 1. OH, optional: spend 1 Ammo for +2 Power.',
+    },
+    {
+      id: 'gunner', name: 'Gunner', dRange: [2, 4], dPower: 0, dPriority: 0, absoluteRange: true,
+      start: [{ k: 'move', min: 0, max: 1 }],
+      before: [{ k: 'spendAmmoForRange', optional: true }],
+      after: [{ k: 'move', min: 1, max: 2 }],
+      text: 'Start: Move up to 1. BA, optional: spend 1 Ammo for -1 to +1 Range. AA: Move 1 or 2.',
+    },
+    {
+      id: 'pointblank', name: 'Point Blank', dRange: [0, 1], dPower: 0, dPriority: 0, absoluteRange: true,
+      guard: 2,
+      damage: [{ k: 'push', min: 0, max: 2 }],
+      text: 'Guard 2. OD: Push the target up to 2.',
+    },
+    {
+      id: 'trick', name: 'Trick', dRange: [1, 2], dPower: 0, dPriority: -3, absoluteRange: true,
+      stunImmune: true,
+      end: [{ k: 'retreatAtRange1', min: 0, max: 1 }],
+      text: 'Stun Immunity. EoB at range 1: retreat up to 1.',
     },
   ],
 
   bases: [
     {
-      id: 'parry', name: 'Parry', range: [1, 2], power: 1, priority: 7,
-      stunGuard: 3,
-      text: 'Stun Guard 3. No Soak — you still take the damage.',
+      id: 'reload', name: 'Reload', range: null, power: null, priority: 4,
+      noHit: true, teleport: true,
+      after: [{ k: 'teleport' }],
+      end: [{ k: 'regainAllAmmo' }],
+      text: 'Does not hit opponents. AA: Teleport to any space. EoB: regain all Ammo.',
     },
   ],
 
   finishers: [
     {
-      id: 'lastLight', name: 'Last Light', range: [1, 3], power: 7, priority: 6,
-      stunImmune: true,
-      text: 'Stun Immunity. Everything, all at once.',
+      id: 'fullyAutomatic', name: 'Fully Automatic', range: [3, 6], power: 2, priority: 6,
+      negateAmmo: true,
+      hit: [{ k: 'spendAllAmmoForPower', amount: 2 }],
+      text: 'Rev: negate the effects of any used Ammo. OH: spend all remaining Ammo for +2 Power each.',
     },
     {
-      id: 'ghostStep', name: 'Ghost Step', range: [1, 2], power: 5, priority: 8,
-      before: [{ k: 'jumpPast' }],
-      hit: [{ k: 'stun' }],
-      text: 'BA: Vault past the target. OH: Stun regardless of Stun Guard.',
-      pierceStunGuard: true,
+      id: 'forceGrenade', name: 'Force Grenade', range: [1, 2], power: 4, priority: 4,
+      negateAmmo: true, ignoreStyleBA: true, alwaysHits: true,
+      hit: [{ k: 'push', min: 0, max: 6 }],
+      after: [{ k: 'retreat', min: 0, max: 5 }],
+      text: 'Rev: negate used Ammo, ignore your Style BA. OH: push up to 6. AA: retreat up to 5.',
     },
   ],
 };
 
-export const CHARACTERS = [CADENZA, DRIFTER];
+export const CHARACTERS = [CADENZA, RUKYUK];
 export const CHARACTER_BY_ID = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
 
 // --------------------------------------------------------------- combination
@@ -219,26 +250,53 @@ export function combine(base, style) {
   const s = style || {
     name: '', dRange: [0, 0], dPower: 0, dPriority: 0, text: '',
   };
-  const rangeLo = Math.max(0, base.range[0] + s.dRange[0]);
-  const rangeHi = Math.max(0, base.range[1] + s.dRange[1]);
+  // Range resolution.
+  //   * A base with no range (Reload) never gains one.
+  //   * absoluteRange styles (Rukyuk's) REPLACE the base's range band —
+  //     his sheet lists Sniper as "Range 3-5", not "+3~+5".
+  //   * ordinary styles (Cadenza's) add their deltas to the base band.
+  let range = null;
+  if (!base.noHit && base.range) {
+    if (s.absoluteRange && s.dRange) {
+      range = [Math.max(0, s.dRange[0]), Math.max(0, s.dRange[1])];
+    } else if (s.dRange) {
+      range = [
+        Math.max(0, base.range[0] + s.dRange[0]),
+        Math.max(0, base.range[1] + s.dRange[1]),
+      ];
+    } else {
+      range = [...base.range];
+    }
+  }
   return {
     name: `${s.name ? s.name + ' ' : ''}${base.name}`,
     baseId: base.id,
     styleId: s.id || null,
-    range: [rangeLo, rangeHi],
+    range,
     // A "no damage" base (Dodge) can never deal damage, whatever the Style says.
-    power: base.noDamage ? null : Math.max(0, base.power + s.dPower),
-    noDamage: !!base.noDamage,
-    priority: base.priority + s.dPriority,
-    soak: (base.soak || 0) + (s.soak || 0),
-    stunGuard: (base.stunGuard || 0) + (s.stunGuard || 0),
+    power: (base.noDamage || base.power === null)
+      ? null
+      : Math.max(0, base.power + s.dPower),
+    noDamage: !!base.noDamage || base.power === null,
+    priority: base.priority + (s.dPriority || 0),
+    armor: (base.armor || 0) + (s.armor || 0),
+    guard: (base.guard || 0) + (s.dGuard || s.guard || 0),
     stunImmune: !!base.stunImmune || !!s.stunImmune,
-    pierceStunGuard: !!base.pierceStunGuard || !!s.pierceStunGuard,
+    pierceGuard: !!base.pierceGuard || !!s.pierceGuard,
+    ignoreArmor: !!base.ignoreArmor || !!s.ignoreArmor,
+    ignoreGuard: !!base.ignoreGuard || !!s.ignoreGuard,
+    noHit: !!base.noHit,
+    alwaysHits: !!base.alwaysHits,
+    teleport: !!base.teleport,
+    negateAmmo: !!base.negateAmmo,
+    ignoreStyleBA: !!base.ignoreStyleBA,
 
     isFinisher: !!base.isFinisher,
+    reveal: [...(base.reveal || []), ...(s.reveal || [])],
     start: [...(s.start || []), ...(base.start || [])],
     before: [...(s.before || []), ...(base.before || [])],
     hit: [...(base.hit || []), ...(s.hit || [])],
+    damage: [...(base.damage || []), ...(s.damage || [])],
     after: [...(base.after || []), ...(s.after || [])],
     end: [...(base.end || []), ...(s.end || [])],
     text: [s.text, base.text].filter(Boolean).join(' | '),

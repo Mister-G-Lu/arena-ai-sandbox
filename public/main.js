@@ -1,4 +1,5 @@
 import { CHARACTERS, baseLibrary, styleLibrary } from '../src/characters.js';
+import { TOKEN_BY_ID, applyTokenMods } from '../src/tokens.js';
 import {
   ARENA_SIZE, MAX_FORCE, startEncounter, resolveBeat, playerAttack,
   threatSpaces, intentThreatens, nearestEnemy, canUseFinisher, projectedSpace,
@@ -13,8 +14,9 @@ const SCREENS = ['select', 'combat', 'reward', 'end'];
 const show = (n) => SCREENS.forEach((s) => $(`screen-${s}`).classList.toggle('hidden', s !== n));
 
 let run, state, sel = { base: null, style: null, finisher: null },
-    targetUid = null, ante = false, logMark = 0,
-    dodge = { n: 2, dir: 1 };   // Dodge's chosen distance and direction
+    targetUid = null, ante = [], logMark = 0,
+    dodge = { n: 2, dir: 1 },   // Dodge's chosen distance and direction
+    optIns = {};                // optional "spend Ammo for X" toggles
 
 // ============================================================ character select
 
@@ -52,8 +54,8 @@ function startNode() {
   state = startEncounter(run, enc);
   state.force = run.force || 0;
   sel = { base: null, style: null, finisher: null };
-  targetUid = null; ante = false; logMark = 0;
-  dodge = { n: 2, dir: 1 };
+  targetUid = null; ante = []; logMark = 0;
+  dodge = { n: 2, dir: 1 }; optIns = {};
   $('log').innerHTML = '';
   $('enc-name').textContent = enc.name;
   $('enc-blurb').textContent = enc.blurb;
@@ -65,11 +67,28 @@ function startNode() {
 // ============================================================ render
 
 function chosenAttack() {
-  if (sel.finisher) return playerAttack(state.char, sel.finisher, null);
-  if (sel.base) return playerAttack(state.char, sel.base, sel.style);
-  return null;
+  let a = null;
+  if (sel.finisher) a = playerAttack(state.char, sel.finisher, null);
+  else if (sel.base) a = playerAttack(state.char, sel.base, sel.style);
+  if (!a) return null;
+  // Mirror what resolveBeat will do: apply anted token mods, then the
+  // "no shell loaded" penalty, so the preview never lies.
+  const spec = state.char.tokens;
+  if (spec && spec.kind === 'unique') {
+    a = applyTokenMods({ ...a, range: a.range ? [...a.range] : null, hit: [...a.hit] },
+      ante, { negate: !!a.negateAmmo });
+    if (spec.requiredOrMiss && !a.noHit && !a.alwaysHits && ante.length === 0) {
+      a.range = null;
+      a.noRange = true;
+    }
+  }
+  return a;
 }
 const ready = () => !!(sel.finisher || (sel.base && sel.style));
+const antedStunImmunity = () => {
+  const spec = state.char.tokens;
+  return !!(spec && spec.ante && spec.ante.stunImmune && ante.length > 0);
+};
 const isDodge = () => sel.base === 'dodge' && !sel.finisher;
 const currentPicks = () => (isDodge() ? { dodgeMove: dodge.n, dodgeDir: dodge.dir } : undefined);
 
@@ -116,11 +135,18 @@ function render() {
 
 function renderTokens() {
   const box = $('tokens');
-  const t = state.char.tokens;
-  if (!t) { box.innerHTML = ''; return; }
-  let html = `<span class="tlabel">${t.name.toUpperCase()}</span>`;
-  for (let i = 0; i < t.max; i++)
-    html += `<span class="shield ${i < state.player.tokens ? '' : 'spent'}"></span>`;
+  const spec = state.char.tokens;
+  if (!spec) { box.innerHTML = ''; return; }
+  let html = `<span class="tlabel">${spec.name.toUpperCase()}</span>`;
+  if (spec.kind === 'fungible') {
+    for (let i = 0; i < spec.max; i++)
+      html += `<span class="shield ${i < state.player.tokens ? '' : 'spent'}"></span>`;
+  } else {
+    for (const t of spec.list) {
+      const have = state.player.tokenPool.includes(t.id);
+      html += `<span class="ammopip ${have ? '' : 'spent'}" title="${t.name}: ${t.text}">${t.short}</span>`;
+    }
+  }
   box.innerHTML = html;
 }
 
@@ -188,8 +214,8 @@ function renderIntents() {
       div.innerHTML = `<span class="who">${e.name}</span><span class="fx">destroyed</span>`;
     } else {
       const pills =
-        (i.soak ? `<span class="soakpill">SOAK ${i.soak}</span>` : '') +
-        (i.stunGuard ? `<span class="sgpill">SG ${i.stunGuard}</span>` : '') +
+        (i.armor ? `<span class="soakpill">ARMOR ${i.armor}</span>` : '') +
+        (i.guard ? `<span class="sgpill">GUARD ${i.guard}</span>` : '') +
         (i.stunImmune ? `<span class="immpill">STUN IMMUNE</span>` : '');
       div.innerHTML = `
         <span class="who">${e.name} <span class="hp">${Math.max(0, e.life)}/${e.maxLife}</span></span>
@@ -232,7 +258,7 @@ function renderBoard() {
       d.innerHTML += `<span class="ghost">${state.char.name.slice(0, 3).toUpperCase()}</span>`;
     }
     if (state.player.space === i) {
-      d.innerHTML += `<div class="token you${ante ? ' immune' : ''}">${state.char.name.slice(0, 3).toUpperCase()}</div>`;
+      d.innerHTML += `<div class="token you${antedStunImmunity() ? ' immune' : ''}">${state.char.name.slice(0, 3).toUpperCase()}</div>`;
     }
     const e = state.enemies.find((x) => x.life > 0 && x.space === i);
     if (e) {
@@ -269,25 +295,31 @@ function renderPreview() {
   for (const e of state.enemies) {
     if (e.life <= 0 || dodged.has(e.uid)) continue;
     if (!intentThreatens(state, e)) continue;
-    const dmg = Math.max(0, e.intent.power - atk.soak);
+    const dmg = Math.max(0, e.intent.power - atk.armor);
     incoming += dmg;
-    const immune = atk.stunImmune || ante;
-    if (dmg > 0 && !immune && atk.stunGuard < dmg) stunRisk = true;
+    const immune = atk.stunImmune || antedStunImmunity();
+    if (dmg > 0 && !immune && atk.guard < dmg) stunRisk = true;
   }
   const faster = state.enemies.filter((e) => e.life > 0 && e.intent.priority > pri).length;
 
   $('preview').innerHTML = `
     <span class="pname">${atk.name}</span>
-    ${atk.noDamage
-      ? '<span class="stat"><i>POWER</i> N/A</span>'
+    ${!atk.range
+      ? `<span class="stat"><i>RANGE</i> N/A</span>${atk.noDamage ? '' : `<span class="stat"><i>POWER</i> ${atk.power}</span>`}`
       : `<span class="stat"><i>RANGE</i> ${atk.range[0]}~${atk.range[1]}</span>
-         <span class="stat"><i>POWER</i> ${atk.power}</span>`}
+         <span class="stat"><i>POWER</i> ${atk.noDamage ? 'N/A' : atk.power}</span>`}
     <span class="stat"><i>PRIORITY</i> ${pri}</span>
-    ${atk.soak ? `<span class="soakpill">SOAK ${atk.soak}</span>` : ''}
-    ${atk.stunGuard ? `<span class="sgpill">STUN GUARD ${atk.stunGuard}</span>` : ''}
-    ${(atk.stunImmune || ante) ? `<span class="immpill">STUN IMMUNE</span>` : ''}
+    ${atk.armor ? `<span class="soakpill">ARMOR ${atk.armor}</span>` : ''}
+    ${atk.guard ? `<span class="sgpill">GUARD ${atk.guard}</span>` : ''}
+    ${(atk.stunImmune || antedStunImmunity()) ? `<span class="immpill">STUN IMMUNE</span>` : ''}
+    ${atk.ignoreArmor ? '<span class="immpill">IGNORE ARMOR</span>' : ''}
+    ${atk.ignoreGuard ? '<span class="immpill">IGNORE GUARD</span>' : ''}
     <div class="verdict ${hits ? 'good' : 'bad'}">
-      ${atk.noDamage
+      ${atk.noRange
+        ? 'No shell loaded — Range is N/A and this shot cannot connect.'
+        : atk.noHit
+        ? 'This attack does not hit opponents.'
+        : atk.noDamage
         ? (plan && plan.legal
             ? (plan.passed.length
                 ? `Dodge to space ${plan.dest}, slipping past ${plan.passed.map((e) => e.name).join(' and ')}.`
@@ -316,7 +348,12 @@ const highlight = (t) => (t || '')
   .replace(/\bStart:/g, '<span class="band start">Start:</span>')
   .replace(/\bBA:/g, '<span class="band ba">BA:</span>')
   .replace(/\bOH:/g, '<span class="band oh">OH:</span>')
-  .replace(/\bEoB:/g, '<span class="band eob">EoB:</span>');
+  .replace(/\bEoB:/g, '<span class="band eob">EoB:</span>')
+  .replace(/\bOD:/g, '<span class="band od">OD:</span>')
+  .replace(/\bAA:/g, '<span class="band aa">AA:</span>')
+  .replace(/\bRev:/g, '<span class="band rev">Rev:</span>')
+  .replace(/Armor (\d+)/g, '<span class="kw">Armor $1</span>')
+  .replace(/Guard (\d+)/g, '<span class="kw">Guard $1</span>');
 
 function renderHand() {
   const h = currentHand(run);
@@ -326,8 +363,8 @@ function renderHand() {
   for (const id of h.bases) {
     const c = B[id];
     rowB.appendChild(cardEl(c, sel.base === id && !sel.finisher,
-      c.noDamage
-        ? `POW N/A · PRI ${c.priority}`
+      c.noDamage || c.power === null || !c.range
+        ? `R N/A · POW N/A · PRI ${c.priority}`
         : `R ${c.range[0]}~${c.range[1]} · POW ${c.power} · PRI ${c.priority}`,
       () => { sel.base = sel.base === id ? null : id; sel.finisher = null; render(); }));
   }
@@ -416,7 +453,7 @@ function decideShieldPolicy(baseId, styleId, picks) {
     player: { ...state.player, dodging: new Set() },
     enemies: state.enemies.map((e) => ({ ...e, dodging: new Set() })),
   };
-  resolveBeat(sim, { baseId, styleId, picks, targetUid, ante, autoShield: 'never' });
+  resolveBeat(sim, { baseId, styleId, picks, targetUid, ante, optIns, autoShield: 'never' });
   return sim.player.life <= 0 ? 'ask' : 'never';
 }
 
@@ -440,11 +477,11 @@ function finishBeat(baseId, styleId, policy, picks) {
 }
 
 function commit(baseId, styleId, autoShield, picks) {
-  resolveBeat(state, { baseId, styleId, picks, targetUid, ante, autoShield });
+  resolveBeat(state, { baseId, styleId, picks, targetUid, ante, optIns, autoShield });
   cyclePlay(run, baseId, styleId);
   run.force = state.force;
   sel = { base: null, style: null, finisher: null };
-  ante = false;
+  ante = []; optIns = {};
   if (!state.enemies.some((e) => e.uid === targetUid && e.life > 0)) targetUid = null;
   paintLog();
   render();

@@ -9,7 +9,15 @@ import { newRun, resetPiles, currentHand, cyclePlay, currentEncounter,
 import { mulberry32 } from '../src/rng.js';
 
 const RUNS = Number(process.argv[2] || 60);
-const clone = (s) => ({ ...s, log: [], player: { ...s.player, dodging: new Set() }, enemies: s.enemies.map((e) => ({ ...e, dodging: new Set() })) });
+
+function anteOptions(s) {
+  const spec = s.tokenSpec;
+  if (!spec) return [null];
+  if (spec.kind === 'fungible') return s.player.tokens > 0 ? [null, true] : [null];
+  const pool = s.player.tokenPool;
+  return pool.length ? [null, ...pool.map((id) => [id])] : [null];
+}
+import { cloneState as clone } from '../src/combat.js';
 
 function bestPlay(s, hand) {
   let best = null;
@@ -23,7 +31,7 @@ function bestPlay(s, hand) {
             ? [{dodgeMove:1,dodgeDir:1},{dodgeMove:2,dodgeDir:1},{dodgeMove:3,dodgeDir:1},
                {dodgeMove:1,dodgeDir:-1},{dodgeMove:2,dodgeDir:-1},{dodgeMove:3,dodgeDir:-1}]
             : [undefined])) {
-        for (const ante of s.player.tokens > 0 ? [false, true] : [false]) {
+        for (const ante of anteOptions(s)) {
           const sim = clone(s);
           resolveBeat(sim, { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal' });
           const dealt = s.enemies.reduce((a, e, i) => a + (e.life - sim.enemies[i].life), 0);
@@ -68,10 +76,10 @@ console.log(`\nforgiveness curve (${RUNS} runs/point)`);
 console.log(`Bars are FULL-RUN clear rate (the ceiling).`);
 console.log(`Numbers in brackets are AVG ENCOUNTERS CLEARED — the floor, and`);
 console.log(`the real measure of forgiveness: how far a sloppy player still gets.\n`);
-console.log('  err%   cadenza                    drifter');
+console.log('  err%   cadenza                    rukyuk');
 for (const err of [0, 0.1, 0.2, 0.3, 0.4, 0.5]) {
   const out = {};
-  for (const c of ['cadenza', 'drifter']) {
+  for (const c of ['cadenza', 'rukyuk']) {
     const rng = mulberry32(999);
     let w = 0, cl = 0;
     for (let i = 1; i <= RUNS; i++) { const r = run1(c, err, i * 7919, rng); if (r.won) w++; cl += r.cleared; }
@@ -79,20 +87,20 @@ for (const err of [0, 0.1, 0.2, 0.3, 0.4, 0.5]) {
   }
   const fmt = (o) => `${(o.rate * 100).toFixed(0).padStart(3)}% (${o.cleared.toFixed(1)}/${ENCOUNTERS.length})`;
   const bar = (o) => '#'.repeat(Math.round(o.rate * 12)).padEnd(12, '.');
-  console.log(`  ${(err * 100).toFixed(0).padStart(3)}%   ${bar(out.cadenza)} ${fmt(out.cadenza)}   ${bar(out.drifter)} ${fmt(out.drifter)}`);
+  console.log(`  ${(err * 100).toFixed(0).padStart(3)}%   ${bar(out.cadenza)} ${fmt(out.cadenza)}   ${bar(out.rukyuk)} ${fmt(out.rukyuk)}`);
 }
 
 // Summarise the floor gap at high error rates, which is the design claim.
-let cadFloor = 0, driFloor = 0, n = 0;
+let cadFloor = 0, rukFloor = 0, n = 0;
 for (const err of [0.3, 0.4, 0.5]) {
-  for (const c of ['cadenza', 'drifter']) {
+  for (const c of ['cadenza', 'rukyuk']) {
     const rng = mulberry32(4242);
     let cl = 0;
     for (let i = 1; i <= RUNS; i++) cl += run1(c, err, i * 7919, rng).cleared;
-    if (c === 'cadenza') cadFloor += cl / RUNS; else driFloor += cl / RUNS;
+    if (c === 'cadenza') cadFloor += cl / RUNS; else rukFloor += cl / RUNS;
   }
   n++;
 }
 console.log(`\n  floor (avg encounters cleared at 30-50% error):`);
-console.log(`    cadenza ${(cadFloor / n).toFixed(2)}   drifter ${(driFloor / n).toFixed(2)}`);
+console.log(`    cadenza ${(cadFloor / n).toFixed(2)}   rukyuk ${(rukFloor / n).toFixed(2)}`);
 console.log();

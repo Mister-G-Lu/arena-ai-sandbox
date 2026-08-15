@@ -1,6 +1,7 @@
 // The roguelite layer: pick a character, run a gauntlet, earn cards.
 
 import { CHARACTER_BY_ID, UNIVERSAL_BASES, STARTING_LIFE } from './characters.js';
+import { startingPool } from './tokens.js';
 import { mulberry32, shuffle } from './rng.js';
 
 // Standard opening: the two fighters face off on the 3rd and 5th tiles,
@@ -77,7 +78,7 @@ export function newRun(charId = 'cadenza', seed = (Math.random() * 1e9) | 0) {
     char,
     node: 0,
     life: char.life,
-    tokens: char.tokens ? char.tokens.start : 0,
+    tokenPool: startingPool(char.tokens),
     force: 0,
     // deck = ids the character may draw. Universal bases + unique base(s).
     deck: {
@@ -131,10 +132,10 @@ export function cyclePlay(run, baseId, styleId) {
 
 export const UPGRADES = [
   { id: 'plating', name: 'Reinforced Plating', text: '+4 max Life, and heal 4.', apply: (r) => { r.char = { ...r.char, life: r.char.life + 4 }; r.life += 4; } },
-  { id: 'spring', name: 'Spare Spring', text: 'Gain 1 Shield token now (up to max).', apply: (r) => { r.tokens = Math.min(r.char.tokens?.max ?? 0, r.tokens + 1); }, needsTokens: true },
+  { id: 'spring', name: 'Spare Spring', text: 'Regain one spent token now.', apply: (r) => { const full = startingPool(r.char.tokens); const missing = full.filter((id) => !r.tokenPool.includes(id)); if (missing.length) r.tokenPool = [...r.tokenPool, missing[0]]; }, needsTokens: true },
   { id: 'flywheel', name: 'Flywheel', text: 'Start each encounter with +2 Force.', apply: (r) => { r.forceBonus = (r.forceBonus || 0) + 2; } },
   { id: 'oil', name: 'Pressure Oil', text: 'Heal 8.', apply: (r) => { r.life = Math.min(r.char.life, r.life + 8); } },
-  { id: 'counterweight', name: 'Counterweight', text: 'Refill Shield tokens to full.', apply: (r) => { r.tokens = r.char.tokens?.max ?? 0; }, needsTokens: true },
+  { id: 'counterweight', name: 'Counterweight', text: 'Refill all your tokens.', apply: (r) => { r.tokenPool = startingPool(r.char.tokens); }, needsTokens: true },
   { id: 'governor', name: 'Governor', text: 'Draw one extra Style each beat.', apply: (r) => { r.extraStyle = true; }, once: true },
 ];
 
@@ -155,7 +156,10 @@ export function takeReward(run, opt) {
 
 export function advance(run, endState) {
   run.life = endState.player.life;
-  run.tokens = endState.player.tokens;
+  // Tokens carry over exactly as they ended the fight. For Rukyuk this is
+  // the whole point: walking into the next encounter dry means spending a
+  // beat on Reload while something is already swinging at you.
+  run.tokenPool = [...endState.player.tokenPool];
   run.cleared++;
   run.node++;
   run.force = run.forceBonus || 0;

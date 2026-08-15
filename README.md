@@ -17,7 +17,7 @@ Husk telegraphs:  Heavy Swing   R 1~1 / POW 5 / PRI 1
 
 ```bash
 npm run serve         # http://localhost:3000
-npm test              # 33 rules tests
+npm test              # 70 rules tests
 npm run balance       # solver telemetry, per character
 node tools/forgiveness.mjs   # clear rate vs. player mistake rate
 ```
@@ -34,17 +34,21 @@ spaces apart and symmetric about the centre of the seven-space arena.
               YOU        FOE
 ```
 
-**Damage** `= max(0, Power − Soak)`
+**Damage** `= max(0, Power − Armor)`
 
 **The stun rule.** Any damage stuns the target — cancelling their entire
 activation — *unless*:
 
 - the target is **Stun Immune**, or
-- the target's **Stun Guard ≥ the damage dealt**
+- the target's **Guard ≥ the damage dealt**
 
-Soak therefore does double duty: it blunts damage *and*, by shrinking the
-number, makes your Stun Guard more likely to hold. This is why Cadenza feels
+Armor therefore does double duty: it blunts damage *and*, by shrinking the
+number, makes your Guard more likely to hold. This is why Cadenza feels
 armoured rather than merely tanky.
+
+> **Naming.** This project uses the V4 keywords **Armor** (damage reduction)
+> and **Guard** (stun prevention). Older printings called these Soak and Stun
+> Guard; they are the same two mechanics, renamed.
 
 ### Beat structure
 
@@ -52,12 +56,20 @@ Ante → reveal, then five timing bands:
 
 | # | Band | Who | Cancelled by a stun? |
 | --- | --- | --- | --- |
+| 0 | **On Reveal** (Rev) | before anything resolves | no |
 | 1 | **Start** | every fighter, fastest first | no — nobody has swung yet |
 | 2 | **Before Activating** (BA) | that fighter, in its own slot | yes |
-| 3 | **the attack** | that fighter, in Priority order | yes — a stunned fighter does not attack at all |
-| 4 | **On Hit** (OH) | riders, only if the attack connected | n/a |
-| 5 | **After Activating** | that fighter | yes — welded to the activation |
-| 6 | **End of Beat** (EoB) | every fighter | **no — always fires** |
+| 3 | **On Hit** (OH) | riders, *before damage is dealt* | n/a |
+| 4 | **the attack** | that fighter, in Priority order | yes — a stunned fighter does not attack at all |
+| 5 | **On Damage** (OD) | only if damage actually got through | n/a |
+| 6 | **After Activating** (AA) | that fighter | yes — welded to the activation |
+| 7 | **End of Beat** (EoB) | every fighter | **no — always fires** |
+
+**On Hit resolves *before* damage.** This is the official ordering and it is
+load-bearing: Crossfire's "OH: spend 1 Ammo for +2 Power" and Feedback Field's
+"+2 Power per damage absorbed" both have to raise Power before that Power is
+applied. **On Damage** is the separate, later band for riders that need the
+damage to have landed — like Point Blank's push.
 
 Two distinctions do most of the design work here:
 
@@ -117,11 +129,42 @@ took this beat.
 **Rocket Press** (1/8/0) Soak 3, Stun Immunity, BA: Advance at least 2 ·
 **Feedback Field** (1~2/1/0) Soak 5, OH: +2 Power per damage soaked.
 
-### Drifter · Nameless Duelist · *Hard*
-Life 20, no tokens. Same health as anyone — the difficulty is entirely in the
-kit. No Soak anywhere, so every point of damage lands in full and almost any
-hit stuns; Priority and footwork are the only defence. Included as a contrast
-case, and to prove the character layer is general.
+### Rukyuk Amberdeen · The Gunslinger · *Hard*
+Life 20, **6 Ammo tokens**, each with its own effect.
+
+- **Passive:** ante an Ammo every beat, or your **Range becomes N/A** and you
+  simply cannot connect.
+- **Setup:** gain all six shells. The *only* way to get them back is Reload.
+
+| Shell | Effect |
+| --- | --- |
+| **Explosive** | +2 Power |
+| **Longshot** | −1 to +1 Range |
+| **AP** | Ignore Armor |
+| **Swift** | +2 Priority |
+| **Flash** | Ignore Guard |
+| **Impact** | OH: Push 2 |
+
+| Styles | |
+| --- | --- |
+| **Sniper** (3\~5/1/2) | Start: Move up to 2. AA: Move 1, 2 or 3 |
+| **Crossfire** (2\~3/1/−2) | Armor 2, Guard 1. OH optional: spend 1 Ammo for +2 Power |
+| **Gunner** (2\~4/0/0) | Start: Move up to 1. BA optional: spend 1 Ammo for −1 to +1 Range. AA: Move 1 or 2 |
+| **Point Blank** (0\~1/0/0) | Guard 2. OD: Push the target up to 2 |
+| **Trick** (1\~2/0/−3) | Stun Immunity. EoB at range 1: retreat up to 1 |
+
+Note his styles list **absolute ranges**, not deltas — Sniper *is* 3\~5,
+whatever base it is attached to. Cadenza's styles are deltas. `combine()`
+handles both via an `absoluteRange` flag.
+
+**Reload** (—/—/4) — does not hit. AA: teleport to any space. EoB: regain all
+Ammo. The EoB timing matters: you get your shells back *even if you were
+stunned that beat*, which is what makes Reload a reliable panic button.
+
+**Finishers:** **Fully Automatic** (3\~6/2/6) Rev: negate used Ammo; OH: spend
+all remaining Ammo for +2 Power each · **Force Grenade** (1\~2/4/4) Rev: negate
+used Ammo, ignore your Style's BA; OH: push up to 6; AA: retreat up to 5.
+Force Grenade is the only attack that hits with an empty magazine.
 
 ## Is Cadenza actually forgiving?
 
@@ -130,30 +173,33 @@ That was the design brief, so it gets measured rather than asserted.
 decisions into random legal plays — a direct model of a player making mistakes.
 
 ```
-  err%   cadenza                    drifter
-    0%   ############ 100% (7.0/7)   #########...  73% (6.5/7)
-   10%   ########....  68% (6.7/7)   ####........  33% (5.9/7)
-   20%   ###.........  25% (6.0/7)   ##..........  18% (5.1/7)
-   30%   ##..........  20% (5.6/7)   #...........  10% (4.3/7)
-   40%   #...........   8% (5.0/7)   ............   0% (3.7/7)
-   50%   ............   0% (4.5/7)   ............   0% (3.3/7)
+  err%   cadenza                    rukyuk
+    0%   ############  97% (7.0/7)   ############  97% (6.9/7)
+   10%   #########...  77% (6.7/7)   ###########.  90% (6.8/7)
+   20%   ######......  47% (6.3/7)   ########....  67% (6.4/7)
+   30%   ##..........  20% (5.4/7)   ####........  33% (5.5/7)
+   40%   #...........   7% (5.1/7)   ####........  30% (5.0/7)
+   50%   ............   3% (4.6/7)   ##..........  13% (4.2/7)
 
   floor (avg encounters cleared at 30-50% error):
-    cadenza 5.08   drifter 3.57
+    cadenza 4.98   rukyuk 5.02
+
+  fully random play (tools/sloppy.mjs, 300 runs):
+    cadenza 2.27 / 7 encounters
+    rukyuk  1.05 / 7 encounters
 ```
 
-Read the **encounters cleared** figure, not the clear rate. The Drifter has the
-higher *ceiling* — it clears 100% under perfect play, where Cadenza sits at 96%
-— but the lower *floor*: under sloppy play (30–50% mistakes) Cadenza averages
-**5.13** encounters to the Drifter's **4.01**. That gap is the whole point.
-Cadenza raises the floor, not the ceiling, which is exactly what a starter
-character should do.
+The two characters sit almost on top of each other on the *structured*
+forgiveness curve, because a solver making "random" mistakes still antes ammo
+most beats. The difference shows up under genuinely careless play: with no
+ammo discipline at all, Rukyuk manages **1.05** encounters to Cadenza's
+**2.27**. That is the intended shape — Rukyuk punishes inattention specifically
+through his resource, not through raw numbers.
 
-Note this only became a fair comparison once life was a shared constant. The
-Drifter used to be "hard" partly because it had 16 life; with everyone at 20,
-difficulty has to be expressed in the kit, so its Parry lost its Soak. Better
-design pressure — a character should be hard because of how it plays, not
-because of a smaller number.
+An earlier pass had Ammo refilling between encounters, and Rukyuk came out
+*more* forgiving than Cadenza (6.06 vs 4.98) — completely backwards. Tokens now
+carry over exactly as the fight ended them, so walking into an encounter dry
+means burning a beat on Reload while something is already swinging.
 
 Supporting telemetry (`npm run balance`), per run:
 
@@ -203,15 +249,17 @@ Guard", so those exist as answers to Cadenza specifically:
 | Path | What |
 | --- | --- |
 | `src/characters.js` | Characters, styles, bases, finishers, `combine()`, `STARTING_LIFE`. |
+| `src/tokens.js` | Token systems: fungible (Shields) and unique (Ammo). |
 | `src/enemies.js` | Enemy types and telegraph patterns. |
 | `src/combat.js` | Beat resolution: ante, priority, soak, the stun rule. |
 | `src/run.js` | Gauntlet, hands, cooldowns, upgrades. |
 | `test/combat.test.mjs` | 33 tests. |
 | `tools/balance.mjs` | Solver telemetry. |
 | `tools/forgiveness.mjs` | Clear rate vs. mistake rate. |
+| `tools/sloppy.mjs` | Fully random play — the harshest forgiveness bar. |
 | `public/` | Browser client. No build step, no dependencies. |
 
-## Four bugs the tests caught
+## Five bugs the tests caught
 
 Worth recording, because both were design errors rather than typos:
 
@@ -230,6 +278,16 @@ Worth recording, because both were design errors rather than typos:
    to Start, the board preview stopped accounting for it — the UI would have
    drawn threat ranges from the wrong tile while the engine resolved correctly.
    Silent, and invisible to every engine-level test.
+5. **On Hit resolved *after* damage**, so Feedback Field dealt 1 instead of 11
+   and Crossfire's ammo-burn did nothing. Adding Rukyuk forced a read of the
+   official turn sequence, which put On Hit before damage and split On Damage
+   out as its own band. The finisher had been quietly broken for three commits.
+
+And one that was not a rules bug at all: the solver's state clone was a bare
+object spread, which **dropped the `tokens` accessor**. Every score became
+`NaN`, every option tied, and the AI just took the first legal play — Rukyuk
+scored a 0% clear rate. `cloneState()` now rebuilds the accessor. Worth
+remembering that a getter is invisible to `{...obj}`.
 
 ## Extending
 

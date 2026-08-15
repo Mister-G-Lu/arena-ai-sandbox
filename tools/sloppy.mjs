@@ -21,8 +21,15 @@ for (let i = 1; i <= RUNS; i++) {
     let n = 0;
     while (!s.over && n < 40) {
       const h = currentHand(run);
+      const spec = s.tokenSpec;
+      let ante = null;
+      if (spec && spec.kind === 'fungible') ante = rng() < 0.4 ? true : null;
+      else if (spec && s.player.tokenPool.length) {
+        // a careless player fires without checking, 30% of the time
+        ante = rng() < 0.7 ? [pick(s.player.tokenPool)] : null;
+      }
       const play = { baseId: pick(h.bases), styleId: pick(h.styles),
-                     ante: rng() < 0.4, autoShield: 'lethal' };
+                     ante, autoShield: 'lethal' };
       resolveBeat(s, play);
       if (s.player.stunned) stunnedBeats++;
       beats++; n++;

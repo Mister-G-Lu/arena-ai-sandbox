@@ -13,14 +13,23 @@ import {
 } from '../src/run.js';
 
 const RUNS = Number(process.argv[2] || 200);
+
+/** Ante options: fungible -> on/off; unique -> each available shell, or none. */
+/** The distance band a character wants to fight at. */
+function preferredBand(char) {
+  return char.id === 'rukyuk' ? [3, 5] : [1, 2];
+}
+
+function anteOptions(s) {
+  const spec = s.tokenSpec;
+  if (!spec) return [null];
+  if (spec.kind === 'fungible') return s.player.tokens > 0 ? [null, true] : [null];
+  const pool = s.player.tokenPool;
+  return pool.length ? [null, ...pool.map((id) => [id])] : [null];
+}
 const CHAR = process.argv[3] || 'cadenza';
 
-const clone = (s) => ({
-  ...s,
-  log: [],
-  player: { ...s.player, dodging: new Set() },
-  enemies: s.enemies.map((e) => ({ ...e, dodging: new Set() })),
-});
+import { cloneState as clone } from '../src/combat.js';
 
 /** Greedy one-ply solver over the full option space including the ante. */
 export function solve(s, hand) {
@@ -46,17 +55,29 @@ export function solve(s, hand) {
       }
       for (const picks of pickSets) {
         for (const targetUid of targets) {
-          for (const ante of s.player.tokens > 0 ? [false, true] : [false]) {
+          for (const ante of anteOptions(s)) {
             const sim = clone(s);
             resolveBeat(sim, { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal' });
             const dealt = s.enemies.reduce((a, e, i) => a + (e.life - sim.enemies[i].life), 0);
             const taken = s.player.life - sim.player.life;
             const kills = sim.enemies.filter((e, i) => e.life <= 0 && s.enemies[i].life > 0).length;
             const tokensSpent = s.player.tokens - sim.player.tokens;
+            // Positional term: reward ending the beat inside your own
+            // effective band. Without this a sniper never learns to kite,
+            // because backing off scores zero damage this beat.
+            let posScore = 0;
+            const foes = sim.enemies.filter((e) => e.life > 0);
+            if (foes.length) {
+              const d = Math.min(...foes.map((e) => Math.abs(e.space - sim.player.space)));
+              const band = preferredBand(s.char);
+              if (d < band[0]) posScore = -(band[0] - d) * 1.4;
+              else if (d > band[1]) posScore = -(d - band[1]) * 0.5;
+              else posScore = 1.2;
+            }
             const score =
               dealt * 1.0 - taken * 1.7 + kills * 5 +
               (sim.victory ? 30 : 0) - (sim.over && !sim.victory ? 60 : 0) -
-              tokensSpent * 2.5;
+              tokensSpent * 2.0 + posScore;
             if (!best || score > best.score)
               best = { baseId: b, styleId: st, picks, targetUid, ante, autoShield: 'lethal', score };
           }
@@ -126,7 +147,7 @@ ENCOUNTERS.forEach((enc, i) => {
 
 const avg = (f) => (res.reduce((a, r) => a + f(r), 0) / RUNS).toFixed(2);
 console.log(`\nfeel metrics (per run):`);
-console.log(`  shields spent   ${avg((r) => r.shieldsSpent)}`);
+console.log(`  tokens spent    ${avg((r) => r.shieldsSpent)}`);
 console.log(`  finishers used  ${avg((r) => r.finishersUsed)}`);
 console.log(`  stuns landed    ${avg((r) => r.stunsLanded)}   <- 'badass' index`);
 console.log(`  beats stunned   ${avg((r) => r.beatsStunned)}   <- punishment index`);

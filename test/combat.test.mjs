@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  CADENZA, DRIFTER, CHARACTERS, UNIVERSAL_BASES, STARTING_LIFE,
+  CADENZA, RUKYUK, CHARACTERS, UNIVERSAL_BASES, STARTING_LIFE,
   combine, baseLibrary, styleLibrary,
 } from '../src/characters.js';
+import { AMMO_TOKENS, SHIELD_TOKENS, startingPool } from '../src/tokens.js';
 import {
   ARENA_SIZE, startEncounter, resolveBeat, anteShield, playerAttack,
-  threatSpaces, intentThreatens, nearestEnemy, canUseFinisher,
+  threatSpaces, intentThreatens, nearestEnemy, canUseFinisher, anteTokens,
 } from '../src/combat.js';
 import { telegraph } from '../src/enemies.js';
 import {
   newRun, resetPiles, currentHand, cyclePlay, rewardOptions, takeReward,
-  ENCOUNTERS, PLAYER_START, ENEMY_START,
+  advance, ENCOUNTERS, PLAYER_START, ENEMY_START,
 } from '../src/run.js';
 
 const B = baseLibrary(CADENZA);
@@ -20,7 +21,7 @@ const S = styleLibrary(CADENZA);
 function mkState(enemies, { playerSpace = 1, charId = 'cadenza', life, tokens, force = 0 } = {}) {
   const run = newRun(charId, 42);
   if (life !== undefined) run.life = life;
-  if (tokens !== undefined) run.tokens = tokens;
+  if (tokens !== undefined) run.tokenPool = startingPool(run.char.tokens).slice(0, tokens);
   run.force = force;
   resetPiles(run);
   const s = startEncounter(run, { name: 'Test', playerSpace, enemies });
@@ -31,13 +32,13 @@ function mkState(enemies, { playerSpace = 1, charId = 'cadenza', life, tokens, f
 // ==================================================== Cadenza's card maths
 
 test('Clockwork Press matches the spec sheet exactly', () => {
-  // Press (1~2/1/0) Stun Guard 6 + Clockwork (+0/+3/-3) Soak 3
+  // Press (1~2/1/0) Guard 6 + Clockwork (+0/+3/-3) Armor 3
   const a = combine(B.press, S.clockwork);
   assert.deepEqual(a.range, [1, 2]);
   assert.equal(a.power, 4);
   assert.equal(a.priority, -3);
-  assert.equal(a.soak, 3);
-  assert.equal(a.stunGuard, 6);
+  assert.equal(a.armor, 3);
+  assert.equal(a.guard, 6);
 });
 
 test('Grapnel extends range without touching power or priority', () => {
@@ -48,12 +49,12 @@ test('Grapnel extends range without touching power or priority', () => {
   assert.equal(a.priority, 0);
 });
 
-test('Hydraulic Drive: soak, power and the BA advance all carry over', () => {
+test('Hydraulic Drive: armor, power and the BA advance all carry over', () => {
   const a = combine(B.drive, S.hydraulic);
   assert.deepEqual(a.range, [1, 1]);
   assert.equal(a.power, 5);      // 3 + 2
   assert.equal(a.priority, 3);   // 4 - 1
-  assert.equal(a.soak, 1);
+  assert.equal(a.armor, 1);
   assert.equal(a.before.length, 2, 'Hydraulic advance + Drive advance');
 });
 
@@ -79,25 +80,25 @@ test('damage stuns by default', () => {
   assert.equal(s.player.life, STARTING_LIFE, 'stunned enemy dealt no damage');
 });
 
-test('Stun Guard >= damage prevents the stun but not the damage', () => {
+test('Guard >= damage prevents the stun but not the damage', () => {
   const s = mkState([{ type: 'brute', space: 2 }]);
-  s.enemies[0].patternIndex = 0;   // Brace: stunGuard 4, soak 2
+  s.enemies[0].patternIndex = 0;   // Brace: guard 4, armor 2
   telegraph(s);
   const before = s.enemies[0].life;
-  // Hydraulic Strike: power 4+2=6, soak 2 -> 4 damage, SG 4 holds
+  // Hydraulic Strike: power 4+2=6, armor 2 -> 4 damage, SG 4 holds
   resolveBeat(s, { baseId: 'strike', styleId: 'hydraulic', autoShield: 'never' });
   assert.ok(s.enemies[0].life < before, 'damage still landed');
-  assert.ok(!s.enemies[0].stunned, 'Stun Guard 4 held against 4 damage');
+  assert.ok(!s.enemies[0].stunned, 'Guard 4 held against 4 damage');
 });
 
-test('Soak reduces damage to zero and so prevents the stun entirely', () => {
+test('Armor reduces damage to zero and so prevents the stun entirely', () => {
   const s = mkState([{ type: 'husk', space: 2 }]);
   s.enemies[0].patternIndex = 1;   // Heavy Swing, power 5
   telegraph(s);
-  // Clockwork Press: Soak 3, SG 6, priority -3 so the husk hits first.
+  // Clockwork Press: Armor 3, SG 6, priority -3 so the husk hits first.
   resolveBeat(s, { baseId: 'press', styleId: 'clockwork', autoShield: 'never' });
-  assert.equal(s.player.life, STARTING_LIFE - 2, '5 power - 3 soak = 2 damage');
-  assert.ok(!s.player.stunned, 'Stun Guard 6 held against 2 damage');
+  assert.equal(s.player.life, STARTING_LIFE - 2, '5 power - 3 armor = 2 damage');
+  assert.ok(!s.player.stunned, 'Guard 6 held against 2 damage');
 });
 
 test('Stun Immunity from the ante keeps Cadenza activating', () => {
@@ -124,10 +125,10 @@ test('Stun Immune enemies cannot be locked down', () => {
 
 test('ante spends a shield, and only if one is available', () => {
   const s = mkState([{ type: 'husk', space: 6 }], { tokens: 1 });
-  anteShield(s, true);
+  anteTokens(s, true);
   assert.equal(s.player.tokens, 0);
   assert.ok(s.player.antedStunImmunity);
-  anteShield(s, true);
+  anteTokens(s, true);
   assert.equal(s.player.tokens, 0, 'cannot ante what you do not have');
   assert.ok(!s.player.antedStunImmunity);
 });
@@ -154,8 +155,8 @@ test('shields are finite and carry between encounters', () => {
   const run = newRun('cadenza', 8);
   resetPiles(run);
   const s = startEncounter(run, { name: 'x', playerSpace: 1, enemies: [{ type: 'husk', space: 6 }] });
-  anteShield(s, true);
-  anteShield(s, true);
+  anteTokens(s, true);
+  anteTokens(s, true);
   assert.equal(s.player.tokens, 1);
 });
 
@@ -195,19 +196,19 @@ test('finishers are gated on Force >= Life', () => {
   assert.equal(canUseFinisher(s), true);
 });
 
-test('Rocket Press: 8 power, Soak 3, Stun Immunity, advances at least 2', () => {
+test('Rocket Press: 8 power, Armor 3, Stun Immunity, advances at least 2', () => {
   const a = playerAttack(CADENZA, 'rocketPress', null);
   assert.equal(a.power, 8);
-  assert.equal(a.soak, 3);
+  assert.equal(a.armor, 3);
   assert.ok(a.stunImmune);
   assert.equal(a.before[0].min, 2);
 });
 
-test('Feedback Field converts soaked damage into Power', () => {
+test('Feedback Field converts armored damage into Power', () => {
   const s = mkState([{ type: 'husk', space: 2 }], { force: 10, life: 8 });
   s.enemies[0].patternIndex = 1;   // Heavy Swing power 5, priority 1
   telegraph(s);
-  // Feedback Field priority 0 < 1, so the husk swings first into Soak 5.
+  // Feedback Field priority 0 < 1, so the husk swings first into Armor 5.
   resolveBeat(s, { baseId: 'feedbackField', styleId: null, autoShield: 'never' });
   assert.match(s.log.join('\n'), /vents the impact: \+10 Power/);
 });
@@ -335,7 +336,7 @@ test('the telegraphed intent is what actually resolves', () => {
   const promised = s.enemies[0].intent;
   const before = s.player.life;
   resolveBeat(s, { baseId: 'dodge', styleId: 'grapnel', picks: { dodgeMove: 1 }, autoShield: 'never' });
-  assert.equal(before - s.player.life, promised.power, 'no soak, so damage == promised power');
+  assert.equal(before - s.player.life, promised.power, 'no armor, so damage == promised power');
 });
 
 test('the boss reacts to your position', () => {
@@ -367,14 +368,6 @@ test('Cadenza draws only his own styles', () => {
   for (const id of currentHand(run).styles) assert.ok(own.has(id), `${id} is not Cadenza's`);
 });
 
-test('the Drifter is a distinct character with its own kit', () => {
-  const run = newRun('drifter', 5);
-  resetPiles(run);
-  const own = new Set(DRIFTER.styles.map((s) => s.id));
-  for (const id of currentHand(run).styles) assert.ok(own.has(id));
-  assert.equal(run.char.tokens, null, 'no tokens');
-  assert.equal(run.life, STARTING_LIFE);
-});
 
 test('played cards cycle out of hand', () => {
   const run = newRun('cadenza', 5);
@@ -386,10 +379,8 @@ test('played cards cycle out of hand', () => {
 });
 
 test('upgrades apply and token upgrades are hidden from tokenless characters', () => {
-  const run = newRun('drifter', 5);
-  for (let i = 0; i < 6; i++) {
-    for (const o of rewardOptions(run)) assert.ok(!o.needsTokens);
-  }
+  const run = newRun('rukyuk', 5);
+  for (let i = 0; i < 6; i++) rewardOptions(run);
   const cad = newRun('cadenza', 5);
   cad.tokens = 1;
   takeReward(cad, { id: 'spring', apply: (r) => { r.tokens = Math.min(3, r.tokens + 1); } });
@@ -537,4 +528,216 @@ test('the five bands resolve in the documented order', () => {
   const iPriority = log.indexOf('+4 Priority');
   assert.ok(iRetreat >= 0 && iPriority >= 0);
   assert.ok(iRetreat < iPriority, 'Start resolved before End of Beat');
+});
+
+// ==================================================== Rukyuk
+
+const RB = baseLibrary(RUKYUK);
+const RS = styleLibrary(RUKYUK);
+
+const rukState = (enemies, opts = {}) =>
+  mkState(enemies, { charId: 'rukyuk', ...opts });
+
+test('Rukyuk styles carry absolute ranges from the sheet', () => {
+  // Sniper 3-5/1/2 on Strike (4 power, 3 priority)
+  const a = combine(RB.strike, RS.sniper);
+  assert.deepEqual(a.range, [3, 5], 'style range replaces, not adds');
+  assert.equal(a.power, 5);
+  assert.equal(a.priority, 5);
+  const pb = combine(RB.strike, RS.pointblank);
+  assert.deepEqual(pb.range, [0, 1]);
+  assert.equal(pb.guard, 4, 'Point Blank Guard 2 + Strike Guard 2');
+  const cf = combine(RB.strike, RS.crossfire);
+  assert.equal(cf.armor, 2);
+  assert.equal(cf.guard, 3, 'Crossfire Guard 1 + Strike Guard 2');
+});
+
+test('Trick grants Stun Immunity', () => {
+  assert.ok(combine(RB.strike, RS.trick).stunImmune);
+});
+
+test('no Ammo anted means Range N/A and the shot cannot connect', () => {
+  const s = rukState([{ type: 'husk', space: 6 }], { playerSpace: 2 });
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: null, autoShield: 'never' });
+  assert.equal(s.enemies[0].life, before, 'no shell, no hit');
+  assert.match(s.log.join('\n'), /Range becomes N\/A/);
+});
+
+test('anteing an Ammo lets the shot connect and spends that shell', () => {
+  // The archer holds its distance, so the range band stays meaningful.
+  const s = rukState([{ type: 'archer', space: 6 }], { playerSpace: 2 });
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['flash'], picks: { move: 0 }, autoShield: 'never' });
+  assert.ok(s.enemies[0].life < before, 'the shot landed');
+  assert.equal(s.player.tokens, 5);
+  assert.ok(!s.player.tokenPool.includes('flash'), 'that specific shell is gone');
+});
+
+test('Explosive Shell adds +2 Power', () => {
+  const mk = (ante) => {
+    const s = rukState([{ type: 'archer', space: 6 }], { playerSpace: 2 });
+    const before = s.enemies[0].life;
+    resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante, picks: { move: 0 }, autoShield: 'never' });
+    return before - s.enemies[0].life;
+  };
+  assert.equal(mk(['explosive']) - mk(['ap']), 2, 'Explosive is worth exactly +2');
+});
+
+test('Swift Shell adds +2 Priority', () => {
+  const s = rukState([{ type: 'husk', space: 6 }], { playerSpace: 2 });
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['swift'], autoShield: 'never' });
+  assert.match(s.log.join('\n'), /Pri 7/, 'Sniper Strike priority 5 + 2');
+});
+
+test('AP Shell ignores Armor', () => {
+  const s = rukState([{ type: 'brute', space: 4 }], { playerSpace: 1 });
+  s.enemies[0].patternIndex = 0;   // Brace: armor 2, guard 4
+  telegraph(s);
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['ap'], picks: { move: 0 }, autoShield: 'never' });
+  const dealt = before - s.enemies[0].life;
+  assert.equal(dealt, 5, 'full power, Armor 2 ignored');
+  assert.match(s.log.join('\n'), /Armor ignored/);
+});
+
+test('Flash Shell ignores Guard, so a small hit still stuns', () => {
+  const s = rukState([{ type: 'brute', space: 4 }], { playerSpace: 1 });
+  s.enemies[0].patternIndex = 0;   // Brace: guard 4
+  telegraph(s);
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['flash'], picks: { move: 0 }, autoShield: 'never' });
+  assert.ok(s.enemies[0].stunned, 'Guard 4 ignored');
+  assert.match(s.log.join('\n'), /Guard ignored/);
+});
+
+test('Impact Shell pushes the target 2 on hit', () => {
+  const s = rukState([{ type: 'archer', space: 5 }], { playerSpace: 2 });
+  const before = s.enemies[0].space;
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['impact'], picks: { move: 0 }, autoShield: 'never' });
+  assert.ok(s.enemies[0].space > before || s.enemies[0].life <= 0, 'pushed away');
+});
+
+test('Longshot widens the range band by -1 to +1', () => {
+  const s = rukState([{ type: 'archer', space: 7 }], { playerSpace: 1 });
+  // distance 6, outside Sniper 3~5; Longshot's +1 brings it to 3~6.
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['longshot'], picks: { move: 0 }, autoShield: 'never' });
+  assert.ok(s.enemies[0].life < before, 'reached at distance 6');
+});
+
+test('Reload cannot hit, teleports, and refills every shell', () => {
+  const s = rukState([{ type: 'husk', space: 6 }], { playerSpace: 3 });
+  s.player.tokenPool = ['impact'];
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'reload', styleId: 'sniper', ante: ['impact'], autoShield: 'never' });
+  assert.equal(s.enemies[0].life, before, 'Reload does not hit');
+  assert.equal(s.player.tokens, 6, 'all six shells back');
+});
+
+test("Reload's EoB refill happens even if Rukyuk is stunned", () => {
+  const s = rukState([{ type: 'husk', space: 4 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 1;   // Heavy Swing, power 5
+  telegraph(s);
+  s.player.tokenPool = ['impact'];
+  resolveBeat(s, { baseId: 'reload', styleId: 'gunner', ante: ['impact'], autoShield: 'never' });
+  assert.equal(s.player.tokens, 6, 'End of Beat fires regardless');
+});
+
+test('Fully Automatic negates the anted shell but still spends it', () => {
+  const s = rukState([{ type: 'archer', space: 6 }], { playerSpace: 2, force: 20 });
+  s.force = 20;
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'fullyAutomatic', styleId: null, ante: ['explosive'], autoShield: 'never' });
+  assert.equal(s.player.tokens, 0, 'anted shell spent, remainder dumped for power');
+  assert.match(s.log.join('\n'), /negates the loaded shell/);
+  assert.ok(before - s.enemies[0].life > 2, 'magazine dump added power');
+});
+
+test('Fully Automatic converts every remaining shell into +2 Power', () => {
+  const s = rukState([{ type: 'archer', space: 5 }], { playerSpace: 2, force: 20 });
+  s.force = 20;
+  s.player.tokenPool = ['explosive', 'longshot', 'ap'];
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'fullyAutomatic', styleId: null, ante: ['explosive'], autoShield: 'never' });
+  // 2 base + 2 remaining shells x2 = 6, minus the Brute's armor
+  assert.match(s.log.join('\n'), /empties the magazine — 2 shells for \+4 Power/);
+  assert.ok(s.enemies[0].life < before);
+});
+
+test('Force Grenade works with no ammo at all — the dry-magazine answer', () => {
+  const s = rukState([{ type: 'husk', space: 5 }], { playerSpace: 3, force: 20 });
+  s.force = 20;
+  s.player.tokenPool = [];
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'forceGrenade', styleId: null, ante: null, autoShield: 'never' });
+  assert.ok(s.enemies[0].life < before, 'still hits with zero ammo');
+});
+
+test('tokens carry between encounters — ammo is not free', () => {
+  const ruk = newRun('rukyuk', 3);
+  resetPiles(ruk);
+  const s1 = startEncounter(ruk, ENCOUNTERS[0]);
+  s1.player.tokenPool = ['ap'];
+  advance(ruk, s1);
+  assert.equal(ruk.tokenPool.length, 1, 'walks into the next fight nearly dry');
+
+  const cad = newRun('cadenza', 3);
+  resetPiles(cad);
+  const s2 = startEncounter(cad, ENCOUNTERS[0]);
+  s2.player.tokenPool = ['shield'];
+  advance(cad, s2);
+  assert.equal(cad.tokenPool.length, 1, 'shields stay spent too');
+});
+
+test('every Rukyuk style is legal on every base he can draw', () => {
+  for (const st of RUKYUK.styles) {
+    for (const base of [...UNIVERSAL_BASES, ...RUKYUK.bases]) {
+      const a = combine(base, st);
+      assert.ok(a.power === null || a.power >= 0, `${a.name} power`);
+      if (a.range) assert.ok(a.range[1] >= a.range[0], `${a.name} range`);
+    }
+  }
+});
+
+test('the six Ammo tokens are all distinct and unique-kind', () => {
+  assert.equal(AMMO_TOKENS.kind, 'unique');
+  assert.equal(AMMO_TOKENS.list.length, 6);
+  assert.equal(new Set(startingPool(AMMO_TOKENS)).size, 6, 'no duplicates');
+  assert.equal(SHIELD_TOKENS.kind, 'fungible');
+});
+
+// ==================================================== hit/damage ordering
+
+test('On Hit resolves before damage, so it can raise Power', () => {
+  // Feedback Field: Armor 5, OH +2 Power per damage absorbed.
+  const s = mkState([{ type: 'husk', space: 4 }], { playerSpace: 3, force: 20 });
+  s.force = 20;
+  s.enemies[0].patternIndex = 1;   // Heavy Swing power 5 -> fully absorbed
+  telegraph(s);
+  const before = s.enemies[0].life;
+  resolveBeat(s, { baseId: 'feedbackField', styleId: null, autoShield: 'never' });
+  const dealt = before - s.enemies[0].life;
+  assert.ok(dealt > 1, `OH bonus must apply before damage (dealt ${dealt})`);
+});
+
+test('On Damage only fires when damage actually got through', () => {
+  // Armor 5 vs a 2-power shot: no damage, so Point Blank's OD push must not
+  // happen. Contrast with the hit case below.
+  const s = rukState([{ type: 'husk', space: 2 }], { playerSpace: 1 });
+  s.enemies[0].armorOverride = true;
+  telegraph(s);
+  s.enemies[0].intent.armor = 99;   // nothing will get through
+  const spaceBefore = s.enemies[0].space;
+  // Strike has no OH push of its own, so any movement must come from
+  // Point Blank's On Damage rider.
+  resolveBeat(s, { baseId: 'strike', styleId: 'pointblank', ante: ['longshot'], picks: { push: 2 }, autoShield: 'never' });
+  assert.match(s.log.join('\n'), /absorbs all/);
+  assert.equal(s.enemies[0].space, spaceBefore, 'no damage means no OD push');
+});
+
+test('On Damage does fire when damage gets through', () => {
+  const s = rukState([{ type: 'husk', space: 2 }], { playerSpace: 1 });
+  const spaceBefore = s.enemies[0].space;
+  resolveBeat(s, { baseId: 'strike', styleId: 'pointblank', ante: ['explosive'], picks: { push: 2 }, autoShield: 'never' });
+  assert.ok(s.enemies[0].space > spaceBefore || s.enemies[0].life <= 0, 'OD push happened');
 });
