@@ -139,31 +139,7 @@ host becomes aware), Severance/SOMA (the self as a function), Control/SCP
 Binge play is allowed, never hard-blocked. Skipped days are forgiven by the fiction
 ("the city didn't notice. the coffee is still warm.").
 
-## P10 — The action tank (Fallen London regen, not a clicker)
-
-**One action every ten real minutes. Cap 50. That is the whole economy.**
-
-This is the habit-game chassis. The console mock's "fifty clicks" is a prototype
-lie; the shipping game meters attention the way the simulation would.
-
-| Rule | Behaviour |
-|---|---|
-| Regen | +1 action / 10 real minutes, while below cap |
-| Cap | 50. Never more. A full tank is a full shift. |
-| Full-tank spend | Spending from 50 **restarts** the 10-minute clock. The next action is 10:00 away. |
-| Below-cap spend | Spending from 49 or fewer **keeps the rhythm**. The existing countdown is not reset. |
-| Cap clamp | Accrual that would exceed 50 is clamped to 50 and the clock **resets** (you are full; there is nothing to count). |
-| Offline | On load, accrue `floor(elapsed / 10min)` since `lastTick`, then apply the clamp. The city kept working. You did not have to. |
-
-- A player who empties the tank and walks away comes back to a full shift in ~8 hours 20 minutes. That is the evening session.
-- A player who nips one action every ten minutes is always topping up. The clock never restarts unless they hit the wall and spend from full.
-- There is **no paid refill, no ad, no watch-to-skip**. The throttle is diegetic: *your attention is a resource the simulation meters.*
-- Client-side regen is the Phase-1 truth (local clock + save envelope). Phase-2 moves spend/regen to server RPCs so a clock-rolled client cannot mint actions. See `design/user-system.md` and, later, `design/server-authoritative-actions.md`.
-
-*Origin:* user direction — Fallen London's action tank, not an idle clicker; one action / ten minutes; cap fifty.
-
 ---
 
 *Changelog: v1 established from Drafts 01–03 plus user direction on death frequency,
-the FL-chess-style cost system, zone-based story resources, and the endgame tool.
-v1.1 adds P10 (action tank).*
+the FL-chess-style cost system, zone-based story resources, and the endgame tool.*
