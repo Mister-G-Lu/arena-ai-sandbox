@@ -6,7 +6,7 @@ You are the night operator at Meridian Central Dispatch. Fifty tasks a shift. At
 
 - **Live site:** https://mister-g-lu.github.io/arena-ai-sandbox/ *(GitHub Pages, built from `docs/` on `main`)*
 - **Site source:** [`docs/`](docs/) — static HTML/CSS/JS, no build step
-- **Design docs:** [`design/`](design/) — core design bible and drafts (⚠ full spoilers)
+- **Design docs:** [`design/`](design/) — core design bible + arcs (⚠ full spoilers)
 - **Working branch:** `arena/01a006db-arena-ai-sandbox` — merged into `main` in small PRs
 
 ## Local dev
