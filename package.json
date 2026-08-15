@@ -1,10 +1,11 @@
 {
-  "name": "seven-space-arena",
+  "name": "seven-space-gauntlet",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/engine.test.mjs",
-    "serve": "node server.mjs"
+    "test": "node --test test/combat.test.mjs",
+    "serve": "node server.mjs",
+    "balance": "node tools/balance.mjs"
   }
 }

@@ -3,50 +3,90 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Seven-Space Arena</title>
+<title>Seven-Space Gauntlet</title>
 <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-<header>
-  <h1>Seven-Space Arena</h1>
-  <div class="sub">Pick a <b>Base</b> and a <b>Style</b>. They combine into one attack. Highest Speed strikes first.</div>
-</header>
 
-<main>
-  <section class="board-wrap">
-    <div class="fighters">
-      <div class="fighter you">
-        <div class="fname">You</div>
-        <div class="lifebar"><span id="life0-fill"></span></div>
-        <div class="lifenum"><span id="life0">18</span> / 18</div>
-      </div>
-      <div class="vs" id="distance">distance 4</div>
-      <div class="fighter foe">
-        <div class="fname">Rival</div>
-        <div class="lifebar foe"><span id="life1-fill"></span></div>
-        <div class="lifenum"><span id="life1">18</span> / 18</div>
-      </div>
-    </div>
-    <div id="board" class="board"></div>
-    <div id="preview" class="preview">Select a base and a style.</div>
-    <div class="controls">
-      <button id="go" disabled>Resolve turn</button>
-      <button id="reset" class="ghost">New duel</button>
+<div id="app">
+  <!-- ============ TITLE ============ -->
+  <section id="screen-title" class="screen">
+    <div class="title-card">
+      <h1>Seven-Space<br><span>Gauntlet</span></h1>
+      <p class="tag">A roguelite duel on a seven-space line.</p>
+      <ul class="rules">
+        <li>Combine a <b>Base</b> and a <b>Style</b> into one attack each turn.</li>
+        <li>Enemies <b>telegraph everything</b> — range, damage, speed, movement.</li>
+        <li>Nothing is hidden. Every death is a puzzle you misread.</li>
+      </ul>
+      <button id="btn-start" class="big">Begin the run</button>
     </div>
   </section>
 
-  <section class="cards">
-    <h2>Bases</h2>
-    <div id="bases" class="row"></div>
-    <h2>Styles</h2>
-    <div id="styles" class="row"></div>
+  <!-- ============ COMBAT ============ -->
+  <section id="screen-combat" class="screen hidden">
+    <header class="hud">
+      <div class="hud-left">
+        <div class="enc-name" id="enc-name">The Threshold</div>
+        <div class="enc-blurb" id="enc-blurb"></div>
+      </div>
+      <div class="hud-right">
+        <div class="pips" id="node-pips"></div>
+        <div class="lifewrap">
+          <span class="lifelabel">LIFE</span>
+          <div class="lifebar"><span id="life-fill"></span></div>
+          <span class="lifenum" id="life-num">20/20</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="intents" id="intents"></div>
+
+    <div class="board" id="board"></div>
+
+    <div class="preview" id="preview">Choose a Base and a Style.</div>
+
+    <div class="handzone">
+      <div class="handcol">
+        <h3>Bases</h3>
+        <div class="row" id="hand-bases"></div>
+      </div>
+      <div class="handcol">
+        <h3>Styles</h3>
+        <div class="row" id="hand-styles"></div>
+      </div>
+    </div>
+
+    <div class="actionbar">
+      <div class="targetsel" id="targetsel"></div>
+      <button id="btn-resolve" disabled>Resolve turn</button>
+    </div>
+
+    <details class="logbox">
+      <summary>Combat log</summary>
+      <div id="log"></div>
+    </details>
   </section>
 
-  <section class="logbox">
-    <h2>Combat log</h2>
-    <div id="log"></div>
+  <!-- ============ REWARD ============ -->
+  <section id="screen-reward" class="screen hidden">
+    <div class="title-card">
+      <h2 class="won">Encounter cleared</h2>
+      <p class="tag" id="reward-sub">Choose your spoils.</p>
+      <div class="rewards" id="rewards"></div>
+    </div>
   </section>
-</main>
+
+  <!-- ============ END ============ -->
+  <section id="screen-end" class="screen hidden">
+    <div class="title-card">
+      <h2 id="end-title">The run ends</h2>
+      <p class="tag" id="end-sub"></p>
+      <div class="deckdump" id="end-deck"></div>
+      <button id="btn-again" class="big">Run again</button>
+    </div>
+  </section>
+</div>
 
 <script type="module" src="./main.js"></script>
 </body>
