@@ -434,6 +434,15 @@ h2::before {
   grid-template-columns: repeat(4, 1fr);
   border-bottom: 1px solid var(--line-soft);
 }
+.readouts-5 { grid-template-columns: repeat(5, 1fr); }
+.action-meta {
+  margin-left: auto;
+  align-self: center;
+  color: var(--faint);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 .readout { padding: 14px 16px; border-right: 1px solid var(--line-soft); }
 .readout:last-child { border-right: none; }
 .readout label {
@@ -531,7 +540,9 @@ h2::before {
   .brand-sub { display: none; }
   .site-nav { gap: 12px; }
   .readouts { grid-template-columns: repeat(2, 1fr); }
+  .readouts-5 { grid-template-columns: repeat(2, 1fr); }
   .readout:nth-child(2) { border-right: none; }
+  .action-meta { margin-left: 0; }
 }
 
 /* ----- reduced motion ----- */
