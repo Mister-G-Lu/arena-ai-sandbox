@@ -1094,3 +1094,93 @@ h2 {
   font-size: 1.2rem;
   font-weight: bold;
 }
+
+/* ====================================================================
+   CONSOLE TRANSITIONS & TASK PROCESSING
+   ==================================================================== */
+
+.orient-console-stack {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.orient-console-stack.orient-enter {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.orient-console-stack.orient-exit {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* Task processing animation */
+.task-processing {
+  margin-top: 16px;
+}
+
+.processing-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+}
+
+.processing-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--amber));
+  width: 0%;
+  animation: processing-fill 1.2s ease-out forwards;
+  box-shadow: 0 0 8px var(--teal);
+}
+
+@keyframes processing-fill {
+  0% { width: 0%; }
+  30% { width: 45%; }
+  60% { width: 70%; }
+  100% { width: 100%; }
+}
+
+.processing-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.processing-line {
+  color: var(--teal);
+  opacity: 0;
+  animation: processing-line-in 0.2s ease forwards;
+}
+
+.processing-line:nth-child(1) { animation-delay: 0.1s; }
+.processing-line:nth-child(2) { animation-delay: 0.4s; }
+.processing-line:nth-child(3) { animation-delay: 0.7s; }
+.processing-line:nth-child(4) { animation-delay: 1.0s; }
+
+@keyframes processing-line-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Task confirm row layout */
+.task-confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.task-confirm-hint {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.task-confirm-hint .dim {
+  color: var(--faint);
+}
