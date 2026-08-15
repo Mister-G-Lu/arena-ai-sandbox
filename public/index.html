@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Seven-Space Arena</title>
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<header>
+  <h1>Seven-Space Arena</h1>
+  <div class="sub">Pick a <b>Base</b> and a <b>Style</b>. They combine into one attack. Highest Speed strikes first.</div>
+</header>
+
+<main>
+  <section class="board-wrap">
+    <div class="fighters">
+      <div class="fighter you">
+        <div class="fname">You</div>
+        <div class="lifebar"><span id="life0-fill"></span></div>
+        <div class="lifenum"><span id="life0">18</span> / 18</div>
+      </div>
+      <div class="vs" id="distance">distance 4</div>
+      <div class="fighter foe">
+        <div class="fname">Rival</div>
+        <div class="lifebar foe"><span id="life1-fill"></span></div>
+        <div class="lifenum"><span id="life1">18</span> / 18</div>
+      </div>
+    </div>
+    <div id="board" class="board"></div>
+    <div id="preview" class="preview">Select a base and a style.</div>
+    <div class="controls">
+      <button id="go" disabled>Resolve turn</button>
+      <button id="reset" class="ghost">New duel</button>
+    </div>
+  </section>
+
+  <section class="cards">
+    <h2>Bases</h2>
+    <div id="bases" class="row"></div>
+    <h2>Styles</h2>
+    <div id="styles" class="row"></div>
+  </section>
+
+  <section class="logbox">
+    <h2>Combat log</h2>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

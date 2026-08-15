@@ -1,0 +1,69 @@
+:root{
+  --bg:#0d1018; --panel:#161b27; --panel2:#1e2432; --line:#2b3346;
+  --ink:#e8ecf5; --dim:#8e9ab4; --you:#4cc2ff; --foe:#ff6b6b; --gold:#ffcf5c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:radial-gradient(1200px 600px at 50% -10%, #1a2133, var(--bg));
+  color:var(--ink); font:15px/1.45 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+}
+header{padding:22px 20px 6px; text-align:center}
+h1{margin:0; font-size:26px; letter-spacing:.5px}
+.sub{color:var(--dim); font-size:13px; margin-top:4px}
+main{max-width:960px; margin:0 auto; padding:16px 16px 60px; display:grid; gap:18px}
+h2{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin:14px 0 8px}
+
+.board-wrap{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px}
+.fighters{display:flex; align-items:center; gap:14px; justify-content:space-between}
+.fighter{flex:1; min-width:0}
+.fighter.foe{text-align:right}
+.fname{font-weight:600; font-size:13px}
+.lifebar{height:9px; background:#0a0d14; border-radius:6px; overflow:hidden; margin:5px 0 3px}
+.lifebar span{display:block; height:100%; width:100%; background:var(--you); transition:width .3s}
+.lifebar.foe span{background:var(--foe); float:right}
+.lifenum{font-size:12px; color:var(--dim)}
+.vs{font-size:12px; color:var(--gold); white-space:nowrap}
+
+.board{display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:16px 0}
+.space{
+  aspect-ratio:1/1.15; border:1px solid var(--line); border-radius:10px;
+  background:var(--panel2); display:flex; align-items:center; justify-content:center;
+  position:relative; font-size:11px; color:#4d5875;
+}
+.space .idx{position:absolute; top:5px; left:7px}
+.space.threat{box-shadow:inset 0 0 0 2px rgba(255,207,92,.55)}
+.token{width:60%; aspect-ratio:1; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:12px; font-weight:700; color:#080c14; transition:.25s}
+.token.you{background:var(--you); box-shadow:0 0 18px rgba(76,194,255,.45)}
+.token.foe{background:var(--foe); box-shadow:0 0 18px rgba(255,107,107,.45)}
+
+.preview{background:#0a0d14; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+  font-size:13px; color:var(--dim); min-height:42px}
+.preview b{color:var(--gold)}
+.stat{display:inline-block; margin-right:12px; color:var(--ink)}
+
+.controls{display:flex; gap:10px; margin-top:12px}
+button{
+  flex:1; padding:11px; border-radius:10px; border:1px solid transparent; cursor:pointer;
+  background:var(--gold); color:#1a1406; font-weight:700; font-size:14px;
+}
+button:disabled{opacity:.35; cursor:not-allowed}
+button.ghost{flex:0 0 130px; background:transparent; border-color:var(--line); color:var(--dim); font-weight:500}
+
+.row{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:9px}
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:10px;
+  cursor:pointer; transition:.15s;
+}
+.card:hover{border-color:#3d4a66; transform:translateY(-2px)}
+.card.sel{border-color:var(--gold); background:#221d0f}
+.card.spent{opacity:.32; pointer-events:none}
+.cname{font-weight:650; font-size:13.5px; margin-bottom:5px}
+.cstats{font-size:11px; color:var(--gold); margin-bottom:5px; font-variant-numeric:tabular-nums}
+.ctext{font-size:11.5px; color:var(--dim)}
+
+.logbox{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:6px 16px 16px}
+#log{font-size:12.5px; max-height:240px; overflow:auto; font-family:ui-monospace,monospace}
+#log div{padding:2px 0; border-bottom:1px solid rgba(255,255,255,.04); color:var(--dim)}
+#log div.turn{color:var(--gold); margin-top:8px}
+#log div.win{color:var(--ink); font-weight:700}
