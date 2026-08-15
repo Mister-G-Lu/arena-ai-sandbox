@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { page: 'first-shift', icon: '◈', label: 'FIRST SHIFT' },
   { page: 'console', icon: '▣', label: 'CONSOLE' },
   { page: 'bulletin', icon: '▤', label: 'BULLETIN' },
+  { page: 'profile', icon: '◉', label: 'PROFILE' },
 ];
 
 export default function NavBar({ currentPage, onNavigate }) {
