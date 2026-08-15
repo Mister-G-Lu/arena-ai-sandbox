@@ -1,0 +1,26 @@
+{
+  "id": "floor12-04",
+  "zone": "floor12",
+  "title": "The fire",
+  "body": "The smoke was not a metaphor. A cabinet labelled TUESDAY catches. The sprinklers do not. The form on the desk does not burn. Recommended: do not proceed. — M.",
+  "choices": [
+    {
+      "id": "through",
+      "label": "Go through the smoke. The form is the point.",
+      "outcome": {
+        "text": "Heat like a server room. On the other side of the fire: an office that is your office, and someone already sitting in your chair.",
+        "qualities": { "Attention": 2, "Doubt": 1 }
+      },
+      "next": "floor12-05"
+    },
+    {
+      "id": "retreat",
+      "label": "Retreat. Take the stairs. The memo was right.",
+      "outcome": {
+        "text": "You leave with ash on your cuffs and a key that was in the work-order envelope. The map does not have a lock for it. Floor 12 will close behind you, for now.",
+        "qualities": { "Perception": 1 }
+      },
+      "completeZone": true
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "tutorial-01",
+  "zone": "tutorial",
+  "title": "Clock in",
+  "body": "The chair is already warm. The logbook is open to a blank Tuesday. A mug sits at your left hand, steaming, though you have not been here long enough to pour it.",
+  "choices": [
+    {
+      "id": "sit",
+      "label": "Sit. Start the log.",
+      "outcome": {
+        "text": "The pen writes before you decide what to say. Attendance: recorded. The city is glad to have you.",
+        "qualities": { "Routine": 1 }
+      },
+      "next": "tutorial-02"
+    }
+  ]
+}

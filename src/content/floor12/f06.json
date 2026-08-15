@@ -1,0 +1,17 @@
+{
+  "id": "floor12-06",
+  "zone": "floor12",
+  "title": "Black",
+  "body": "You do not remember the interval. You remember a ledger. You remember three discrepancies and a polite request to reconcile them. You remember saying yes, because there was no other form.",
+  "choices": [
+    {
+      "id": "wake",
+      "label": "Wake at shift start. Write it down.",
+      "outcome": {
+        "text": "The morning memo thanks staff for a quiet, incident-free week. Nobody remembers the fire. You do. In your pocket: the NULL KEY. Day 1 (again). There is no Building 7.",
+        "qualities": { "Doubt": 2, "Perception": 1 }
+      },
+      "completeZone": true
+    }
+  ]
+}
