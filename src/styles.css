@@ -601,6 +601,38 @@ h2::before {
 }
 .memo p { margin: 0; color: var(--muted); font-size: 0.92rem; }
 
+/* ----- personnel ----- */
+
+.personnel-card {
+  background: var(--glass);
+  border: 1px solid var(--line);
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.personnel-card header {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+  margin-bottom: 10px;
+}
+.personnel-card p { color: var(--muted); }
+.personnel-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.personnel-form input {
+  flex: 1;
+  min-width: 220px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  font-family: var(--mono);
+}
+.personnel-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.personnel-error { color: var(--red); font-family: var(--mono); }
+.file-list { margin: 0; padding-left: 18px; color: var(--muted); font-family: var(--mono); font-size: 0.88rem; }
+.file-btn { cursor: pointer; }
+.mono { font-family: var(--mono); }
+
 /* ----- footer ----- */
 
 .site-footer {

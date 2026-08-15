@@ -39,6 +39,19 @@ Pages is already pointed at `main` / `/docs`. After a merge to `main`:
 
 No custom domain. No Actions workflow — the committed `docs/` tree *is* the deploy artifact.
 
+## Supabase (one-time)
+
+Project: `ltawgurvhffikilulyfj` · URL: `https://ltawgurvhffikilulyfj.supabase.co`
+
+1. **SQL editor** — paste and run [`supabase/0001_init.sql`](supabase/0001_init.sql). This creates `profiles` + `saves`, RLS, the signup trigger, and the unique index (one save per operator).
+2. **Authentication → URL configuration** — add to Redirect URLs:
+   - `http://localhost:5173/**`
+   - `https://mister-g-lu.github.io/arena-ai-sandbox/**`
+3. Enable **Email** auth (magic link). Disable confirmations if you want the first token to just work.
+4. The publishable key is already in `src/lib/config.ts`. Optional: set `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` to override.
+
+Personnel on the site is the operator-facing surface: request a reinstatement token, merge a conflicting file, read the File (Attention omitted), export / import the logbook, terminate.
+
 ## Working method
 
 Small PRs into `main`, in commit order. Design first when the design is the change; site PRs stay reviewable.
