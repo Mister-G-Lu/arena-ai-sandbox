@@ -67,7 +67,9 @@ export function applyTokenMods(atk, tokenIds, { negate = false } = {}) {
     if (!m) continue;
     if (m.dPower) atk.power = Math.max(0, (atk.power ?? 0) + m.dPower);
     if (m.dPriority) atk.priority += m.dPriority;
-    if (m.dRange && atk.range) {
+    // A fixed (*asterisked) range ignores every range modifier, including
+    // Longshot — that is the whole point of the notation.
+    if (m.dRange && atk.range && !atk.rangeFixed) {
       atk.range = [
         Math.max(0, atk.range[0] + m.dRange[0]),
         Math.max(0, atk.range[1] + m.dRange[1]),

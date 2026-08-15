@@ -536,7 +536,8 @@ export function resolveBeat(s, play) {
 
     const pool = entry.kind === 'enemy' ? [s.player] : s.enemies.filter((e) => e.life > 0);
     const myKey = actor.uid ?? 'player';
-    const rb = actor.rangeBonus || 0;
+    // A fixed (*) range ignores range modifiers, Gunner's shell included.
+    const rb = a.rangeFixed ? 0 : (actor.rangeBonus || 0);
     const lo = Math.max(0, a.range[0] - Math.max(0, -rb));
     const hi = a.range[1] + Math.max(0, rb);
     const reachable = pool.filter((t) => {

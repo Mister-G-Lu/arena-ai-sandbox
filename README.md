@@ -50,6 +50,19 @@ armoured rather than merely tanky.
 > and **Guard** (stun prevention). Older printings called these Soak and Stun
 > Guard; they are the same two mechanics, renamed.
 
+### Range notation
+
+A Style's range is a **modifier**, not an absolute. Sniper is written
+`+3~5`, so on Strike (Range 1) it produces **4~6**, and on Shot (Range 1~4)
+it produces **4~9**. Choosing the base is therefore a real decision, not just
+a stat pickup.
+
+The exception is an **asterisked range** like `*3~6`. That is *fixed*: it hard
+-overrides the pair's range and ignores every range modifier — styles,
+Longshot, Gunner's shell, all of it. Both of Rukyuk's finishers and both of
+Cadenza's are fixed, since a finisher is a complete attack played without a
+Style. Modelled as `fixedRange` in `src/characters.js`.
+
 ### Beat structure
 
 Ante → reveal, then five timing bands:
@@ -147,24 +160,28 @@ Life 20, **6 Ammo tokens**, each with its own effect.
 
 | Styles | |
 | --- | --- |
-| **Sniper** (3\~5/1/2) | Start: Move up to 2. AA: Move 1, 2 or 3 |
-| **Crossfire** (2\~3/1/−2) | Armor 2, Guard 1. OH optional: spend 1 Ammo for +2 Power |
-| **Gunner** (2\~4/0/0) | Start: Move up to 1. BA optional: spend 1 Ammo for −1 to +1 Range. AA: Move 1 or 2 |
-| **Point Blank** (0\~1/0/0) | Guard 2. OD: Push the target up to 2 |
-| **Trick** (1\~2/0/−3) | Stun Immunity. EoB at range 1: retreat up to 1 |
-
-Note his styles list **absolute ranges**, not deltas — Sniper *is* 3\~5,
-whatever base it is attached to. Cadenza's styles are deltas. `combine()`
-handles both via an `absoluteRange` flag.
+| **Sniper** (+3\~5/+1/+2) | AA: Move 1, 2 or 3 |
+| **Crossfire** (+2\~3/+1/−2) | Armor 2, Guard 1. OH optional: spend 1 Ammo for +2 Power |
+| **Gunner** (+2\~4/+0/+0) | BA optional: spend 1 Ammo for −1 to +1 Range. AA: Move 1 or 2 |
+| **Point Blank** (+0\~1/+0/+0) | Guard 2. OD: Push the target up to 2 |
+| **Trick** (+1\~2/+0/−3) | Stun Immunity. EoB at range 1: retreat up to 1 |
 
 **Reload** (—/—/4) — does not hit. AA: teleport to any space. EoB: regain all
 Ammo. The EoB timing matters: you get your shells back *even if you were
 stunned that beat*, which is what makes Reload a reliable panic button.
 
-**Finishers:** **Fully Automatic** (3\~6/2/6) Rev: negate used Ammo; OH: spend
-all remaining Ammo for +2 Power each · **Force Grenade** (1\~2/4/4) Rev: negate
+**Finishers:** **Fully Automatic** (\*3\~6/2/6) Rev: negate used Ammo; OH: spend
+all remaining Ammo for +2 Power each · **Force Grenade** (\*1\~2/4/4) Rev: negate
 used Ammo, ignore your Style's BA; OH: push up to 6; AA: retreat up to 5.
 Force Grenade is the only attack that hits with an empty magazine.
+
+Because his styles are modifiers, **which base you pair them with matters**:
+
+| Sniper (+3\~5) on… | Result |
+| --- | --- |
+| Strike (1) | 4\~6 |
+| Shot (1\~4) | 4\~9 |
+| Burst (2\~3) | 5\~8 |
 
 ## Is Cadenza actually forgiving?
 
@@ -174,32 +191,33 @@ decisions into random legal plays — a direct model of a player making mistakes
 
 ```
   err%   cadenza                    rukyuk
-    0%   ############  97% (7.0/7)   ############  97% (6.9/7)
-   10%   #########...  77% (6.7/7)   ###########.  90% (6.8/7)
-   20%   ######......  47% (6.3/7)   ########....  67% (6.4/7)
-   30%   ##..........  20% (5.4/7)   ####........  33% (5.5/7)
-   40%   #...........   7% (5.1/7)   ####........  30% (5.0/7)
-   50%   ............   3% (4.6/7)   ##..........  13% (4.2/7)
+    0%   ############  97% (7.0/7)   ##########..  80% (6.8/7)
+   10%   #########...  77% (6.7/7)   ########....  70% (6.6/7)
+   20%   ######......  47% (6.3/7)   #####.......  43% (5.9/7)
+   30%   ##..........  20% (5.4/7)   ##..........  13% (5.2/7)
+   40%   #...........   7% (5.1/7)   #...........  10% (4.8/7)
+   50%   ............   3% (4.6/7)   ............   3% (4.3/7)
 
   floor (avg encounters cleared at 30-50% error):
-    cadenza 4.98   rukyuk 5.02
+    cadenza 4.98   rukyuk 4.79
 
   fully random play (tools/sloppy.mjs, 300 runs):
     cadenza 2.27 / 7 encounters
-    rukyuk  1.05 / 7 encounters
+    rukyuk  0.58 / 7 encounters
 ```
 
-The two characters sit almost on top of each other on the *structured*
-forgiveness curve, because a solver making "random" mistakes still antes ammo
-most beats. The difference shows up under genuinely careless play: with no
-ammo discipline at all, Rukyuk manages **1.05** encounters to Cadenza's
-**2.27**. That is the intended shape — Rukyuk punishes inattention specifically
-through his resource, not through raw numbers.
+Rukyuk is harder than Cadenza at every level: lower ceiling (80% vs 97% under
+perfect play), lower floor (4.79 vs 4.98 encounters), and a hard collapse under
+genuinely careless play (**0.58** encounters to Cadenza's **2.27**). He punishes
+inattention through his resource rather than through raw numbers — every beat
+without a loaded shell is a wasted beat.
 
-An earlier pass had Ammo refilling between encounters, and Rukyuk came out
-*more* forgiving than Cadenza (6.06 vs 4.98) — completely backwards. Tokens now
-carry over exactly as the fight ended them, so walking into an encounter dry
-means burning a beat on Reload while something is already swinging.
+Two earlier passes got this backwards and the harness caught both. Ammo used to
+refill between encounters, which made the sniper *more* forgiving than the tank
+(6.06 vs 4.98); tokens now carry over exactly as the fight ended them. And while
+his styles were briefly modelled as absolute ranges, he could not establish
+distance at all and needed invented Start-band moves to function — with the
+correct modifier maths his reach is real and those crutches are gone.
 
 Supporting telemetry (`npm run balance`), per run:
 

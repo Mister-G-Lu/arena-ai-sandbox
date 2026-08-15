@@ -306,7 +306,7 @@ function renderPreview() {
     <span class="pname">${atk.name}</span>
     ${!atk.range
       ? `<span class="stat"><i>RANGE</i> N/A</span>${atk.noDamage ? '' : `<span class="stat"><i>POWER</i> ${atk.power}</span>`}`
-      : `<span class="stat"><i>RANGE</i> ${atk.range[0]}~${atk.range[1]}</span>
+      : `<span class="stat"><i>RANGE</i> ${atk.rangeFixed ? '*' : ''}${atk.range[0]}~${atk.range[1]}</span>
          <span class="stat"><i>POWER</i> ${atk.noDamage ? 'N/A' : atk.power}</span>`}
     <span class="stat"><i>PRIORITY</i> ${pri}</span>
     ${atk.armor ? `<span class="soakpill">ARMOR ${atk.armor}</span>` : ''}
@@ -341,6 +341,8 @@ function renderPreview() {
 }
 
 const fmt = (n) => (n >= 0 ? `+${n}` : `${n}`);
+// A style's range is a modifier: +3~5 means "add 3 to the low end, 5 to the high".
+const rangeMod = ([lo, hi]) => (lo === hi ? fmt(lo) : `${fmt(lo)}~${hi >= 0 ? hi : `${hi}`}`);
 const highlight = (t) => (t || '')
   .replace(/Soak (\d+)/g, '<span class="kw">Soak $1</span>')
   .replace(/Stun Guard (\d+)/g, '<span class="kw">Stun Guard $1</span>')
@@ -363,9 +365,10 @@ function renderHand() {
   for (const id of h.bases) {
     const c = B[id];
     rowB.appendChild(cardEl(c, sel.base === id && !sel.finisher,
-      c.noDamage || c.power === null || !c.range
+      c.noDamage || c.power === null || !(c.range || c.fixedRange)
         ? `R N/A · POW N/A · PRI ${c.priority}`
-        : `R ${c.range[0]}~${c.range[1]} · POW ${c.power} · PRI ${c.priority}`,
+        : `R ${c.fixedRange ? `*${c.fixedRange[0]}~${c.fixedRange[1]}` : `${c.range[0]}~${c.range[1]}`}` +
+          ` · POW ${c.power} · PRI ${c.priority}`,
       () => { sel.base = sel.base === id ? null : id; sel.finisher = null; render(); }));
   }
 

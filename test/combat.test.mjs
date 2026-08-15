@@ -4,7 +4,7 @@ import {
   CADENZA, RUKYUK, CHARACTERS, UNIVERSAL_BASES, STARTING_LIFE,
   combine, baseLibrary, styleLibrary,
 } from '../src/characters.js';
-import { AMMO_TOKENS, SHIELD_TOKENS, startingPool } from '../src/tokens.js';
+import { AMMO_TOKENS, SHIELD_TOKENS, startingPool, applyTokenMods } from '../src/tokens.js';
 import {
   ARENA_SIZE, startEncounter, resolveBeat, anteShield, playerAttack,
   threatSpaces, intentThreatens, nearestEnemy, canUseFinisher, anteTokens,
@@ -538,18 +538,39 @@ const RS = styleLibrary(RUKYUK);
 const rukState = (enemies, opts = {}) =>
   mkState(enemies, { charId: 'rukyuk', ...opts });
 
-test('Rukyuk styles carry absolute ranges from the sheet', () => {
-  // Sniper 3-5/1/2 on Strike (4 power, 3 priority)
+test('Rukyuk styles are range MODIFIERS, not absolutes', () => {
+  // Sniper +3~5 on Strike (Range 1) -> 4~6.
   const a = combine(RB.strike, RS.sniper);
-  assert.deepEqual(a.range, [3, 5], 'style range replaces, not adds');
+  assert.deepEqual(a.range, [4, 6], 'style range adds to the base');
   assert.equal(a.power, 5);
   assert.equal(a.priority, 5);
-  const pb = combine(RB.strike, RS.pointblank);
-  assert.deepEqual(pb.range, [0, 1]);
-  assert.equal(pb.guard, 4, 'Point Blank Guard 2 + Strike Guard 2');
+  // The same style on a longer base reaches further — base choice matters.
+  assert.deepEqual(combine(RB.shot, RS.sniper).range, [4, 9], 'Shot 1~4 + 3~5');
+  assert.deepEqual(combine(RB.burst, RS.sniper).range, [5, 8], 'Burst 2~3 + 3~5');
+  // Point Blank +0~1 keeps a melee base in melee.
+  assert.deepEqual(combine(RB.strike, RS.pointblank).range, [1, 2]);
   const cf = combine(RB.strike, RS.crossfire);
   assert.equal(cf.armor, 2);
   assert.equal(cf.guard, 3, 'Crossfire Guard 1 + Strike Guard 2');
+});
+
+test('an asterisked *fixed range overrides everything', () => {
+  // Fully Automatic is *3~6: no style is attached, and no modifier applies.
+  const fa = combine(RB.fullyAutomatic, null);
+  assert.deepEqual(fa.range, [3, 6]);
+  assert.ok(fa.rangeFixed);
+});
+
+test('Longshot cannot widen a fixed range, but does widen a normal one', () => {
+  const fa = combine(RB.fullyAutomatic, null);
+  const fixed = applyTokenMods(
+    { ...fa, range: [...fa.range], hit: [...fa.hit] }, ['longshot']);
+  assert.deepEqual(fixed.range, [3, 6], 'fixed range ignores Longshot');
+
+  const ss = combine(RB.strike, RS.sniper);          // 4~6
+  const normal = applyTokenMods(
+    { ...ss, range: [...ss.range], hit: [...ss.hit] }, ['longshot']);
+  assert.deepEqual(normal.range, [3, 7], 'normal range widens by -1/+1');
 });
 
 test('Trick grants Stun Immunity', () => {
@@ -568,7 +589,7 @@ test('anteing an Ammo lets the shot connect and spends that shell', () => {
   // The archer holds its distance, so the range band stays meaningful.
   const s = rukState([{ type: 'archer', space: 6 }], { playerSpace: 2 });
   const before = s.enemies[0].life;
-  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['flash'], picks: { move: 0 }, autoShield: 'never' });
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['flash'], autoShield: 'never' });
   assert.ok(s.enemies[0].life < before, 'the shot landed');
   assert.equal(s.player.tokens, 5);
   assert.ok(!s.player.tokenPool.includes('flash'), 'that specific shell is gone');
@@ -578,7 +599,7 @@ test('Explosive Shell adds +2 Power', () => {
   const mk = (ante) => {
     const s = rukState([{ type: 'archer', space: 6 }], { playerSpace: 2 });
     const before = s.enemies[0].life;
-    resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante, picks: { move: 0 }, autoShield: 'never' });
+    resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante, autoShield: 'never' });
     return before - s.enemies[0].life;
   };
   assert.equal(mk(['explosive']) - mk(['ap']), 2, 'Explosive is worth exactly +2');
@@ -591,29 +612,29 @@ test('Swift Shell adds +2 Priority', () => {
 });
 
 test('AP Shell ignores Armor', () => {
-  const s = rukState([{ type: 'brute', space: 4 }], { playerSpace: 1 });
+  const s = rukState([{ type: 'brute', space: 5 }], { playerSpace: 1 });
   s.enemies[0].patternIndex = 0;   // Brace: armor 2, guard 4
   telegraph(s);
   const before = s.enemies[0].life;
-  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['ap'], picks: { move: 0 }, autoShield: 'never' });
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['ap'], autoShield: 'never' });
   const dealt = before - s.enemies[0].life;
   assert.equal(dealt, 5, 'full power, Armor 2 ignored');
   assert.match(s.log.join('\n'), /Armor ignored/);
 });
 
 test('Flash Shell ignores Guard, so a small hit still stuns', () => {
-  const s = rukState([{ type: 'brute', space: 4 }], { playerSpace: 1 });
+  const s = rukState([{ type: 'brute', space: 5 }], { playerSpace: 1 });
   s.enemies[0].patternIndex = 0;   // Brace: guard 4
   telegraph(s);
-  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['flash'], picks: { move: 0 }, autoShield: 'never' });
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['flash'], autoShield: 'never' });
   assert.ok(s.enemies[0].stunned, 'Guard 4 ignored');
   assert.match(s.log.join('\n'), /Guard ignored/);
 });
 
 test('Impact Shell pushes the target 2 on hit', () => {
-  const s = rukState([{ type: 'archer', space: 5 }], { playerSpace: 2 });
+  const s = rukState([{ type: 'archer', space: 6 }], { playerSpace: 2 });
   const before = s.enemies[0].space;
-  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['impact'], picks: { move: 0 }, autoShield: 'never' });
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['impact'], autoShield: 'never' });
   assert.ok(s.enemies[0].space > before || s.enemies[0].life <= 0, 'pushed away');
 });
 
@@ -621,7 +642,7 @@ test('Longshot widens the range band by -1 to +1', () => {
   const s = rukState([{ type: 'archer', space: 7 }], { playerSpace: 1 });
   // distance 6, outside Sniper 3~5; Longshot's +1 brings it to 3~6.
   const before = s.enemies[0].life;
-  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['longshot'], picks: { move: 0 }, autoShield: 'never' });
+  resolveBeat(s, { baseId: 'strike', styleId: 'sniper', ante: ['longshot'], autoShield: 'never' });
   assert.ok(s.enemies[0].life < before, 'reached at distance 6');
 });
 

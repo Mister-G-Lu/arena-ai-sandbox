@@ -6,8 +6,14 @@
 // Everyone shares the Universal Bases.
 //
 // Stat notation follows the spec sheet:
-//   Styles:  (range / power / priority) as DELTAS, e.g. Clockwork (+0/+3/-3)
-//   Bases:   (range / power / priority) as ABSOLUTES, e.g. Press (1~2/1/0)
+//   Styles:  (range / power / priority) as MODIFIERS, e.g. Clockwork (+0/+3/-3)
+//            or Sniper (+3~5/+1/+2). A style's range ADDS to its base:
+//            Sniper (+3~5) on Strike (1) gives 4~6.
+//   Bases:   (range / power / priority) as printed, e.g. Press (1~2/1/0)
+//
+//   *3~5     An asterisked range is FIXED: it hard-overrides the pair's range
+//            and ignores every range modifier, from styles and tokens alike.
+//            Modelled as `fixedRange: [3, 5]`.
 //
 // Timing bands, in resolution order:
 //   Rev   "On Reveal"          -> reveal  (before anything else resolves)
@@ -128,13 +134,13 @@ export const CADENZA = {
 
   finishers: [
     {
-      id: 'rocketPress', name: 'Rocket Press', range: [1, 1], power: 8, priority: 0,
+      id: 'rocketPress', name: 'Rocket Press', fixedRange: [1, 1], power: 8, priority: 0,
       armor: 3, stunImmune: true,
       before: [{ k: 'advance', min: 2, max: 6 }],
       text: 'Armor 3, Stun Immunity. BA: Advance at least 2.',
     },
     {
-      id: 'feedbackField', name: 'Feedback Field', range: [1, 2], power: 1, priority: 0,
+      id: 'feedbackField', name: 'Feedback Field', fixedRange: [1, 2], power: 1, priority: 0,
       armor: 5,
       hit: [{ k: 'powerPerDamageArmored', amount: 2 }],
       text: 'Armor 5. OH: +2 Power for each point of damage your Armor absorbed this beat.',
@@ -168,32 +174,30 @@ export const RUKYUK = {
 
   styles: [
     {
-      id: 'sniper', name: 'Sniper', dRange: [3, 5], dPower: 1, dPriority: 2, absoluteRange: true,
-      start: [{ k: 'move', min: 0, max: 2 }],
+      id: 'sniper', name: 'Sniper', dRange: [3, 5], dPower: 1, dPriority: 2,
       after: [{ k: 'move', min: 1, max: 3 }],
-      text: 'Start: Move up to 2 to find your line. AA: Move 1, 2 or 3.',
+      text: 'AA: Move 1, 2 or 3.',
     },
     {
-      id: 'crossfire', name: 'Crossfire', dRange: [2, 3], dPower: 1, dPriority: -2, absoluteRange: true,
+      id: 'crossfire', name: 'Crossfire', dRange: [2, 3], dPower: 1, dPriority: -2,
       armor: 2, guard: 1,
       hit: [{ k: 'spendAmmoForPower', amount: 2, optional: true }],
       text: 'Armor 2, Guard 1. OH, optional: spend 1 Ammo for +2 Power.',
     },
     {
-      id: 'gunner', name: 'Gunner', dRange: [2, 4], dPower: 0, dPriority: 0, absoluteRange: true,
-      start: [{ k: 'move', min: 0, max: 1 }],
+      id: 'gunner', name: 'Gunner', dRange: [2, 4], dPower: 0, dPriority: 0,
       before: [{ k: 'spendAmmoForRange', optional: true }],
       after: [{ k: 'move', min: 1, max: 2 }],
-      text: 'Start: Move up to 1. BA, optional: spend 1 Ammo for -1 to +1 Range. AA: Move 1 or 2.',
+      text: 'BA, optional: spend 1 Ammo for -1 to +1 Range. AA: Move 1 or 2.',
     },
     {
-      id: 'pointblank', name: 'Point Blank', dRange: [0, 1], dPower: 0, dPriority: 0, absoluteRange: true,
+      id: 'pointblank', name: 'Point Blank', dRange: [0, 1], dPower: 0, dPriority: 0,
       guard: 2,
       damage: [{ k: 'push', min: 0, max: 2 }],
       text: 'Guard 2. OD: Push the target up to 2.',
     },
     {
-      id: 'trick', name: 'Trick', dRange: [1, 2], dPower: 0, dPriority: -3, absoluteRange: true,
+      id: 'trick', name: 'Trick', dRange: [1, 2], dPower: 0, dPriority: -3,
       stunImmune: true,
       end: [{ k: 'retreatAtRange1', min: 0, max: 1 }],
       text: 'Stun Immunity. EoB at range 1: retreat up to 1.',
@@ -212,17 +216,17 @@ export const RUKYUK = {
 
   finishers: [
     {
-      id: 'fullyAutomatic', name: 'Fully Automatic', range: [3, 6], power: 2, priority: 6,
+      id: 'fullyAutomatic', name: 'Fully Automatic', fixedRange: [3, 6], power: 2, priority: 6,
       negateAmmo: true,
       hit: [{ k: 'spendAllAmmoForPower', amount: 2 }],
-      text: 'Rev: negate the effects of any used Ammo. OH: spend all remaining Ammo for +2 Power each.',
+      text: '*3~6 (fixed). Rev: negate the effects of any used Ammo. OH: spend all remaining Ammo for +2 Power each.',
     },
     {
-      id: 'forceGrenade', name: 'Force Grenade', range: [1, 2], power: 4, priority: 4,
+      id: 'forceGrenade', name: 'Force Grenade', fixedRange: [1, 2], power: 4, priority: 4,
       negateAmmo: true, ignoreStyleBA: true, alwaysHits: true,
       hit: [{ k: 'push', min: 0, max: 6 }],
       after: [{ k: 'retreat', min: 0, max: 5 }],
-      text: 'Rev: negate used Ammo, ignore your Style BA. OH: push up to 6. AA: retreat up to 5.',
+      text: '*1~2 (fixed). Rev: negate used Ammo, ignore your Style BA. OH: push up to 6. AA: retreat up to 5.',
     },
   ],
 };
@@ -251,28 +255,34 @@ export function combine(base, style) {
     name: '', dRange: [0, 0], dPower: 0, dPriority: 0, text: '',
   };
   // Range resolution.
+  //
   //   * A base with no range (Reload) never gains one.
-  //   * absoluteRange styles (Rukyuk's) REPLACE the base's range band —
-  //     his sheet lists Sniper as "Range 3-5", not "+3~+5".
-  //   * ordinary styles (Cadenza's) add their deltas to the base band.
+  //   * A FIXED range (written *3~5 on a card) hard-overrides everything and
+  //     ignores every range modifier, from styles and from tokens alike.
+  //   * Otherwise styles are MODIFIERS: +3~5 on a Range 1 base gives 4~6.
+  //
+  // Fixed ranges are the exception, so they are opt-in via `fixedRange`.
   let range = null;
-  if (!base.noHit && base.range) {
-    if (s.absoluteRange && s.dRange) {
-      range = [Math.max(0, s.dRange[0]), Math.max(0, s.dRange[1])];
-    } else if (s.dRange) {
-      range = [
-        Math.max(0, base.range[0] + s.dRange[0]),
-        Math.max(0, base.range[1] + s.dRange[1]),
-      ];
-    } else {
-      range = [...base.range];
-    }
+  let rangeFixed = false;
+  if (base.fixedRange) {
+    range = [...base.fixedRange];
+    rangeFixed = true;
+  } else if (s.fixedRange) {
+    range = [...s.fixedRange];
+    rangeFixed = true;
+  } else if (!base.noHit && base.range) {
+    const d = s.dRange || [0, 0];
+    range = [
+      Math.max(0, base.range[0] + d[0]),
+      Math.max(0, base.range[1] + d[1]),
+    ];
   }
   return {
     name: `${s.name ? s.name + ' ' : ''}${base.name}`,
     baseId: base.id,
     styleId: s.id || null,
     range,
+    rangeFixed,
     // A "no damage" base (Dodge) can never deal damage, whatever the Style says.
     power: (base.noDamage || base.power === null)
       ? null
