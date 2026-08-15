@@ -37,7 +37,7 @@ export function solve(s, hand) {
       // enumerate a few movement choices
       let pickSets = [{}];
       if (atk.noDamage) pickSets = [{ dodgeDir: 1 }, { dodgeDir: -1 }];
-      for (const eff of [...(atk.start || []), ...atk.before, ...atk.after, ...atk.hit]) {
+      for (const eff of [...(atk.start || []), ...atk.before, ...atk.after, ...(atk.end || []), ...atk.hit]) {
         if ((eff.min ?? 0) === (eff.max ?? 0)) continue;
         const next = [];
         for (const base of pickSets)

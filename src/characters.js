@@ -9,10 +9,16 @@
 //   Styles:  (range / power / priority) as DELTAS, e.g. Clockwork (+0/+3/-3)
 //   Bases:   (range / power / priority) as ABSOLUTES, e.g. Press (1~2/1/0)
 //
-// Timing bands:
-//   BA  "Before Activating"  -> before
-//   OH  "On Hit"             -> hit
-//   EoB "End of Beat"        -> after
+// Timing bands, in resolution order:
+//   Start "Start of Beat"      -> start   (all fighters, Priority order)
+//   BA    "Before Activating"  -> before  (in that fighter's own slot)
+//         the attack itself
+//   OH    "On Hit"             -> hit
+//   After "After Activating"   -> after   (cancelled if that fighter is stunned)
+//   EoB   "End of Beat"        -> end     (ALWAYS fires, even when stunned)
+//
+// The After/EoB split matters: a stun cancels a fighter's activation and
+// everything welded to it, but End of Beat is unconditional.
 
 // ------------------------------------------------------------- universal bases
 
@@ -35,8 +41,8 @@ export const UNIVERSAL_BASES = [
   },
   {
     id: 'burst', name: 'Burst', range: [2, 3], power: 3, priority: 1,
-    before: [{ k: 'retreat', min: 1, max: 2 }],
-    text: 'BA: Retreat 1~2',
+    start: [{ k: 'retreat', min: 1, max: 2 }],
+    text: 'Start: Retreat 1~2',
   },
   {
     id: 'grasp', name: 'Grasp', range: [1, 1], power: 2, priority: 5,
@@ -84,12 +90,12 @@ export const CADENZA = {
     },
     {
       id: 'mechanical', name: 'Mechanical', dRange: [0, 0], dPower: 2, dPriority: -2,
-      after: [{ k: 'advance', min: 0, max: 3 }],
+      end: [{ k: 'advance', min: 0, max: 3 }],
       text: 'EoB: Advance up to 3',
     },
     {
       id: 'battery', name: 'Battery', dRange: [0, 0], dPower: 1, dPriority: -1,
-      after: [{ k: 'priorityBonus', amount: 4 }],
+      end: [{ k: 'priorityBonus', amount: 4 }],
       text: 'EoB: You have +4 Priority next beat',
     },
     {
@@ -161,7 +167,7 @@ export const DRIFTER = {
     },
     {
       id: 'twisting', name: 'Twisting', dRange: [1, 1], dPower: 0, dPriority: 2,
-      after: [{ k: 'advance', min: 0, max: 1 }],
+      end: [{ k: 'advance', min: 0, max: 1 }],
       text: '+1/+0/+2. EoB: Advance 0~1',
     },
   ],
@@ -234,6 +240,7 @@ export function combine(base, style) {
     before: [...(s.before || []), ...(base.before || [])],
     hit: [...(base.hit || []), ...(s.hit || [])],
     after: [...(base.after || []), ...(s.after || [])],
+    end: [...(base.end || []), ...(s.end || [])],
     text: [s.text, base.text].filter(Boolean).join(' | '),
   };
 }

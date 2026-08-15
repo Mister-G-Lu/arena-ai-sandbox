@@ -46,14 +46,29 @@ Soak therefore does double duty: it blunts damage *and*, by shrinking the
 number, makes your Stun Guard more likely to hold. This is why Cadenza feels
 armoured rather than merely tanky.
 
-**Beat structure.** Ante → reveal → **Start** → activate in **Priority** order
-→ End of Beat.
+### Beat structure
 
-- **Start** effects resolve before *any* activation. Dodge lives here, which is
-  what makes it pre-emptive: you reposition before the fastest enemy swings.
-- **Before Activating** fires immediately before *that fighter's own*
-  activation, not as a global band — which is what lets Press read damage it
-  has already absorbed.
+Ante → reveal, then five timing bands:
+
+| # | Band | Who | Cancelled by a stun? |
+| --- | --- | --- | --- |
+| 1 | **Start** | every fighter, fastest first | no — nobody has swung yet |
+| 2 | **Before Activating** (BA) | that fighter, in its own slot | yes |
+| 3 | **the attack** | that fighter, in Priority order | yes — a stunned fighter does not attack at all |
+| 4 | **On Hit** (OH) | riders, only if the attack connected | n/a |
+| 5 | **After Activating** | that fighter | yes — welded to the activation |
+| 6 | **End of Beat** (EoB) | every fighter | **no — always fires** |
+
+Two distinctions do most of the design work here:
+
+- **Start vs. BA.** Start resolves for *everyone* before *anyone* activates, so
+  a Priority 1 Burst still retreats before a Priority 6 Slash lands. BA fires
+  inside that fighter's own slot, which is what lets Press read damage it has
+  already absorbed this beat.
+- **After Activating vs. End of Beat.** A stun cancels a fighter's activation
+  and everything welded to it — BA, the attack, After. It never touches End of
+  Beat. Battery's "+4 Priority next beat" fires even on a beat where you were
+  stunned, whiffed, or had no legal target.
 
 **Clash.** On equal Priority the **player acts first**. Encounters are
 one-versus-many, so a mutual re-pick would stall constantly; the player-first
@@ -63,6 +78,10 @@ tie is easier to read off the intent list and is the generous reading.
 
 **Dodge** — Priority 3, Power N/A (can *never* deal damage, whatever Style you
 attach). *Start: Move 1~3. You dodge all attacks from enemies you move past.*
+
+**Burst** (2~3/3/1) — *Start: Retreat 1~2.* Also a Start-band move, so its
+retreat beats even the fastest attacker; the payoff for going slow is that you
+reposition first.
 
 It is the pure defensive option: pick a direction and a distance, slip **past**
 an enemy, and every attack that enemy makes this beat cannot touch you —
@@ -83,8 +102,8 @@ Life 20, 3 Shield tokens.
 | Styles | |
 | --- | --- |
 | **Hydraulic** (+0/+2/−1) | Soak 1. BA: Advance 1 |
-| **Mechanical** (+0/+2/−2) | EoB: Advance up to 3 |
-| **Battery** (+0/+1/−1) | EoB: +4 Priority next beat |
+| **Mechanical** (+0/+2/−2) | EoB: Advance up to 3 (fires even if stunned) |
+| **Battery** (+0/+1/−1) | EoB: +4 Priority next beat (fires even if stunned) |
 | **Clockwork** (+0/+3/−3) | Soak 3 |
 | **Grapnel** (+2~4/+0/+0) | OH: Pull target up to 3 |
 
@@ -112,15 +131,15 @@ decisions into random legal plays — a direct model of a player making mistakes
 
 ```
   err%   cadenza                    drifter
-    0%   ############  96% (7.0/7)   ############ 100% (7.0/7)
-   10%   ########....  70% (6.7/7)   ###########.  88% (6.8/7)
-   20%   ######......  50% (6.4/7)   ########....  68% (6.2/7)
-   30%   ##..........  14% (5.6/7)   ####........  32% (5.2/7)
-   40%   #...........   6% (5.0/7)   #...........  10% (4.3/7)
-   50%   #...........   6% (4.8/7)   ............   0% (3.3/7)
+    0%   ############ 100% (7.0/7)   #########...  73% (6.5/7)
+   10%   ########....  68% (6.7/7)   ####........  33% (5.9/7)
+   20%   ###.........  25% (6.0/7)   ##..........  18% (5.1/7)
+   30%   ##..........  20% (5.6/7)   #...........  10% (4.3/7)
+   40%   #...........   8% (5.0/7)   ............   0% (3.7/7)
+   50%   ............   0% (4.5/7)   ............   0% (3.3/7)
 
   floor (avg encounters cleared at 30-50% error):
-    cadenza 5.13   drifter 4.01
+    cadenza 5.08   drifter 3.57
 ```
 
 Read the **encounters cleared** figure, not the clear rate. The Drifter has the
@@ -168,10 +187,16 @@ Guard", so those exist as answers to Cadenza specifically:
 - **Automaton** (The Foundry) — **Stun Immune** on every intent. You cannot
   lock it down; you have to out-position it. Its *Shove* (Push 2~3) drags you
   out of melee, which is what **Grapnel** (Pull 3) is for.
+- **Tracking intents.** The Husk, Stalker and Warden now do their approach in
+  the **Start** band, so they close *as you evade*. Dodge and Burst still beat
+  a given attack, but they no longer reset the whole fight.
+- Most intents carry **Stun Guard**, so a light poke no longer cancels a full
+  activation. Locking an enemy out costs a real commitment.
 - **Brute** — *Brace* has Stun Guard 4 and Soak 2, so chip damage will not stun
   it. You need a real hit.
-- **Warden** — *Sunder* is Stun Immune and carries its own stun rider; the ante
-  is the clean answer.
+- **Warden** — **Stun Immune on every intent**, with a Stalker escort. A boss
+  that can be stun-locked every beat is not a boss; the counterplay is Soak,
+  positioning and the ante rather than lockdown.
 
 ## Layout
 
@@ -186,7 +211,7 @@ Guard", so those exist as answers to Cadenza specifically:
 | `tools/forgiveness.mjs` | Clear rate vs. mistake rate. |
 | `public/` | Browser client. No build step, no dependencies. |
 
-## Three bugs the tests caught
+## Four bugs the tests caught
 
 Worth recording, because both were design errors rather than typos:
 
@@ -201,6 +226,10 @@ Worth recording, because both were design errors rather than typos:
    in the Start band is what lets it beat a Priority 6 attacker; the test
    `'Dodge resolves in the Start band'` pins that by dodging a Stalker that is
    explicitly faster.
+4. **`projectedSpace` only read the BA band.** The moment Burst's retreat moved
+   to Start, the board preview stopped accounting for it — the UI would have
+   drawn threat ranges from the wrong tile while the engine resolved correctly.
+   Silent, and invisible to every engine-level test.
 
 ## Extending
 

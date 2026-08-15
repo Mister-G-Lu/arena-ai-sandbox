@@ -1,13 +1,24 @@
 // Beat resolution on a 7-space line: one player versus 1..3 enemies.
 //
 // BEAT STRUCTURE
-//   1. Ante      — spend tokens (Cadenza: Shield -> Stun Immunity)
-//   2. Reveal    — Style + Base combine; enemies' intents are already public
-//   3. Start     — "Start of Beat" effects, before ANY activation.
-//                  Dodge lives here: you reposition before anyone swings,
-//                  which is what makes it pre-emptive rather than reactive.
-//   4. Activate  — in Priority order; each fighter's BA fires in its own slot
-//   5. End       — EoB effects, intents re-telegraph
+//   1. Ante       — spend tokens (Cadenza: Shield -> Stun Immunity)
+//   2. Reveal     — Style + Base combine; enemy intents are already public
+//   3. START      — every fighter's Start effects, in Priority order
+//                   (faster fighters resolve their Start first).
+//                   Dodge and Burst live here: you reposition before anyone
+//                   swings, which is what makes them pre-emptive.
+//   4. ACTIVATION — in Priority order, one fighter at a time:
+//                     a. Before Activating (BA)
+//                     b. the attack  (skipped entirely if stunned)
+//                     c. On Hit (OH) riders
+//                     d. After Activating  (skipped if stunned)
+//   5. END OF BEAT — EoB effects for EVERY fighter, in Priority order.
+//                    These fire NO MATTER WHAT: being stunned, whiffing, or
+//                    never having a legal target does not cancel them.
+//
+// The After / End-of-Beat distinction is the load-bearing one. A stun cancels
+// a fighter's activation and everything welded to it (BA, the attack, After),
+// but never touches End of Beat.
 //
 // PRIORITY TIES ("clash")
 //   The player acts first on a tie. Encounters are one-vs-many, so a
@@ -157,14 +168,16 @@ function applyEffect(s, actor, target, eff, pick, log) {
     }
     case 'stun':
       if (!target) return;
-      // An explicit "OH: Stun" rider still respects Stun Immunity — that is
-      // the whole point of anteing a Shield.
+      // An explicit "OH: Stun" rider ignores Stun Guard — Stun Guard only
+      // protects against the automatic stun that damage causes. Stun Immunity
+      // is the only thing that stops it, which is the point of the ante.
       if (target.stunImmune) {
         log(`${target.name} is Stun Immune and shrugs off the stun.`);
         return;
       }
+      if (target.stunned) return;
       target.stunned = true;
-      log(`${target.name} is stunned.`);
+      log(`${target.name} is stunned by the attack's rider (Stun Guard does not apply).`);
       return;
     case 'priorityBonus':
       actor.priorityBonusNext = (actor.priorityBonusNext || 0) + eff.amount;
@@ -324,15 +337,15 @@ export function resolveBeat(s, play) {
     return chosen || nearestEnemy(s);
   };
 
-  // ---- START band: everyone's Start effects resolve before ANY activation,
-  // in Priority order. Dodge repositions here.
+  // ---- (3) START band. Every fighter's Start effects, faster first.
+  // A stun cannot happen yet, so nothing here can be cancelled.
   for (const entry of order) {
     if (entry.actor.life <= 0) continue;
     for (const eff of entry.atk.start || [])
       applyEffect(s, entry.actor, targetOf(entry), eff, pickFor(entry), log);
   }
 
-  // ---- ACTIVATION, in Priority order.
+  // ---- (4) ACTIVATION, in Priority order.
   // "Before Activating" fires immediately before that fighter's own
   // activation — NOT as a global band. This matters: Press reads the damage
   // you took earlier in the beat, which only exists if faster fighters have
@@ -392,11 +405,12 @@ export function resolveBeat(s, play) {
     checkEnd(s, log);
   }
 
-  // ---- END OF BEAT band
+  // ---- (5) END OF BEAT band.
+  // These fire NO MATTER WHAT. Being stunned, whiffing, or having had no
+  // legal target does not cancel an EoB effect — only death does.
   for (const entry of order) {
-    if (s.over) break;
-    if (entry.actor.life <= 0 || entry.actor.stunned) continue;
-    for (const eff of entry.atk.after)
+    if (entry.actor.life <= 0) continue;
+    for (const eff of entry.atk.end || [])
       applyEffect(s, entry.actor, targetOf(entry), eff, pickFor(entry), log);
   }
 
@@ -496,7 +510,9 @@ export function threatSpaces(space, atk) {
 /** Where an actor ends up after its telegraphed BA movement. */
 export function projectedSpace(s, actor, atk, targetSpace) {
   let from = actor.space;
-  for (const eff of atk.before) {
+  // Start effects happen before the attack, so they count toward where the
+  // attack is made from — as do Before Activating effects.
+  for (const eff of [...(atk.start || []), ...(atk.before || [])]) {
     const dir = towardDir(from, targetSpace);
     if (eff.k === 'advance' || eff.k === 'close') from += dir * (eff.max ?? 0);
     if (eff.k === 'retreat') from -= dir * (eff.max ?? 0);

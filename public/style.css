@@ -273,3 +273,17 @@ button.ghost{background:transparent; border-color:var(--line); color:var(--dim);
 .token.foe.dodged::after{
   content:'✕'; position:absolute; font-size:20px; color:var(--green); font-weight:900;
 }
+
+/* ================= timing bands ================= */
+.band{font-weight:800; font-size:10px; letter-spacing:.05em; padding:1px 5px;
+  border-radius:5px; margin-right:2px}
+.band.start{background:rgba(95,216,139,.16); color:var(--green)}
+.band.ba{background:rgba(76,194,255,.16); color:var(--you)}
+.band.oh{background:rgba(255,207,92,.16); color:var(--gold)}
+.band.eob{background:rgba(178,148,255,.18); color:#b294ff}
+.bands{margin:10px 0 2px; padding-left:20px; font-size:12.5px; color:var(--dim); line-height:1.7}
+.bands b{color:var(--ink)}
+.bands b.start{color:var(--green)}
+.bands b.ba{color:var(--you)}
+.bands b.oh{color:var(--gold)}
+.bands b.eob{color:#b294ff}

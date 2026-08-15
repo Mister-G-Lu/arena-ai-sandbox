@@ -312,7 +312,11 @@ const fmt = (n) => (n >= 0 ? `+${n}` : `${n}`);
 const highlight = (t) => (t || '')
   .replace(/Soak (\d+)/g, '<span class="kw">Soak $1</span>')
   .replace(/Stun Guard (\d+)/g, '<span class="kw">Stun Guard $1</span>')
-  .replace(/Stun Immunity/g, '<span class="kw">Stun Immunity</span>');
+  .replace(/Stun Immunity/g, '<span class="kw">Stun Immunity</span>')
+  .replace(/\bStart:/g, '<span class="band start">Start:</span>')
+  .replace(/\bBA:/g, '<span class="band ba">BA:</span>')
+  .replace(/\bOH:/g, '<span class="band oh">OH:</span>')
+  .replace(/\bEoB:/g, '<span class="band eob">EoB:</span>');
 
 function renderHand() {
   const h = currentHand(run);

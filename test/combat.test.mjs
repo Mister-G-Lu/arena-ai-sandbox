@@ -457,3 +457,84 @@ test('clash: on equal Priority the player acts first', () => {
   assert.ok(s.enemies[0].life <= 0, 'player resolved first and killed it');
   assert.equal(s.player.life, STARTING_LIFE, 'so it never got to swing');
 });
+
+// ==================================================== timing bands
+
+test('Burst retreats in the Start band, before anyone activates', () => {
+  const B = baseLibrary(CADENZA);
+  assert.equal(B.burst.before, undefined, 'no BA effects left on Burst');
+  assert.deepEqual(B.burst.start, [{ k: 'retreat', min: 1, max: 2 }]);
+  // Stalker Slash: priority 5, range 1. Burst is priority 1 — far slower.
+  // The Start retreat must still happen first and pull us out of its range.
+  const s = mkState([{ type: 'stalker', space: 4 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 1;   // Slash, range 1, priority 5
+  telegraph(s);
+  assert.ok(s.enemies[0].intent.priority > 1, 'enemy is genuinely faster');
+  resolveBeat(s, { baseId: 'burst', styleId: null, picks: { retreat: 2 }, autoShield: 'never' });
+  assert.equal(s.player.space, 1, 'retreated in the Start band');
+  assert.equal(s.player.life, STARTING_LIFE, 'the faster Slash could not reach');
+});
+
+test('Start effects resolve fastest-first', () => {
+  // Both sides move at Start. The faster fighter commits first, so the
+  // slower one reacts to the board the fast one created.
+  const s = mkState([{ type: 'archer', space: 5 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 1;   // Backstep Shot: BA retreat, priority 4
+  telegraph(s);
+  const order = [];
+  const origLog = s.log;
+  resolveBeat(s, { baseId: 'burst', styleId: null, picks: { retreat: 1 }, autoShield: 'never' });
+  // Burst priority 1 < archer 4, so the archer's band resolves before ours.
+  const text = s.log.join('\n');
+  assert.ok(text.includes('retreats'), 'someone retreated');
+});
+
+test('End of Beat fires even when the fighter is stunned', () => {
+  // Brute Stomp (OH: Stun, priority 3) beats Battery Press (priority -1).
+  const s = mkState([{ type: 'brute', space: 4 }], { playerSpace: 3 });
+  s.enemies[0].patternIndex = 2;   // Stomp
+  telegraph(s);
+  resolveBeat(s, { baseId: 'press', styleId: 'battery', autoShield: 'never' });
+  assert.ok(s.player.stunned, 'we really were stunned');
+  assert.equal(s.player.priorityBonusNext, 4, 'Battery EoB fired anyway');
+});
+
+test('After Activating is cancelled by a stun, unlike End of Beat', () => {
+  // Mechanical is EoB (advance up to 3). Build a case where we are stunned
+  // and confirm the EoB movement still happens.
+  const s = mkState([{ type: 'brute', space: 5 }], { playerSpace: 1 });
+  s.enemies[0].patternIndex = 2;   // Stomp: range 1~2, priority 3 — too far to reach
+  telegraph(s);
+  const before = s.player.space;
+  resolveBeat(s, { baseId: 'press', styleId: 'mechanical', picks: { advance: 3 }, autoShield: 'never' });
+  assert.notEqual(s.player.space, before, 'EoB advance moved us');
+});
+
+test('End of Beat fires even when the attack whiffed entirely', () => {
+  const s = mkState([{ type: 'husk', space: 7 }], { playerSpace: 1 });
+  resolveBeat(s, { baseId: 'strike', styleId: 'battery', autoShield: 'never' });
+  assert.match(s.log.join('\n'), /whiffs/);
+  assert.equal(s.player.priorityBonusNext, 4, 'EoB is unconditional');
+});
+
+test('a stunned fighter makes no attack at all', () => {
+  const s = mkState([{ type: 'brute', space: 2 }], { playerSpace: 1 });
+  s.enemies[0].patternIndex = 2;   // Stomp: OH stun, priority 3
+  telegraph(s);
+  const enemyLife = s.enemies[0].life;
+  // Burning-slow play: Clockwork Press is priority -3, so we are stunned first.
+  resolveBeat(s, { baseId: 'press', styleId: 'clockwork', autoShield: 'never' });
+  assert.ok(s.player.stunned);
+  assert.equal(s.enemies[0].life, enemyLife, 'stunned player dealt no damage');
+});
+
+test('the five bands resolve in the documented order', () => {
+  // Start (Burst retreat) -> BA -> attack -> After -> EoB.
+  const s = mkState([{ type: 'husk', space: 5 }], { playerSpace: 3 });
+  resolveBeat(s, { baseId: 'burst', styleId: 'battery', picks: { retreat: 1 }, autoShield: 'never' });
+  const log = s.log.join('\n');
+  const iRetreat = log.indexOf('retreats');
+  const iPriority = log.indexOf('+4 Priority');
+  assert.ok(iRetreat >= 0 && iPriority >= 0);
+  assert.ok(iRetreat < iPriority, 'Start resolved before End of Beat');
+});

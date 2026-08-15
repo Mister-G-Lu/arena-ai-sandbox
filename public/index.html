@@ -69,6 +69,18 @@
     </div>
 
     <details class="logbox">
+      <summary>Beat structure</summary>
+      <ol class="bands">
+        <li><b class="start">Start</b> — all fighters, fastest first. Dodge and Burst move here, before anyone swings.</li>
+        <li><b class="ba">Before Activating</b> — in that fighter's own slot, just before its attack.</li>
+        <li><b>Attack</b> — in Priority order. A stunned fighter does not attack at all.</li>
+        <li><b class="oh">On Hit</b> — riders that only fire if the attack connected.</li>
+        <li><b>After Activating</b> — welded to the attack; a stun cancels it.</li>
+        <li><b class="eob">End of Beat</b> — fires <i>no matter what</i>, even stunned.</li>
+      </ol>
+    </details>
+
+    <details class="logbox">
       <summary>Combat log</summary>
       <div id="log"></div>
     </details>

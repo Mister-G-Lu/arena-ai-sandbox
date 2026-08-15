@@ -5,11 +5,12 @@
 // resolves both sides through one code path.
 
 export function intent({
-  name, range, power, priority, before = [], hit = [], after = [],
+  name, range, power, priority,
+  start = [], before = [], hit = [], after = [], end = [],
   soak = 0, stunGuard = 0, stunImmune = false, hitAll = false, text = '', tag = '',
 }) {
   return {
-    name, range, power, priority, before, hit, after,
+    name, range, power, priority, start, before, hit, after, end,
     soak, stunGuard, stunImmune, hitAll, text, tag,
   };
 }
@@ -23,13 +24,13 @@ export const ENEMY_TYPES = {
     // Cycles predictably: shamble -> swing -> shamble ...
     pattern: (self, i) => [
       intent({
-        name: 'Shamble', range: [1, 1], power: 2, priority: 2,
-        before: [{ k: 'advance', min: 1, max: 2 }],
-        text: 'Before: Advance 1~2',
+        name: 'Shamble', range: [1, 1], power: 2, priority: 2, stunGuard: 2,
+        start: [{ k: 'advance', min: 1, max: 2 }],
+        text: 'Start: Advance 1~2 (tracks you). Stun Guard 2',
       }),
       intent({
-        name: 'Heavy Swing', range: [1, 1], power: 5, priority: 1,
-        text: 'A wide, slow blow.',
+        name: 'Heavy Swing', range: [1, 1], power: 5, priority: 1, stunGuard: 3,
+        text: 'Stun Guard 3. A wide, slow blow.',
       }),
     ][i % 2],
   },
@@ -40,12 +41,12 @@ export const ENEMY_TYPES = {
     pattern: (self, i) => [
       intent({
         name: 'Dart In', range: [1, 2], power: 3, priority: 6,
-        before: [{ k: 'close', min: 0, max: 3 }],
-        text: 'Before: Close up to 3',
+        start: [{ k: 'close', min: 0, max: 3 }],
+        text: 'Start: Close up to 3 (tracks you as you move)',
       }),
       intent({
-        name: 'Slash', range: [1, 1], power: 4, priority: 5,
-        text: 'Quick and clean.',
+        name: 'Slash', range: [1, 1], power: 4, priority: 5, stunGuard: 2,
+        text: 'Stun Guard 2. Quick and clean.',
       }),
       intent({
         name: 'Fade', range: [1, 3], power: 2, priority: 7,
@@ -60,8 +61,8 @@ export const ENEMY_TYPES = {
     blurb: 'Deadly at range, helpless up close. Punishes you for standing still.',
     pattern: (self, i) => [
       intent({
-        name: 'Loose Arrow', range: [3, 6], power: 4, priority: 3,
-        text: 'Only reaches distant targets.',
+        name: 'Loose Arrow', range: [3, 6], power: 4, priority: 3, stunGuard: 2,
+        text: 'Stun Guard 2. Only reaches distant targets.',
       }),
       intent({
         name: 'Backstep Shot', range: [2, 5], power: 3, priority: 4,
@@ -84,14 +85,14 @@ export const ENEMY_TYPES = {
         text: 'Gains 4 Guard this turn.',
       }),
       intent({
-        name: 'Hammerfall', range: [1, 2], power: 7, priority: 1,
+        name: 'Hammerfall', range: [1, 2], power: 7, priority: 1, stunGuard: 5,
         hit: [{ k: 'push', min: 1, max: 2 }],
         text: 'Hit: Push 1~2',
       }),
       intent({
-        name: 'Stomp', range: [1, 2], power: 4, priority: 3,
+        name: 'Stomp', range: [1, 2], power: 4, priority: 3, stunGuard: 3,
         hit: [{ k: 'stun' }],
-        text: 'OH: Stun',
+        text: 'Stun Guard 3. OH: Stun',
       }),
     ][i % 3],
   },
@@ -121,7 +122,7 @@ export const ENEMY_TYPES = {
 
   warden: {
     id: 'warden', name: 'Warden', glyph: 'W', life: 30, tier: 'boss',
-    blurb: 'The Warden of the Seven Spaces. It answers everything you try.',
+    blurb: 'The Warden of the Seven Spaces. Stun Immune — it cannot be locked down, only outplayed.',
     // Reactive boss: reads your position and picks the intent that hurts most.
     pattern: (self, i, ctx) => {
       const d = ctx ? Math.abs(self.space - ctx.playerSpace) : 3;
@@ -137,22 +138,23 @@ export const ENEMY_TYPES = {
       }
       if (d <= 2) {
         return intent({
-          name: 'Backhand', range: [1, 2], power: phase2 ? 6 : 4, priority: 5,
+          name: 'Backhand', range: [1, 2], power: phase2 ? 6 : 4, priority: 5, stunGuard: 4,
           hit: [{ k: 'push', min: 2, max: 2 }],
           text: 'Hit: Push 2',
         });
       }
       if (d >= 5) {
         return intent({
-          name: 'Chain Pull', range: [3, 6], power: 3, priority: 4,
+          name: 'Chain Pull', range: [3, 7], power: 4, priority: 4, stunGuard: 3,
           hit: [{ k: 'pull', min: 2, max: 3 }],
           text: 'Hit: Pull 2~3',
         });
       }
       return intent({
-        name: 'Advancing Cut', range: [2, 3], power: phase2 ? 6 : 5, priority: 3,
-        before: [{ k: 'advance', min: 0, max: 1 }],
-        text: 'Before: Advance 0~1',
+        name: 'Advancing Cut', range: [2, 4], power: phase2 ? 6 : 5, priority: 3,
+        stunImmune: true,
+        start: [{ k: 'advance', min: 0, max: 2 }],
+        text: 'Stun Immune. Start: Advance 0~2 (tracks you)',
       });
     },
   },

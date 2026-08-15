@@ -41,19 +41,30 @@ export const ENCOUNTERS = [
     name: 'The Foundry',
     blurb: 'Stun Immune. Locking it down is not an option.',
     playerSpace: PLAYER_START,
-    enemies: [{ type: 'automaton', space: ENEMY_START }, { type: 'husk', space: 7 }],
+    enemies: [
+      { type: 'automaton', space: ENEMY_START },
+      { type: 'husk', space: 7 },
+      { type: 'husk', space: 1 },
+    ],
   },
   {
     name: 'Crossfire',
     blurb: 'Three enemies, two directions.',
     playerSpace: PLAYER_START,
-    enemies: [{ type: 'archer', space: 1 }, { type: 'stalker', space: ENEMY_START }, { type: 'husk', space: 7 }],
+    enemies: [
+      { type: 'archer', space: 1 },
+      { type: 'stalker', space: ENEMY_START },
+      { type: 'brute', space: 7 },
+    ],
   },
   {
     name: 'The Warden',
-    blurb: 'It has been waiting at the end of the hall.',
+    blurb: 'It has been waiting at the end of the hall — and it is not alone.',
     playerSpace: PLAYER_START,
-    enemies: [{ type: 'warden', space: ENEMY_START }],
+    enemies: [
+      { type: 'warden', space: ENEMY_START },
+      { type: 'stalker', space: 7 },
+    ],
   },
 ];
 
