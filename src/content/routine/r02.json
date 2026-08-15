@@ -1,0 +1,26 @@
+{
+  "id": "routine-02",
+  "zone": "routine",
+  "title": "Population chart",
+  "body": "41,312. Holding steady. The chart goes back one hundred years, to the day. Every year: 41,312. No births. No deaths. No one moved.",
+  "choices": [
+    {
+      "id": "initial",
+      "label": "Initial the chart. Move on.",
+      "outcome": {
+        "text": "Your initials look like last Tuesday's initials. You tell yourself you have a consistent signature.",
+        "qualities": { "Routine": 1, "Salary": 2 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "count",
+      "label": "Count them. Just this once.",
+      "outcome": {
+        "text": "You get to 41,311 and the last name is yours. You do not remember writing it there.",
+        "qualities": { "Doubt": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

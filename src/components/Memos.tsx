@@ -2,6 +2,11 @@ import { HudFrame } from './HudFrame';
 
 const MEMOS = [
   {
+    id: '013',
+    tag: 'disregard',
+    body: 'A work order has been filed for Floor 12. There is no Floor 12. Please disregard. Attendance remains mandatory. — M.',
+  },
+  {
     id: '012',
     tag: 'internal',
     body: 'The third-floor vending machine has been re-designated. Please do not look for it. — M.',

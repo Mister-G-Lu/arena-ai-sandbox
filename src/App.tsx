@@ -6,8 +6,10 @@ import { Hero } from './components/Hero';
 import { Job } from './components/Job';
 import { Memos } from './components/Memos';
 import { Shift } from './components/Shift';
+import { WorkOrders } from './components/WorkOrders';
 import { useActions } from './hooks/useActions';
 import { useGlitch } from './hooks/useGlitch';
+import { useProgress } from './hooks/useProgress';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { useShift } from './hooks/useShift';
 
@@ -16,11 +18,20 @@ export function App() {
   const fx = useGlitch(reduced);
   const { remaining, cap, untilNext, canAct, spendOne } = useActions();
   const { shift, perform, startTomorrow } = useShift(reduced);
+  const { progress, currentCard, lastOutcome, choose, openZone } = useProgress();
 
   const onTask = useCallback(() => {
     if (!spendOne()) return;
     perform();
   }, [spendOne, perform]);
+
+  const onChoose = useCallback(
+    (id: string) => {
+      if (!spendOne()) return;
+      choose(id);
+    },
+    [spendOne, choose],
+  );
 
   return (
     <>
@@ -39,6 +50,14 @@ export function App() {
           weatherOverride={fx.weatherOverride}
           onTask={onTask}
           onTomorrow={startTomorrow}
+        />
+        <WorkOrders
+          progress={progress}
+          currentCard={currentCard}
+          lastOutcome={lastOutcome}
+          canAct={canAct}
+          onChoose={onChoose}
+          onOpenZone={openZone}
         />
         <Memos />
       </main>

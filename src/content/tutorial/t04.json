@@ -1,0 +1,26 @@
+{
+  "id": "tutorial-04",
+  "zone": "tutorial",
+  "title": "Weather desk",
+  "body": "Five lines, same as last night, same as the night before you started. Clear skies until 06:00. The forecast does not continue past that.",
+  "choices": [
+    {
+      "id": "file",
+      "label": "Stamp it. File it.",
+      "outcome": {
+        "text": "CLEAR SKIES UNTIL 06:00. You have never once been asked to stay for the morning.",
+        "qualities": { "Routine": 1 }
+      },
+      "next": "tutorial-05"
+    },
+    {
+      "id": "after",
+      "label": "Write in the margin: and after?",
+      "outcome": {
+        "text": "The pen skips. The margin rejects the ink. When you look again the question is gone.",
+        "qualities": { "Doubt": 1, "Attention": 1 }
+      },
+      "next": "tutorial-05"
+    }
+  ]
+}

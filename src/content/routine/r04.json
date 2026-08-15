@@ -1,0 +1,17 @@
+{
+  "id": "routine-04",
+  "zone": "routine",
+  "title": "On-time performance",
+  "body": "All trucks on schedule. On-time performance: 100.0%. It has never been 99.9. You are invited to be proud of this.",
+  "choices": [
+    {
+      "id": "proud",
+      "label": "Be proud. Stamp 100.0%.",
+      "outcome": {
+        "text": "The stamp is worn in the shape of those digits. No other stamp exists in the drawer.",
+        "qualities": { "Routine": 1, "Salary": 2 }
+      },
+      "endZone": true
+    }
+  ]
+}

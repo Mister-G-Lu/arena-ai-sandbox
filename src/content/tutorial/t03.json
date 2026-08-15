@@ -1,0 +1,17 @@
+{
+  "id": "tutorial-03",
+  "zone": "tutorial",
+  "title": "The break room",
+  "body": "You were told the coffee is always warm. It is. There is no one else in the building. The pot is full. The pot is always full.",
+  "choices": [
+    {
+      "id": "drink",
+      "label": "Pour a cup. Drink it.",
+      "outcome": {
+        "text": "It tastes like Tuesday. You could not describe Tuesday to anyone who asked.",
+        "qualities": { "Routine": 1 }
+      },
+      "next": "tutorial-04"
+    }
+  ]
+}

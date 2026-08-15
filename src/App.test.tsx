@@ -10,9 +10,12 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /false reality/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /the city runs because you answer/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /tonight's shift/i })).toBeInTheDocument();
+    expect(screen.getByText(/MEMO 013/)).toBeInTheDocument();
     expect(screen.getByText(/MEMO 012/)).toBeInTheDocument();
     expect(screen.getByText(DEFAULT_HINT)).toBeInTheDocument();
     expect(screen.getByLabelText(/holographic projection/i)).toBeInTheDocument();
+    expect(screen.getByText(/work orders/i)).toBeInTheDocument();
+    expect(screen.getByTestId('qualities')).not.toHaveTextContent('Attention');
   });
 
   it('performs a task and spends an action', async () => {
