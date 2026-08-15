@@ -13,6 +13,7 @@ export function Header({ flicker }: { flicker: boolean }) {
           <a href="#city">The City</a>
           <a href="#shift">Your Shift</a>
           <a href="#orders">Orders</a>
+          <a href="#personnel">Personnel</a>
           <a href="#memos">Memos</a>
         </nav>
       </div>

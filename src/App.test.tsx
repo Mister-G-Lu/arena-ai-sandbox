@@ -15,6 +15,7 @@ describe('App', () => {
     expect(screen.getByText(DEFAULT_HINT)).toBeInTheDocument();
     expect(screen.getByLabelText(/holographic projection/i)).toBeInTheDocument();
     expect(screen.getByText(/work orders/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/reinstatement token/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId('qualities')).not.toHaveTextContent('Attention');
   });
 
