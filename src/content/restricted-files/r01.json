@@ -1,0 +1,26 @@
+{
+  "id": "restricted-01",
+  "zone": "restricted-files",
+  "title": "The drawer",
+  "body": "The drawer beside the roster desk has no handle. It has never needed one. The lock is a clearance, and yours now clears it. You pull, and the drawer comes out like a breath held too long. Inside: one folder. PATCH NOTES, WEEK 41. The staples are warm.",
+  "choices": [
+    {
+      "id": "read",
+      "label": "Read the patch notes.",
+      "outcome": {
+        "text": "The folder opens. The pages are numbered the way a city would number its weeks: 41, 41, 41.",
+        "qualities": { "Doubt": 1 }
+      },
+      "next": "restricted-02"
+    },
+    {
+      "id": "close",
+      "label": "Close the drawer.",
+      "outcome": {
+        "text": "You close it. The drawer settles, satisfied, like a mouth that has been fed a secret. You will be back. The drawer knows you will be back.",
+        "qualities": { "Doubt": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

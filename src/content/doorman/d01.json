@@ -1,0 +1,26 @@
+{
+  "id": "doorman-01",
+  "zone": "doorman",
+  "title": "The lobby at 02:00",
+  "body": "The Annex doorman is not on the roster. The memo says he does not exist. He is in the lobby at 02:00, reading a paper that is always Tuesday's. You set the box of morning smokes on the counter. He does not look up, but the paper shifts, and the counter — the counter breathes out.",
+  "choices": [
+    {
+      "id": "ask",
+      "label": "Ask about the twelfth floor.",
+      "outcome": {
+        "text": "The paper does not move for a long time. Then: \"The elevator knows the way, sir. The elevator has always known the way. The building just doesn't like to admit it.\" He folds the paper. It is Tuesday's. It is always Tuesday's.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "leave",
+      "label": "Just leave the box.",
+      "outcome": {
+        "text": "You leave it. On your way out, the paper has moved to the floor below his hands, and the counter is breathing evenly, like something that has been given what it wanted.",
+        "qualities": { "Routine": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

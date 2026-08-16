@@ -1,0 +1,35 @@
+{
+  "id": "breakroom-01",
+  "zone": "breakroom",
+  "title": "MUNICIPAL BREW",
+  "body": "The machine is older than the building, or wants to be. Its label says MUNICIPAL BREW — SERVICE NOT REQUIRED. Your grounds fit the drawer. The system's coffee is always warm; yours is warm because you made it. This is a difference you are still allowed to keep.",
+  "choices": [
+    {
+      "id": "drink",
+      "label": "Make a cup. Drink it here.",
+      "outcome": {
+        "text": "It tastes like the city is not in the room for a minute. The machine hums, satisfied, like it has been waiting for a competent operator.",
+        "qualities": { "Routine": 1, "Salary": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "watch",
+      "label": "Make a cup. Watch the pot warm.",
+      "outcome": {
+        "text": "The heating coil glows like a small, patient sun. Somewhere below, the building adjusts itself around the warmth. You are the only one who notices.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "leave",
+      "label": "Leave it. The system's coffee is fine.",
+      "outcome": {
+        "text": "It is always fine. That is the problem.",
+        "qualities": { "Doubt": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

@@ -68,6 +68,28 @@
   color: #7c8bb0;
 }
 
+.zone-requirement-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zone-supply-link {
+  align-self: flex-start;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: #57d6c3;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(87, 214, 195, 0.4);
+  padding-bottom: 1px;
+}
+
+.zone-supply-link:hover {
+  color: #ffc66b;
+  border-bottom-color: rgba(255, 198, 107, 0.5);
+}
+
 .zone-card .btn {
   align-self: flex-start;
   margin-top: 4px;

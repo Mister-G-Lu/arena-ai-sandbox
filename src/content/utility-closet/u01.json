@@ -1,0 +1,26 @@
+{
+  "id": "utility-closet-01",
+  "zone": "utility-closet",
+  "title": "The third fuse box",
+  "body": "The closet behind the break room is on no plan. The lock is a latch. Inside: mops that have never dried, a fuse box labelled with a floor that does not exist, and a fuse box labelled with the current one. Your torch shows a third fuse box, behind the first two, painted over. It is warm.",
+  "choices": [
+    {
+      "id": "open",
+      "label": "Open the painted box.",
+      "outcome": {
+        "text": "Inside: a single fuse, stamped 1207. It is not connected to anything. It is not a fuse. You put it back. It was warm.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "close",
+      "label": "Close the closet. Latch it.",
+      "outcome": {
+        "text": "The latch clicks. The closet is a closet again. You hear, behind the door, one soft knock. Just the one.",
+        "qualities": { "Routine": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

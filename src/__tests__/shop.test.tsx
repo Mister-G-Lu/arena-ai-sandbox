@@ -76,7 +76,7 @@ describe('municipal supply', () => {
     expect(document.body.textContent).toContain('UNAVAILABLE //');
   });
 
-  it('takes credits for a good and files the order in the logbook', async () => {
+  it('takes credits for a good and opens its storylet on Notices', async () => {
     seed();
     render(<App />);
     await go('shop');
@@ -88,8 +88,17 @@ describe('municipal supply', () => {
     expect(filed.supplies.coffee).toBe(true);
     expect(filed.credits).toBe(470);
     expect(filed.logbook.some((e: { text: string }) => e.text.includes('GROUND COFFEE'))).toBe(true);
-    // The good's storylet is a zone on the Notices board — asserted with the
-    // content commit that ships the breakroom deck.
+
+    // The good opens its zone on the Notices board: listed, unsealed, playable.
+    await go('notices');
+    await act(async () => { vi.advanceTimersByTime(50); });
+    expect(document.body.textContent).toContain('The Coffee Machine');
+    const coffeeCard = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('The Coffee Machine')) as HTMLElement;
+    expect((coffeeCard.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => { (coffeeCard.querySelector('button') as HTMLButtonElement).click(); });
+    await act(async () => { vi.advanceTimersByTime(50); });
+    expect(document.body.textContent).toContain('MUNICIPAL BREW');
   });
 
   it('will not sell what the operator cannot afford', async () => {

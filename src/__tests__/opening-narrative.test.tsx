@@ -199,7 +199,13 @@ describe('opening narrative', () => {
     expect(document.body.textContent).toContain('INVESTIGATIONS');
     const zoneTitles = Array.from(document.querySelectorAll('.zone-card h3'))
       .map((title) => title.textContent);
-    expect(zoneTitles).toEqual(['Annex elevator discrepancy']);
+    // The expedition is *listed* on Shift 2 for every operator — sealed, with
+    // its clearance shown. The lock itself is the hint that promotion buys.
+    expect(zoneTitles).toEqual(['Annex elevator discrepancy', 'Floor 12']);
+    const floor12Card = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('Floor 12')) as HTMLElement;
+    expect(floor12Card.textContent).toContain('CLEARANCE REQUIRED: SENIOR OPERATOR CLEARANCE');
+    expect((floor12Card.querySelector('button') as HTMLButtonElement).disabled).toBe(true);
 
     await click('▸ OPEN');
     await tick(100);

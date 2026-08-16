@@ -1,0 +1,26 @@
+{
+  "id": "window-ledge-01",
+  "zone": "window-ledge",
+  "title": "The courtyard",
+  "body": "The break-room window faces the courtyard. With your thermos full, you can stand here the way the system intends nobody to stand: comfortable, unhurried, looking out. The courtyard has a fence that appears on no plan. It is the same fence.",
+  "choices": [
+    {
+      "id": "count",
+      "label": "Count the windows across.",
+      "outcome": {
+        "text": "The annex, from here, has eleven floors of windows. You count twelve rows before your eyes stop cooperating. The twelfth row is dark. It is always dark. It is always there.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "sip",
+      "label": "Sip. Watch the courtyard.",
+      "outcome": {
+        "text": "Nothing happens. Nothing needs to. For a minute the city forgets to be strange, and you let it. The thermos stays warm longer than the building's coffee ever has.",
+        "qualities": { "Routine": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

@@ -7,10 +7,16 @@ describe('content pipeline', () => {
   const cards = loadAllStorylets();
 
   it('loads every live deck, including the one-card Shift 2 lead', () => {
-    expect(cards).toHaveLength(13);
+    expect(cards).toHaveLength(21);
     expect(cardsInZone(cards, 'annex-order')).toHaveLength(1);
     expect(cardsInZone(cards, 'routine')).toHaveLength(6);
     expect(cardsInZone(cards, 'floor12')).toHaveLength(6);
+    // Supply storylets: one card per good, plus the sealed drawer's two.
+    const supplyZones = ['breakroom', 'night-radio', 'utility-closet', 'custodial-stores', 'window-ledge', 'doorman'] as const;
+    for (const zone of supplyZones) {
+      expect(cardsInZone(cards, zone), zone).toHaveLength(1);
+    }
+    expect(cardsInZone(cards, 'restricted-files')).toHaveLength(2);
   });
 
   it('keeps the content zone list pinned to the configured zones', () => {

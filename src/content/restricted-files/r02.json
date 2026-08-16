@@ -1,0 +1,26 @@
+{
+  "id": "restricted-02",
+  "zone": "restricted-files",
+  "title": "Patch notes, week 41",
+  "body": "REVISIONS, WEEK 41: The population chart will display 41,312 (no change). Break-room coffee will be warm on arrival (no change). Building 7 basement light fixture: removed (no fixture existed). Elevator car 2 service range: amended to eleven floors (previous range: eleven floors, amended). The twelfth floor — the entry is scratched out so hard the paper is thin. Beneath the scratch, in a hand that is not the typist's: it is still there. We know. We filed it anyway.",
+  "choices": [
+    {
+      "id": "memorise",
+      "label": "Memorise the page.",
+      "outcome": {
+        "text": "You read it until the words are yours. The page does not change. But the paper is thinner where the twelfth floor is, and now you know the thinness by heart.",
+        "qualities": { "Perception": 1, "Doubt": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "file",
+      "label": "File it under MEMORANDA.",
+      "outcome": {
+        "text": "You file it. The drawer takes it back. Somewhere, a ledger line adjusts itself to include you in the count — 41,313 — and then, politely, corrects itself.",
+        "qualities": { "Routine": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import {
   unlockLabel,
   unlocksThrough,
   visibleZones,
+  zoneById,
   zoneState,
   type RequirementCtx,
 } from './progression';
@@ -93,14 +94,39 @@ describe('zones', () => {
       'annex-order': 'investigations',
       routine: 'notices',
       floor12: 'investigations',
+      'restricted-files': 'notices',
+      breakroom: 'notices',
+      'night-radio': 'notices',
+      'utility-closet': 'notices',
+      'custodial-stores': 'notices',
+      'window-ledge': 'notices',
+      doorman: 'notices',
     });
   });
 
   it('reveals the universal Annex order on Shift 2 while promotion controls the rest', () => {
     expect(visibleZones(ctx())).toHaveLength(0);
-    expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).toEqual(['annex-order']);
+    // On Shift 2 the Floor 12 expedition is *listed* for everyone — sealed,
+    // with its clearance shown — so the hierarchy itself is the hint.
+    expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).toEqual(['annex-order', 'floor12']);
     const withNotices = visibleZones(ctx({ unlocks: ['notice-storylets'] }));
     expect(withNotices.map((z) => z.id)).toEqual(['routine']);
+  });
+
+  it('lists promotion-gated content as a locked teaser before clearance', () => {
+    const operator = ctx({
+      tier: 1,
+      unlocks: ['basic-tasks', 'break-room', 'memos', 'notice-storylets'],
+    });
+    const ids = visibleZones(operator).map((z) => z.id);
+    expect(ids).toContain('restricted-files');
+    expect(zoneState(zoneById('restricted-files')!, operator)).toBe('locked');
+    // Supply zones are listed for operators but stay sealed until the good is
+    // ordered from the terminal.
+    expect(ids).toContain('breakroom');
+    expect(zoneState(zoneById('breakroom')!, operator)).toBe('locked');
+    // ...and a day-1 Operator does not yet see the Shift 2 expedition.
+    expect(ids).not.toContain('floor12');
   });
 
   it('opens Floor 12 only on Shift 2 with curiosity and restricted-area clearance', () => {
@@ -109,6 +135,16 @@ describe('zones', () => {
     const curious = { doubt: 2, perception: 1, routine: 0 };
     expect(zoneState(floor12, ctx({ unlocks: clearance, qualities: curious }))).toBe('locked');
     expect(zoneState(floor12, ctx({ day: 2, unlocks: clearance, qualities: curious }))).toBe('open');
+  });
+
+  it('opens a supply zone when the good is owned', () => {
+    const operator = ctx({
+      tier: 1,
+      unlocks: ['basic-tasks', 'break-room', 'memos', 'notice-storylets'],
+      supplies: { coffee: true },
+    });
+    expect(zoneState(zoneById('breakroom')!, operator)).toBe('open');
+    expect(zoneState(zoneById('night-radio')!, operator)).toBe('locked');
   });
 
   it('reports a finished zone as complete regardless of requirements', () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZONES, zoneById } from './progression';
 import {
   SUPPLY_DEFS,
   isPurchaseable,
@@ -35,11 +36,21 @@ describe('supply table', () => {
     expect(supplyCount({ coffee: true })).toBe(1);
   });
 
-  it('every unlocked good names a storylet zone to open', () => {
+  it('pins every supply to the zone it unlocks, and the zone to the supply', () => {
     for (const supply of SUPPLY_DEFS.filter((s) => s.unlocksZone)) {
-      expect(supply.unlocksZone!.length).toBeGreaterThan(0);
+      const zone = zoneById(supply.unlocksZone!);
+      expect(zone, `${supply.id} unlocks a configured zone`).toBeDefined();
+      // The zone's requirement is exactly the supply: the engine gates the
+      // storylet on the good, so nothing here can drift apart.
+      expect(zone?.requires).toEqual({ [supply.id]: 1 });
     }
-    // The zone table itself pins supplies to their zones (see progression's
-    // ZONES); this side of the contract is asserted with the zones.
+    // ...and the reverse: every supply-gated zone is gated by a real supply.
+    for (const zone of ZONES) {
+      for (const key of Object.keys(zone.requires ?? {})) {
+        if (supplyById(key)) {
+          expect(supplyById(key)?.unlocksZone).toBe(zone.id);
+        }
+      }
+    }
   });
 });
