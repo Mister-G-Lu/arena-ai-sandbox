@@ -367,6 +367,19 @@ export function GameStateProvider({ children }) {
    */
   const resolveStorylet = useCallback((storylet, choice) => {
     setState(prev => {
+      const pointer = prev.currentStorylet;
+      if (
+        !pointer ||
+        pointer.zone !== storylet?.zone ||
+        pointer.storyletId !== storylet?.id
+      ) {
+        // Reject stale closures, double clicks after a transition, and callers
+        // attempting to resolve a card other than the one actually open.
+        return prev;
+      }
+      const selectedChoice = storylet.choices?.find((candidate) => candidate.id === choice?.id);
+      if (!selectedChoice) return prev;
+
       // A re-read replays the fiction and files nothing, so it is free. Only a
       // first reading — the one that has consequences — costs an action.
       const alreadySeen = prev.seenStorylets.includes(storylet.id);
@@ -375,7 +388,7 @@ export function GameStateProvider({ children }) {
       return withSpentAction(prev, cost, (charged) => {
         let next = alreadySeen
           ? charged
-          : applyEffectsToState(charged, choice.outcome?.qualities);
+          : applyEffectsToState(charged, selectedChoice.outcome?.qualities);
 
         const seenStorylets = charged.seenStorylets.includes(storylet.id)
           ? charged.seenStorylets
@@ -384,18 +397,18 @@ export function GameStateProvider({ children }) {
         const zones = { ...charged.zones };
         let currentStorylet = charged.currentStorylet;
 
-        if (choice.completeZone) {
+        if (selectedChoice.completeZone) {
           zones[storylet.zone] = 'complete';
           currentStorylet = null;
-        } else if (choice.endZone) {
+        } else if (selectedChoice.endZone) {
           currentStorylet = null;
-        } else if (choice.next) {
-          currentStorylet = { zone: storylet.zone, storyletId: choice.next };
+        } else if (selectedChoice.next) {
+          currentStorylet = { zone: storylet.zone, storyletId: selectedChoice.next };
         }
 
         next = { ...next, seenStorylets, zones, currentStorylet };
 
-        if (choice.completeZone) {
+        if (selectedChoice.completeZone) {
           const zone = zoneById(storylet.zone);
           if (zone?.component && !next.components[zone.component]) {
             next = withLog(

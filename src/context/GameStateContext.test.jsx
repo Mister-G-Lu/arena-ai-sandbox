@@ -132,19 +132,32 @@ describe('effects pipeline', () => {
     expect(api.state.qualities).not.toHaveProperty('nonsense');
   });
 
-  it('files a resolved card\'s consequences once — replays do not farm qualities', async () => {
+  it('files consequences once and rejects a stale card after transition', async () => {
     mount();
-    const card = { id: 'floor12-01', zone: 'floor12' };
-    const press = { outcome: { qualities: { Doubt: 1, Attention: 1 } }, endZone: true };
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.currentStorylet = { zone: 'floor12', storyletId: 'floor12-01' };
+    saved.game.zones.floor12 = 'open';
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    const press = {
+      id: 'press',
+      outcome: { qualities: { Doubt: 1, Attention: 1 } },
+      next: 'floor12-02',
+    };
+    const card = { id: 'floor12-01', zone: 'floor12', choices: [press] };
 
     await act(async () => { api.actions.resolveStorylet(card, press); });
     expect(api.state.qualities.doubt).toBe(1);
     expect(api.state.attention).toBe(1);
-    expect(api.state.currentStorylet).toBeNull();
+    expect(api.state.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-02' });
+    const actionsAfterFirstChoice = api.state.actions;
 
+    // The old button closure cannot resolve the previous card again after the pointer moved.
     await act(async () => { api.actions.resolveStorylet(card, press); });
     expect(api.state.qualities.doubt).toBe(1);
     expect(api.state.attention).toBe(1);
+    expect(api.state.actions).toBe(actionsAfterFirstChoice);
+    expect(api.state.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-02' });
     expect(api.state.seenStorylets.filter((id) => id === 'floor12-01')).toHaveLength(1);
   });
 
