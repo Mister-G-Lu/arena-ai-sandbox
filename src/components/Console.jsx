@@ -43,6 +43,7 @@ const WINDOW_VISTAS = [
   'The towers breathe. Thirty floors of wet glass inhaling amber, exhaling teal. On your screen: 0.00% variance.',
   'A drone convoy threads the gap between the municipal spires at 180 kph, obedient and bright. Below, a streetlight you cleared flickers and holds.',
   'Meridian at 02:47 — a cutter’s wail dopplers down the canyon between buildings and is answered by nothing. The coffee stays warm.',
+  'A man in a gray coat watches the annex from the corner, patient as a filing. His ID badge reads a different name every time the light changes.',
 ];
 
 /** Deterministic vista for a given shift moment — no extra state, just atmosphere that ticks forward. */
