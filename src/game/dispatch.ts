@@ -1,3 +1,5 @@
+import { ACTION_CAP } from './actions';
+
 export const TASKS_PER_SHIFT = 50;
 export const ANOMALY_CHANCE = 0.06;
 
@@ -186,6 +188,11 @@ export function createPendingDispatch(input: CreateDispatchInput): PendingDispat
     taskNumber,
     anomaliesSeenThisShift: input.anomaliesSeenThisShift,
     roll: input.anomalyRoll,
+    // The caller charges this reservation's own action around the mutate, so
+    // `actionsSpentThisShift` here is still the pre-reservation count. What
+    // remains is the number of further tasks the shift can start after this
+    // one: the cap minus everything spent before it minus this task itself.
+    taskSlotsLeft: Math.max(0, ACTION_CAP - input.actionsSpentThisShift - 1),
   });
   const isPersonal = isCorrupt && shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
   const displayedResult = isCorrupt
@@ -227,6 +234,12 @@ export interface AnomalyRoll {
   taskNumber: number;
   anomaliesSeenThisShift: number;
   roll: number;
+  /**
+   * Tasks the shift's remaining action budget can still start after this one.
+   * Defaults to a full quota (the classic pure-grind shift) so callers that
+   * only know the task number keep the original schedule.
+   */
+  taskSlotsLeft?: number;
 }
 
 /**
@@ -234,9 +247,20 @@ export interface AnomalyRoll {
  * already produced. Once the shift has paid its debt, there is no deadline
  * and the authored chance runs unmodified.
  */
-export function anomalyDeadline(anomaliesSeenThisShift: number): number {
-  if (anomaliesSeenThisShift <= 0) return HOOK_DEADLINE;
-  if (anomaliesSeenThisShift < GUARANTEED_ANOMALIES_PER_SHIFT) return TASKS_PER_SHIFT;
+export function anomalyDeadline(
+  taskNumber: number,
+  anomaliesSeenThisShift: number,
+  taskSlotsLeft = TASKS_PER_SHIFT - taskNumber,
+): number {
+  if (anomaliesSeenThisShift <= 0) {
+    return Math.min(HOOK_DEADLINE, taskNumber + taskSlotsLeft);
+  }
+  if (anomaliesSeenThisShift < GUARANTEED_ANOMALIES_PER_SHIFT) {
+    // Owed by the last task the budget can still afford — a shift that spends
+    // actions on notices files fewer tasks, and its second anomaly must land
+    // inside whichever tasks it does file, not in the unfiled remainder.
+    return taskNumber + taskSlotsLeft;
+  }
   return Infinity;
 }
 
@@ -252,8 +276,13 @@ export function anomalyDeadline(anomaliesSeenThisShift: number): number {
 export function anomalyChance({
   taskNumber,
   anomaliesSeenThisShift,
+  taskSlotsLeft,
 }: Omit<AnomalyRoll, 'roll'>): number {
-  const deadline = anomalyDeadline(anomaliesSeenThisShift);
+  const deadline = anomalyDeadline(
+    taskNumber,
+    anomaliesSeenThisShift,
+    taskSlotsLeft ?? TASKS_PER_SHIFT - taskNumber,
+  );
   if (!Number.isFinite(deadline)) return ANOMALY_CHANCE;
   if (taskNumber >= deadline) return 1;
 
@@ -264,12 +293,15 @@ export function anomalyChance({
 /**
  * Normal results use the authored chance, but progression can never be
  * blocked by an unlucky shift. Two anomalies are owed per shift: the first by
- * task 10, the second by the time the fiftieth result is filed.
+ * task 10, the second by the last result the shift's budget can file — a
+ * shift that spends actions on notices still pays its second anomaly, just
+ * inside the shorter queue of tasks it actually files.
  */
 export function shouldTriggerAnomaly({
   taskNumber,
   anomaliesSeenThisShift,
   roll,
+  taskSlotsLeft,
 }: AnomalyRoll): boolean {
-  return roll < anomalyChance({ taskNumber, anomaliesSeenThisShift });
+  return roll < anomalyChance({ taskNumber, anomaliesSeenThisShift, taskSlotsLeft });
 }

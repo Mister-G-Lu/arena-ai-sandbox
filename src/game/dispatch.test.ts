@@ -100,6 +100,43 @@ describe('dispatch anomaly schedule', () => {
     ).toBe(false);
   });
 
+  it('owes the second anomaly by the last task the budget can still afford', () => {
+    // A shift that spends actions on notices files fewer tasks: with no slots
+    // left after this one, the owed anomaly must land now or never.
+    expect(
+      shouldTriggerAnomaly({
+        taskNumber: 45,
+        anomaliesSeenThisShift: 1,
+        taskSlotsLeft: 0,
+        roll: 0.999999,
+      }),
+    ).toBe(true);
+  });
+
+  it('spreads the owed second anomaly across the remaining budget', () => {
+    // Nine tasks left after this one: one in ten.
+    expect(anomalyChance({ taskNumber: 40, anomaliesSeenThisShift: 1, taskSlotsLeft: 9 })).toBe(1 / 10);
+    // The classic call (no budget info) keeps the old full-quota schedule.
+    expect(anomalyChance({ taskNumber: 40, anomaliesSeenThisShift: 1 })).toBeCloseTo(1 / 11);
+  });
+
+  it('forces the second anomaly into the last filed task of a shortened shift', () => {
+    // 49 actions already spent (48 tasks + one notice) and this is the final
+    // reservation the budget can afford. `actionsSpentThisShift` is the
+    // pre-reservation count, as the caller passes it.
+    const pending = createPendingDispatch({
+      day: 3,
+      tasksCompleted: 48,
+      tasksThisShift: 48,
+      actionsSpentThisShift: 49,
+      anomaliesSeenThisShift: 1,
+      anomalyRoll: 0.999999,
+      corruptionRoll: 0.5,
+    });
+    expect(pending.taskNumber).toBe(49);
+    expect(pending.isCorrupt).toBe(true);
+  });
+
   it('delivers both guaranteed anomalies across a maximally unlucky shift', () => {
     let anomalies = 0;
     for (let taskNumber = 1; taskNumber <= TASKS_PER_SHIFT; taskNumber += 1) {
