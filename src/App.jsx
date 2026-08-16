@@ -5,6 +5,7 @@ import Hero from './components/Hero';
 import FirstShift from './components/FirstShift';
 import Console from './components/Console';
 import Notices from './components/Notices';
+import Shop from './components/Shop';
 import ProfilePage from './components/ProfilePage';
 import Footer from './components/Footer';
 import { useRouter } from './hooks/useRouter';
@@ -18,6 +19,7 @@ function GameShell() {
   // the Shift 2 Annex case arrives, then promotion controls their depth.
   const PAGE_GATES = {
     console: { open: state.orientation.completed, fallback: 'first-shift' },
+    shop: { open: state.orientation.completed, fallback: 'first-shift' },
     notices: {
       open: state.orientation.completed && state.promotion.unlocks.includes('notice-storylets'),
       fallback: state.orientation.completed ? 'console' : 'first-shift'
@@ -45,6 +47,7 @@ function GameShell() {
         {visiblePage === 'home' && <Hero />}
         {visiblePage === 'first-shift' && <FirstShift />}
         {visiblePage === 'console' && <Console />}
+        {visiblePage === 'shop' && <Shop />}
         {visiblePage === 'notices' && <Notices key="notices" board="notices" />}
         {visiblePage === 'investigations' && <Notices key="investigations" board="investigations" />}
         {visiblePage === 'profile' && <ProfilePage />}

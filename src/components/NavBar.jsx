@@ -10,6 +10,9 @@ export default function NavBar({ currentPage, onNavigate }) {
     state.orientation.completed
       ? { page: 'console', icon: '▣', label: 'CONSOLE' }
       : { page: 'first-shift', icon: '◈', label: 'FIRST SHIFT' },
+    state.orientation.completed
+      ? { page: 'shop', icon: '¤', label: 'SUPPLY' }
+      : null,
     state.promotion.unlocks.includes('notice-storylets')
       ? { page: 'notices', icon: '✦', label: 'NOTICES' }
       : null,
