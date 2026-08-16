@@ -1,0 +1,12 @@
+{
+  "name": "false-reality",
+  "private": true,
+  "description": "FALSE REALITY — night dispatch storylet game. The site in docs/ has no build step; this manifest exists only for dev tooling.",
+  "scripts": {
+    "start": "python3 -m http.server 8080 -d docs",
+    "test": "node tools/devtools.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

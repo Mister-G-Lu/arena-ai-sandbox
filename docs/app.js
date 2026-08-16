@@ -1,11 +1,11 @@
 /* FALSE REALITY — operator console mock
-   PR 3: happy-shift interactivity only. Glitch engine comes in the next PR. */
+   Reads state from FR.store and exposes FR.game so the dev terminal can drive the
+   real code paths rather than duplicating them. */
 (() => {
   'use strict';
 
   const $ = (s) => document.querySelector(s);
-
-  const state = { day: 4, tasks: 50, minutes: 60 }; // shift starts 01:00
+  const store = window.FR.store;
   const MAX_TASKS = 50;
 
   const SNIPPETS = [
@@ -23,6 +23,16 @@
     'Roof report — antennas clear. Reception: perfect.'
   ];
 
+  const CORRUPT = [
+    '▓▓▓ sector ▓▓9▓▓▓ — all clear ▓▓',
+    'there is no building 7. there is no building 7.',
+    'population: 41,31▓ — unchan6ed. forever.',
+    'you are not supposed to remember this',
+    '██ 06:00 ██ — do not be awake ██'
+  ];
+
+  const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const el = {
     day: $('#day'),
     clock: $('#clock'),
@@ -34,8 +44,10 @@
   };
 
   const pad = (n) => String(n).padStart(2, '0');
-  const clockStr = () =>
-    pad(Math.floor(state.minutes / 60) % 24) + ':' + pad(state.minutes % 60);
+  const clockStr = () => {
+    const m = store.get('shift.minutes');
+    return pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60);
+  };
 
   function addLine(text, cls) {
     const line = document.createElement('div');
@@ -52,70 +64,67 @@
   }
 
   function updateReadouts() {
-    el.day.textContent = state.day;
+    el.day.textContent = store.get('shift.day');
     el.clock.textContent = clockStr();
-    el.tasks.textContent = state.tasks;
+    el.tasks.textContent = store.get('shift.tasks');
     el.weather.textContent = 'Clear skies until 06:00';
+    const done = store.get('shift.tasks') <= 0;
+    el.taskBtn.hidden = done;
+    el.taskBtn.disabled = done;
+    el.nextBtn.hidden = !done;
   }
 
   function beginShift() {
     addLine('Tuesday. The coffee is already warm.', 'system');
   }
 
-  function performTask() {
-    if (state.tasks <= 0) return;
-    state.tasks -= 1;
-    state.minutes = Math.min(state.minutes + 6, 360); // 50 tasks x 6 min = 01:00 -> 06:00
+  function endShift() {
+    store.patch({ shift: { tasks: 0, minutes: 360 } });
+    addLine('SHIFT COMPLETE. The city thanks you. See you tomorrow, Operator.', 'system');
+    updateReadouts();
+  }
+
+  function performTask(opts) {
+    if (store.get('shift.tasks') <= 0) return;
+    const step = store.get('toggles.fastClock') ? 30 : 6;
+    store.patch({ shift: {
+      tasks: store.get('shift.tasks') - 1,
+      minutes: Math.min(store.get('shift.minutes') + step, 360)
+    }});
+
     const text = SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)];
-    const glitch = !REDUCED_MOTION && Math.random() < 0.06;
+    const rate = store.get('toggles.glitchRate');
+    const glitch = (opts && opts.forceGlitch) ||
+      (!REDUCED_MOTION && Math.random() < rate);
     const body = glitch
       ? addLine(CORRUPT[Math.floor(Math.random() * CORRUPT.length)], 'corrupt')
       : addLine(text);
     if (glitch) {
-      // the system catches its own error and smooths it over
       setTimeout(() => {
         body.textContent = text;
         body.closest('.log-line').classList.remove('corrupt');
       }, 950);
     }
     updateReadouts();
-    if (state.tasks === 0) {
-      state.minutes = 360;
-      updateReadouts();
-      addLine('SHIFT COMPLETE. The city thanks you. See you tomorrow, Operator.', 'system');
-      el.taskBtn.disabled = true;
-      el.taskBtn.hidden = true;
-      el.nextBtn.hidden = false;
-    }
+    if (store.get('shift.tasks') === 0) endShift();
   }
 
   function nextShift() {
-    state.day += 1;
-    state.tasks = MAX_TASKS;
-    state.minutes = 60;
+    store.patch({ shift: {
+      day: store.get('shift.day') + 1,
+      tasks: MAX_TASKS,
+      minutes: 60
+    }});
     updateReadouts();
-    el.taskBtn.hidden = false;
-    el.taskBtn.disabled = false;
-    el.nextBtn.hidden = true;
     beginShift();
   }
 
-  el.taskBtn.addEventListener('click', performTask);
+  el.taskBtn.addEventListener('click', () => performTask());
   el.nextBtn.addEventListener('click', nextShift);
   updateReadouts();
   beginShift();
 
-  /* ---------- glitch engine (subtle by design) ---------- */
-
-  const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const CORRUPT = [
-    '▓▓▓ sector ▓▓9▓▓▓ — all clear ▓▓',
-    'there is no building 7. there is no building 7.',
-    'population: 41,31▓ — unchan6ed. forever.',
-    'you are not supposed to remember this',
-    '██ 06:00 ██ — do not be awake ██'
-  ];
+  /* ---------- ambient glitch engine ---------- */
 
   function flashFx(node) {
     if (!node) return;
@@ -125,13 +134,9 @@
 
   function weatherStaticFx() {
     const w = el.weather;
-    const orig = w.textContent;
     w.textContent = '…static…';
     w.style.color = 'var(--red)';
-    setTimeout(() => {
-      w.textContent = 'Clear skies until 06:00';
-      w.style.color = '';
-    }, 420);
+    setTimeout(() => { w.textContent = 'Clear skies until 06:00'; w.style.color = ''; }, 420);
   }
 
   function hintFx() {
@@ -142,19 +147,39 @@
     setTimeout(() => { h.textContent = orig; }, 520);
   }
 
+  function ambientFx() {
+    const r = Math.random();
+    if (r < 0.3) flashFx(document.querySelector('.brand'));
+    else if (r < 0.5) weatherStaticFx();
+    else if (r < 0.65) flashFx(document.querySelector('.stat .num'));
+    else if (r < 0.8) hintFx();
+    else flashFx(document.querySelector('.hero-art figcaption'));
+  }
+
   function scheduleAmbientFx() {
     if (REDUCED_MOTION) return;
-    const delay = 25000 + Math.random() * 25000; // every ~25–50s, one small flicker
+    const delay = 25000 + Math.random() * 25000;
     setTimeout(() => {
-      const r = Math.random();
-      if (r < 0.3) flashFx(document.querySelector('.brand'));
-      else if (r < 0.5) weatherStaticFx();
-      else if (r < 0.65) flashFx(document.querySelector('.stat .num'));
-      else if (r < 0.8) hintFx();
-      else flashFx(document.querySelector('.hero-art figcaption'));
+      if (store.get('toggles.ambientFx')) ambientFx();
       scheduleAmbientFx();
     }, delay);
   }
-
   scheduleAmbientFx();
+
+  /* ---------- the surface the dev terminal drives ---------- */
+
+  window.FR.game = {
+    MAX_TASKS,
+    performTask,
+    nextShift,
+    endShift,
+    ambientFx,
+    log: addLine,
+    refresh: updateReadouts,
+    skipTasks(n) { for (let i = 0; i < n && store.get('shift.tasks') > 0; i++) performTask(); },
+    forceGlitch() { performTask({ forceGlitch: true }); }
+  };
+
+  // Any external state change (dev terminal, warp, import) re-renders the console.
+  store.subscribe((s, reason) => { if (reason !== 'set:shift.tasks') updateReadouts(); });
 })();

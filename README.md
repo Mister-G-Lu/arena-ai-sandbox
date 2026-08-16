@@ -16,3 +16,19 @@ python3 -m http.server 8080 -d docs
 ```
 
 Then open http://localhost:8080.
+
+## Dev tools — the Maintenance Terminal
+
+Press **`` ` ``** (backtick) on localhost to open the dev menu: warp to any arc/beat,
+edit every quality (including player-hidden **Attention**), flip components, zones and
+toggles, and save/load/share named states as JSON.
+
+- Auto-on for `localhost`, `*.local`, `file://` and sandbox previews.
+- On a shared build, opt in with `?dev=1` (and out with `?dev=0`).
+- **Never on for production** — `docs/devtools.*` isn't even fetched there, and a real
+  deploy step should delete those files.
+- Design rationale (and why dev access is *not* an admin account): [`design/dev-tools.md`](design/dev-tools.md)
+
+```bash
+npm install && npm test   # jsdom smoke tests for the terminal + state store
+```
