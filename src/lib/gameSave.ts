@@ -2,6 +2,7 @@ import { z, ZodError } from 'zod';
 import { ACTION_CAP } from '../game/actions';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { GLITCH_DEFS } from '../game/glitches';
+import { CREDIT_LIMIT } from '../game/ledger';
 import {
   COMPONENT_DEFS,
   PROMOTIONS,
@@ -102,7 +103,10 @@ const GlitchIdSchema = z.enum(glitchIds);
  * Promotion title/unlocks are derived from PROMOTIONS and are never persisted.
  */
 export const StoredGameStateSchema = z.strictObject({
-  credits: z.union([z.number().finite().min(0), z.literal(CREDIT_INFINITY)]).default(0),
+  credits: z.union([
+    z.number().finite().min(0).max(CREDIT_LIMIT),
+    z.literal(CREDIT_INFINITY),
+  ]).default(0),
   ledgerUnbound: z.boolean().default(false),
   components: ComponentsSchema,
   supplies: SuppliesSchema,
@@ -149,6 +153,22 @@ export const StoredGameStateSchema = z.strictObject({
   logbook: z.array(JournalEntrySchema).max(5_000).default([]),
   discoveries: z.array(JournalEntrySchema).max(5_000).default([]),
   contacts: z.array(ContactSchema).max(1_000).default([]),
+}).superRefine((state, ctx) => {
+  const infiniteCredits = state.credits === CREDIT_INFINITY;
+  if (state.ledgerUnbound !== infiniteCredits) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ledgerUnbound'],
+      message: 'must match the canonical infinite-credit sentinel',
+    });
+  }
+  if (state.actionsUnbound && !state.devTouched) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['actionsUnbound'],
+      message: 'requires the permanent devTouched audit flag',
+    });
+  }
 });
 
 export const StoredSaveEnvelopeSchema = z.strictObject({
@@ -272,6 +292,9 @@ export function migrateLegacyGameState(raw: unknown, now = new Date()): StoredSa
   const legacy = raw as Record<string, unknown>;
   const { maxCredits: _retiredCap, ...candidate } = legacy;
   const legacyCredits = legacy.credits === Infinity || legacy.credits === CREDIT_INFINITY;
+  const legacyUnbound = Boolean(
+    legacy.ledgerUnbound || legacyCredits || legacy.maxCredits === Infinity || legacy.maxCredits === CREDIT_INFINITY,
+  );
   const legacyPromotion =
     legacy.promotion && typeof legacy.promotion === 'object' && !Array.isArray(legacy.promotion)
       ? { tier: (legacy.promotion as Record<string, unknown>).tier }
@@ -285,8 +308,8 @@ export function migrateLegacyGameState(raw: unknown, now = new Date()): StoredSa
   return createStoredSaveEnvelope(
     {
       ...candidate,
-      credits: legacyCredits ? Infinity : legacy.credits,
-      ledgerUnbound: Boolean(legacy.ledgerUnbound || legacyCredits || legacy.maxCredits === Infinity),
+      credits: legacyUnbound ? Infinity : legacy.credits,
+      ledgerUnbound: legacyUnbound,
       orientation: legacyOrientation,
       promotion: legacyPromotion,
     },

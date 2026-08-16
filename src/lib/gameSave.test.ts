@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CREDIT_LIMIT } from '../game/ledger';
 import { COMPONENT_DEFS, PROMOTIONS, ZONES } from '../game/progression';
 import { QUALITY_DEFS } from '../game/qualities';
 import { SUPPLY_DEFS } from '../game/shop';
@@ -114,6 +115,26 @@ describe('canonical game save', () => {
     ).toThrow(/supplies.*bogus/);
   });
 
+  it('rejects forged unbound capabilities and balances beyond the ledger word', () => {
+    const envelope = createStoredSaveEnvelope(createInitialGameState());
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, credits: CREDIT_LIMIT + 1 },
+    })).toThrow(/credits/);
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, ledgerUnbound: true },
+    })).toThrow(/ledgerUnbound/);
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, credits: CREDIT_INFINITY },
+    })).toThrow(/ledgerUnbound/);
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, actionsUnbound: true, devTouched: false },
+    })).toThrow(/actionsUnbound.*devTouched/);
+  });
+
   it('rejects unknown zones, glitches, malformed pointers, and oversized text', () => {
     const envelope = createStoredSaveEnvelope(createInitialGameState());
     expect(() =>
@@ -190,7 +211,7 @@ describe('canonical game save', () => {
       new Date('2026-08-16T12:00:00Z'),
     );
     const loaded = parseStoredSaveEnvelope(migrated).game;
-    expect(loaded.credits).toBe(9000);
+    expect(loaded.credits).toBe(Infinity);
     expect(loaded.ledgerUnbound).toBe(true);
     expect(loaded.orientation.completed).toBe(true);
     expect(loaded.orientation.skipped).toBe(true);
