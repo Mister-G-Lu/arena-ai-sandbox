@@ -623,6 +623,7 @@ describe('opening narrative', () => {
     const state = createInitialGameState();
     state.orientation.completed = true;
     state.day = 4;
+    state.qualities.doubt = 1; // an operator who has noticed — no prod needed
     state.zones = { 'annex-order': 'complete', 'handwritten-order': 'complete' };
     localStorage.setItem(
       GAME_SAVE_KEY,
@@ -653,6 +654,40 @@ describe('opening narrative', () => {
     // The Shift 2 annex aside is there; the Day 4+ rotation is not.
     expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
     expect(document.body.textContent).not.toContain('You are ahead of your paperwork');
+  }, 60000);
+
+  it('prods an operator who has never noticed anything', async () => {
+    // The cautious roleplayer: a week of filing everything clean, zero Doubt.
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 3;
+    state.qualities.doubt = 0;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+    expect(document.body.textContent).toContain('You file everything clean');
+    expect(document.body.textContent).toContain('Noticing is permitted');
+
+    // One logged discrepancy ends the prod — M. has been answered.
+    await click('EXECUTE TASK');
+    await tick(1200);
+    if (button('LOG THE DISCREPANCY')) {
+      await click('LOG THE DISCREPANCY');
+      await tick(300);
+    } else {
+      await click('ACKNOWLEDGE RESULT');
+      await tick(200);
+      // A clean task is not an answer; the prod stays.
+      expect(document.body.textContent).toContain('You file everything clean');
+      return;
+    }
+    expect(save().qualities.doubt).toBeGreaterThanOrEqual(1);
+    expect(document.body.textContent).not.toContain('You file everything clean');
   }, 60000);
 
   it('guarantees a personal anomaly before task 10 from Shift 2 on', async () => {

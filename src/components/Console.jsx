@@ -80,6 +80,16 @@ const GENERIC_INIT = [
 ];
 
 /**
+ * The one line a shift gets when the operator has never noticed anything.
+ * A cautious roleplayer can file everything clean for a week and never earn
+ * Doubt — the loop stays shut. M. is the game's pressure valve, and this is
+ * the pressure: noticing is the on-ramp, and the button has been there the
+ * whole time.
+ */
+const M_PROD =
+  'M. // “You file everything clean. Admirable. Also suspicious. Noticing is permitted — the button has been on your screen all along.”';
+
+/**
  * M.'s direct-channel check-in, one per night from Day 4 on. Days 1–3 carry
  * their own bespoke asides; after that the Manager goes quiet in the old
  * build, and P7 asks for roughly one or two memorable exchanges per shift.
@@ -383,11 +393,13 @@ export default function Console() {
             ))}
           </div>
 
-          {state.day >= 4 && (
+          {state.day >= 3 && state.promotion.tier === 0 && (state.qualities.doubt ?? 0) <= 0 ? (
+            <p className="manager-aside console-ambient">{M_PROD}</p>
+          ) : state.day >= 4 ? (
             <p className="manager-aside console-ambient">
               {M_AMBIENT[(state.day - 4) % M_AMBIENT.length]}
             </p>
-          )}
+          ) : null}
 
           <div className={`task-workflow task-workflow-${phase}`} aria-live="polite">
             {phase === 'ready' && !shiftComplete && !outOfActions && (
