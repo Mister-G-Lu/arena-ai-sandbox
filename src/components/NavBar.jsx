@@ -4,13 +4,17 @@ import { useGameState } from '../context/GameStateContext';
 export default function NavBar({ currentPage, onNavigate }) {
   const { state } = useGameState();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  // Nav is derived from state: a destination appears the moment it exists.
   const navItems = [
     { page: 'home', icon: '⌂', label: 'HOME' },
     state.orientation.completed
       ? { page: 'console', icon: '▣', label: 'CONSOLE' }
       : { page: 'first-shift', icon: '◈', label: 'FIRST SHIFT' },
+    state.promotion.unlocks.includes('notice-storylets')
+      ? { page: 'notices', icon: '✦', label: 'NOTICES' }
+      : null,
     { page: 'profile', icon: '◉', label: 'PROFILE' },
-  ];
+  ].filter(Boolean);
 
   function handleClick(page) {
     onNavigate(page);
