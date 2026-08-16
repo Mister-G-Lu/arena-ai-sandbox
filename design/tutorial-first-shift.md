@@ -152,14 +152,15 @@ The player executes their first task:
 > You have been oriented, Operator.
 > 
 > — Your shift is **active**.
-> — Your quota is **loaded**.
+> — Your action budget is **full**.
 > — Your coffee is **warm**.
 > 
 > The city is counting on you. **The city has always been counting on you.**
 > 
-> Report to your console below. Fifty tasks await. **They have always been waiting.**
+> Your first result is in the record. Forty-nine work orders remain in the live queue.
+> **They have always been waiting.**
 
-A button scrolls the player to the main console section, where they begin their first shift.
+A button opens the live console route, where the player continues the first shift.
 
 **What it teaches:**
 - The tutorial is over, the game has begun
@@ -198,97 +199,50 @@ The tutorial establishes several recurring phrases that become motifs throughout
 
 ## 4. Technical Implementation
 
-### HTML Structure
-The tutorial is a new section (`#first-shift`) inserted between the Grid and Console sections:
+The tutorial is the `#first-shift` React route. `src/components/FirstShift.jsx`
+coordinates a small stage state machine; each stage is an isolated component:
 
-```html
-<section id="first-shift" class="section section-orient">
-  <div class="wrap">
-    <h2>FIRST SHIFT</h2>
-    <p class="section-lede">...</p>
-    
-    <div class="orient-terminal" id="orient-terminal">
-      <div class="orient-head">
-        <span class="dot dot-amber"></span>
-        MERIDIAN CENTRAL DISPATCH — ORIENTATION SUBSYSTEM
-        <span class="orient-status" id="orient-status">IDLE</span>
-      </div>
-      <div class="orient-screen" id="orient-screen">
-        <!-- Steps render here -->
-      </div>
-      <div class="orient-actions">
-        <button id="orient-btn" class="btn btn-primary">▸ INITIATE ORIENTATION</button>
-      </div>
-    </div>
-  </div>
-</section>
-```
+- `OrientTerminalBoot.jsx`
+- `OrientTerminalMemo.jsx`
+- `OrientTerminalVista.jsx`
+- `OrientTerminalStation.jsx`
+- `OrientTerminalBreakRoom.jsx`
+- `OrientTerminalTask.jsx`
+- `OrientTerminalComplete.jsx`
+- `OrientTerminalWaiver.jsx`
 
-### JavaScript Architecture
-The tutorial is implemented as a separate IIFE module in `app.js`:
+Consequences do not live in those components. Break-room choices call the shared
+`actions.applyEffects` pipeline, and the first result is recorded through
+`actions.recordOrientationTask` in `GameStateContext.jsx`. The training result
+advances the shift clock and career count but deliberately does not debit the
+action tank: teaching the game's verb is free. Completion persists in the
+canonical save's `orientation` object.
 
-```javascript
-(() => {
-  // Step definitions (array of objects)
-  const STEPS = [
-    { status: 'MEMO RECEIVED', render() { ... } },
-    { status: 'STATION CHECK', render() { ... } },
-    { status: 'BREAK ROOM', render() { ... } },
-    { status: 'FIRST TASK', render() { ... } },
-    { status: 'ORIENTED', render() { ... } }
-  ];
-  
-  // Helper functions
-  function appendText(text) { ... }
-  function appendChoices(choices) { ... }
-  function goToStep(n) { ... }
-  
-  // Boot sequence (typewriter effect)
-  function runBootSequence() { ... }
-  
-  // Init
-  btn.onclick = () => runBootSequence();
-})();
-```
+A completed operator can replay an isolated training copy. Replay does not move
+the live queue, action budget, qualities, or story state. Timers are cleared when
+a stage unmounts, and `prefers-reduced-motion` shortens animated transitions.
 
-### Key Features
-1. **Boot Sequence Animation:** Lines appear one by one with a typewriter effect (22ms per line)
-2. **Step Transitions:** Each step has a `render()` function that appends content to the screen
-3. **Choice System:** The break room step uses `appendChoices()` to present three options
-4. **Status Bar:** The header shows the current step's status (e.g., "MEMO RECEIVED")
-5. **Smooth Scroll:** The final step scrolls to the console section
-6. **Reduced Motion Support:** Respects `prefers-reduced-motion` (disables animations)
-
-### CSS Styling
-The tutorial section uses a distinct visual style:
-- **Scanline overlay** (repeating gradient) for CRT effect
-- **Amber status dot** (pulsing) to distinguish from the console's teal dot
-- **Teal text** with subtle glow (`text-shadow`)
-- **Divider lines** between sections
-- **Choice buttons** with hover effects
+The terminal styling remains in `src/styles.css`; all narrative strings render
+through React interpolation rather than HTML injection.
 
 ---
 
 ## 5. Integration with the Game
 
-### Where It Fits
-The First Shift is the **first thing the player experiences** after the hero section. The page flow is:
-1. Hero (hook: "You were already on the roster")
-2. Directive (the job: 50 tasks, 100% attendance)
-3. Grid (the city: 41,312 population, 9 sectors)
-4. **First Shift (tutorial: orientation sequence)**
-5. Console (main game: execute 50 tasks)
-6. Bulletins (memos: the system's voice)
+`src/App.jsx` gates the console and supply routes on `orientation.completed`.
+Notices additionally require the Operator promotion, while Investigations arrive
+with the Shift 2 Annex case. A fresh player may browse the public home route, but
+a direct attempt to open a gated terminal returns them to First Shift.
 
-The hero CTA ("BEGIN SHIFT") now points to `#first-shift` instead of `#shift`, so new players go through the tutorial before the main game.
+Completing or waiving orientation navigates to `#console`. The orientation task
+is already in the operator file, so the console resumes at work order 2 with the
+action tank still full. Reviewing orientation later returns to the exact live
+state that was left open.
 
-### Transition to the Main Game
-When the player completes the tutorial, they click "BEGIN YOUR SHIFT" which scrolls to the console section. The console is **already initialized** (from the existing JS), so the player can immediately start executing tasks.
-
-**Future enhancement:** The tutorial could "seed" the console's first log line. For example, after the tutorial's "ORIENTATION TASK," the console's first task could be:
-> 01:12 — FIRST REAL TASK: Roll call — VANTABLACK, Sector 9. Roads clear, stars out, all clear.
-
-This would create a seamless narrative bridge from tutorial to game.
+The integration path is pinned by `src/__tests__/opening-narrative.test.tsx`:
+orientation, distinct break-room consequences, waiver compensation, promotion,
+the anomaly filing decision, day rollover, and the first expedition all run
+through the real App and canonical save.
 
 ---
 
@@ -306,7 +260,7 @@ The tutorial could hide a secret for observant players:
 - If the player clicks the status bar, it could toggle a "DEBUG MODE" that shows hidden data
 
 ### Accessibility
-The tutorial could offer a "SKIP ORIENTATION" button for returning players, or a "REPLAY ORIENTATION" button after completion (already implemented).
+Skip and replay are implemented. The remaining work is human keyboard and screen-reader testing of focus order, live status updates, animation timing, and the transition into the console.
 
 ### Localization
 The tutorial's text is hardcoded in English. For localization, the text could be moved to a separate data structure (JSON or i18n keys).
@@ -316,15 +270,16 @@ The tutorial's text is hardcoded in English. For localization, the text could be
 ## 7. Testing Checklist
 
 - [x] Boot sequence animates correctly
-- [x] All 5 steps render in order
-- [x] Break room choices work (all 3 lead to the same outcome)
-- [x] First task executes and transitions to final step
-- [x] Final step scrolls to console
+- [x] All orientation stages render in order
+- [x] Break-room choices file three distinct consequences through the shared effects pipeline
+- [x] First task executes, records once, and transitions to the final step
+- [x] Final step opens the console route
+- [x] Replay leaves the live operator file unchanged
 - [x] Status bar updates correctly
 - [x] Reduced motion preference is respected
 - [x] Waiving orientation opens M.'s direct channel before the player confirms the skip
-- [x] JS syntax is valid (verified with `node -c`)
-- [x] HTML structure is valid (all IDs present)
+- [x] TypeScript, ESLint, integration tests, coverage, and production build pass via `npm run check`
+- [x] Orientation and console gates are covered by the App-level narrative test
 - [ ] Playtest: Does the tutorial feel like part of the game, not a tutorial?
 - [ ] Playtest: Are the seeded mysteries noticeable but not confusing?
 - [ ] Playtest: Does the transition to the console feel seamless?
@@ -336,11 +291,11 @@ The tutorial's text is hardcoded in English. For localization, the text could be
 The First Shift tutorial is a **narrative onboarding** that:
 1. **Eases the player** into the game's tone and mechanics
 2. **Seeds the mysteries** that drive the story (coffee, roster, 06:00)
-3. **Teaches the core loop** (click to execute, read the log)
+3. **Teaches the core loop** (execute, review, choose how the result is filed)
 4. **Establishes the system's voice** (polite, controlling, slightly off)
 5. **Transitions seamlessly** to the main game
 
-The tutorial is **diegetic** (it exists in the game world), **interactive** (the player makes choices), and **thematically consistent** (choices don't matter, the system is always watching).
+The tutorial is **diegetic** (it exists in the game world), **interactive** (the player makes choices), and **thematically consistent** (choices are filed even when the system pretends nothing changed).
 
 The player finishes the tutorial feeling:
 - Oriented (they know how to play)
