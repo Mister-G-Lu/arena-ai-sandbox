@@ -43,6 +43,12 @@ export default function FirstShift() {
     window.location.hash = '#console';
   }
 
+  /** The break-room answer is the operator's first filed consequence. */
+  function recordBreakRoomChoice({ effects, logbook }) {
+    actions.applyEffects(effects);
+    if (logbook) actions.addLogEntry(logbook);
+  }
+
   return (
     <section className="section section-orient page active">
       <div className="wrap">
@@ -117,7 +123,11 @@ export default function FirstShift() {
           )}
 
           {stage === 'breakroom' && (
-            <OrientTerminalBreakRoom onComplete={() => transitionTo('task')} />
+            <OrientTerminalBreakRoom
+              reviewMode={reviewMode}
+              onChoose={recordBreakRoomChoice}
+              onComplete={() => transitionTo('task')}
+            />
           )}
 
           {stage === 'task' && (

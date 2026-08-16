@@ -3,26 +3,35 @@ import { useGameState } from '../context/GameStateContext';
 import './ResourceBar.css';
 
 export default function ResourceBar() {
-  const { state, PROMOTIONS } = useGameState();
-  const { credits, maxCredits, components, day, tasksCompleted } = state;
+  const { state, ledger, PROMOTIONS } = useGameState();
+  const { components, day, tasksCompleted } = state;
 
   const componentsCount = Object.values(components).filter(Boolean).length;
-  const creditPercent = maxCredits === Infinity ? 100 : (credits / maxCredits) * 100;
+  // The meter is not a progress bar toward a cap — there is no cap. It shows how
+  // much of the ledger's 32-bit word is in use, which is a flat sliver forever.
+  const wordPercent = Math.max(0.6, ledger.pressure * 100);
   const currentPromotion = PROMOTIONS[state.promotion.tier];
 
   return (
     <section className="resource-bar" aria-label="Operator stats">
       <div className="resource-bar-inner" aria-live="polite">
         {/* Credits */}
-        <div className="resource-item credits">
+        <div className={`resource-item credits${ledger.unbound ? ' ledger-unbound' : ''}`}>
           <span className="resource-icon">¤</span>
           <div className="resource-info">
             <span className="resource-label">Credits</span>
-            <span className="resource-value">{credits.toLocaleString()}</span>
+            <span
+              className="resource-value"
+              title={ledger.unbound
+                ? 'The ledger stopped being a number.'
+                : `Municipal ledger word: ${ledger.limit.toLocaleString()}`}
+            >
+              {ledger.display}
+            </span>
             <div className="resource-meter">
               <div
                 className="resource-meter-fill"
-                style={{ width: `${creditPercent}%` }}
+                style={{ width: `${wordPercent}%` }}
               />
             </div>
           </div>

@@ -8,6 +8,7 @@ You are the night operator at Meridian Central Dispatch. Fifty tasks a shift. At
 - **Tech stack:** React 19 + Vite + vanilla CSS (migrated from static HTML)
 - **Design docs:** [`design/`](design/) — core design bible and drafts (⚠ full spoilers)
 - **Narration system:** [`NARRATION_SETS.md`](NARRATION_SETS.md) — all story text with critical lines marked for polish
+- **Latest review:** [`design/adversarial-review-01.md`](design/adversarial-review-01.md) — integration pass on the opening narrative, and what the current PR fixes
 
 ## Architecture
 
@@ -21,9 +22,20 @@ src/
 │   ├── Hero.jsx                # Home + interactive Meridian dispatch feed
 │   ├── Console.jsx             # Main gameplay console
 │   ├── FirstShift.jsx          # Skippable/reviewable tutorial sequence
+│   ├── Notices.jsx             # Storylet runner: zones, cards, outcomes
 │   ├── ProfilePage.jsx         # Player profile/stats
 │   ├── OrientTerminal*.jsx     # 6 tutorial terminal stages
 │   └── [other page components]
+├── content/                    # Storylet JSON, validated at load time
+│   ├── routine/                # The notice pool
+│   └── floor12/                # First expedition — awards the NULL KEY
+├── game/                       # Pure, tested rules (no React)
+│   ├── ledger.ts               # Uncapped credits + the 32-bit overflow glitch
+│   ├── qualities.ts            # The one effects pipeline
+│   ├── progression.ts          # Promotions + zones, as data
+│   ├── payouts.ts              # What a filed result is worth
+│   ├── glitches.ts             # Anomalies the operator gets to keep
+│   └── storylets.ts            # Storylet schema + validation
 ├── context/
 │   └── GameStateContext.jsx    # Global state management
 ├── hooks/
@@ -32,6 +44,19 @@ src/
 └── main.jsx
 ```
 
+### Rules of the codebase
+
+- **Consequences are data.** Every outcome — an orientation answer, a console
+  filing, a storylet choice — is an `effects` object (`{ Doubt: 1, Attention: 1 }`)
+  filed through one pipeline. No component increments a quality by hand.
+- **Requirements are data.** Promotions and zones declare `requires` maps; one
+  evaluator answers "can I?" and one formatter renders the label. No per-tier
+  strings in JSX.
+- **Content is data.** Storylets live in `src/content/**/*.json` and are schema
+  validated at load. Adding a card or a zone is not a code change.
+- **There are no caps that the fiction doesn't justify.** Credits are limited
+  only by a 32-bit word, and reaching it is a reward (see P2a in the design bible).
+
 ## Local dev
 
 ```bash
@@ -39,11 +64,17 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:5173.
+Then open http://localhost:3000.
 
-Build for production:
+Build for production (outputs to `docs/` for GitHub Pages):
 ```bash
 npm run build
+```
+
+Run the test suite (208 tests — unit rules + a full integration click-through of
+the opening narrative):
+```bash
+npm test
 ```
 
 ## Current State
@@ -60,7 +91,7 @@ npm run build
 **UI Components:**
 - Progress-aware sidebar navigation (Console stays locked until orientation is complete)
 - Interactive homepage dispatch deck combining Directive, Grid, and Bulletins
-- Top resource bar (Credits, Components, Day, Tasks, Rank, Profile)
+- Top resource bar (Credits — uncapped, Components, Day, Tasks, Rank, Profile)
 - Profile page with full player stats
 - Console with two-step task execution and First Shift review access
 - 6-stage tutorial (FirstShift) with skip and non-destructive replay modes
@@ -69,10 +100,14 @@ npm run build
 
 **Gameplay Systems:**
 - Task execution with logging
-- Resource tracking (Credits, Components, Doubt, Perception)
-- 6-tier promotion system
+- Uncapped credit ledger with a 32-bit word and the Overflow glitch
+- Corrupted results as decisions: file as clean, or log the discrepancy
+- Resource tracking (Credits, Components, Doubt, Perception, Routine, Attention)
+- 6-tier promotion system, evaluated automatically from declarative requirements
+- Notices: storylet zones driven by validated JSON content
+- Floor 12 expedition — the first Component (NULL KEY)
 - Two-step task confirmation (execute → confirm)
-- State persistence across sessions
+- State persistence across sessions, with migration for legacy capped saves
 
 **Narration System:**
 - All narration text written (2,650+ words)
@@ -134,9 +169,9 @@ npm run build
    - Death transition sound effects
 
 6. **Save/Load System** (est. 2-3 hours)
-   - Persist game state to localStorage
+   - ~~Persist game state to localStorage~~ (done)
    - Add save/load UI
-   - Handle state migration for future updates
+   - ~~Handle state migration for future updates~~ (done for the retired credit cap)
 
 **Low Priority:**
 
@@ -184,7 +219,7 @@ This is a personal project, but feedback is welcome. If you want to contribute:
 
 1. Check the remaining tasks list above
 2. Pick something that interests you
-3. Create a branch from `arena/01a0078e-arena-ai-sandbox`
+3. Create a branch from `main`
 4. Submit a PR with your changes
 
 For critical narrative work (marked with `//UPDATE [CRITICAL]`), please discuss the changes first to ensure tone consistency.
