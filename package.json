@@ -1,37 +1,35 @@
 {
-  "name": "false-reality",
-  "private": true,
-  "version": "0.41.312",
+  "name": "arena-ai-sandbox",
+  "version": "1.0.0",
+  "description": "A slow-burn action/storylet game in the Fallen London tradition, built in small PRs from this repo.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
   "type": "module",
-  "description": "FALSE REALITY — night dispatch storylet game (pre-alpha)",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Mister-G-Lu/arena-ai-sandbox.git"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mister-G-Lu/arena-ai-sandbox/issues"
+  },
+  "homepage": "https://github.com/Mister-G-Lu/arena-ai-sandbox#readme",
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.4",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
-    "@vitest/coverage-v8": "^4.1.10",
-    "jsdom": "^30.0.1",
-    "typescript": "^7.0.2",
-    "vite": "^8.2.1",
-    "vitest": "^4.1.10"
+    "vite": "^8.2.1"
   }
 }
