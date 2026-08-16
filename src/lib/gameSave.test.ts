@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMPONENT_DEFS, PROMOTIONS, ZONES } from '../game/progression';
 import { QUALITY_DEFS } from '../game/qualities';
+import { SUPPLY_DEFS } from '../game/shop';
 import {
   CREDIT_INFINITY,
   GAME_SAVE_VERSION,
@@ -19,6 +20,8 @@ describe('canonical game save', () => {
   it('derives additive defaults from the game data tables', () => {
     const state = createInitialGameState();
     expect(Object.keys(state.components)).toEqual(COMPONENT_DEFS.map(({ id }) => id));
+    expect(Object.keys(state.supplies)).toEqual(SUPPLY_DEFS.map(({ id }) => id));
+    expect(Object.values(state.supplies)).toEqual(SUPPLY_DEFS.map(() => false));
     expect(Object.keys(state.qualities)).toEqual(
       Object.values(QUALITY_DEFS)
         .filter(({ kind }) => kind === 'quality')
@@ -37,6 +40,8 @@ describe('canonical game save', () => {
     state.credits = Infinity;
     state.ledgerUnbound = true;
     state.components.key = true;
+    state.supplies.coffee = true;
+    state.supplies['bolt-cutters'] = true;
     state.qualities.doubt = 2;
     state.promotion = {
       tier: 2,
@@ -54,6 +59,8 @@ describe('canonical game save', () => {
     const loaded = parseSaveJson(serializeSaveEnvelope(stored));
     expect(loaded.game.credits).toBe(Infinity);
     expect(loaded.game.components.key).toBe(true);
+    expect(loaded.game.supplies.coffee).toBe(true);
+    expect(loaded.game.supplies['bolt-cutters']).toBe(true);
     expect(loaded.game.promotion.title).toBe(PROMOTIONS[2].title);
     expect(loaded.game.promotion.unlocks).toEqual(
       PROMOTIONS.slice(0, 3).flatMap(({ unlocks }) => unlocks),
@@ -98,6 +105,12 @@ describe('canonical game save', () => {
         game: { ...envelope.game, components: { ...envelope.game.components, bogus: true } },
       }),
     ).toThrow(/components.*bogus/);
+    expect(() =>
+      parseStoredSaveEnvelope({
+        ...envelope,
+        game: { ...envelope.game, supplies: { ...envelope.game.supplies, bogus: true } },
+      }),
+    ).toThrow(/supplies.*bogus/);
   });
 
   it('rejects unknown zones, glitches, malformed pointers, and oversized text', () => {

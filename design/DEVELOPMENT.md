@@ -94,6 +94,7 @@ React state directly.
 - Story schema/graph: `src/game/storylets.ts` and `src/content/load.ts`
 - Qualities/effect names: `src/game/qualities.ts`
 - Promotions, zones, component inventory, and board assignment: `src/game/progression.ts`
+- Supplies (the shop's goods) and the purchase rules: `src/game/shop.ts`
 
 Every zone declares `board: 'notices' | 'investigations'`. `Notices.jsx` is the shared
 runner for both routes: Notices holds optional ambient observations; Investigations
@@ -101,7 +102,30 @@ holds active cases and expeditions. Keep that distinction in data rather than ma
 a second storylet engine.
 
 Prefer data-table additions over component branches. A new component belongs in
-`COMPONENT_DEFS`; save defaults and counters derive from that table.
+`COMPONENT_DEFS`; a new shop good belongs in `SUPPLY_DEFS`; save defaults and
+counters derive from those tables. A supply is a requirement metric like any other:
+a zone declares `requires: { coffee: 1 }` and the one checker in `progression.ts`
+reads it off the operator file, rendering the product name as the label.
+
+Zones also use three hint fields, all data:
+
+- `visibleRequires` — when the zone is *listed* at all (as locked teaser or open).
+- `requiresUnlock` — promotion unlock flag required to *open* it.
+- `hintUnlock` — when set, the zone is listed even before that clearance is held,
+  so the lock itself advertises what promotion buys. `lockedNote` supplies the
+  fiction on the sealed card.
+- `requires` — quality/metric thresholds to open (supplies included).
+
+`Notices.jsx` renders sealed cards with their clearance, fiction note, and an
+`ORDER FROM SUPPLY` link when a good is the blocker. `HorizonPanel.jsx` renders
+under both boards: the next promotion with its live gap, what it adds, and every
+locked zone on file. Both are lenses on the same gates the checker enforces —
+hints cannot drift from rules.
+
+The shop is the `SUPPLY` page (`#shop`), gated behind orientation like the
+console. Purchases flow through `actions.purchaseSupply`: one ledger
+`withdraw()`, one `supplies[id] = true`, one logbook entry. The classified
+`machine-favor` item is a permanent teaser — it is never purchaseable.
 
 `loadAllStorylets()` validates the whole graph after validating each card. It
 rejects duplicate card/choice IDs, missing or cross-zone `next` targets,

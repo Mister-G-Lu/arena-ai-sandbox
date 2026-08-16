@@ -13,6 +13,7 @@ import {
   zoneState,
   zoneById
 } from '../game/progression';
+import { SUPPLY_DEFS, supplyById, isPurchaseable } from '../game/shop';
 import {
   createInitialGameState,
   createStoredSaveEnvelope,
@@ -167,6 +168,31 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
+  /**
+   * Order a supply from the municipal terminal. Salary is the mundane
+   * economy's job; a purchase is one transaction through the same ledger,
+   * and the arrival is filed in the logbook like any other result.
+   */
+  const purchaseSupply = useCallback((supplyId) => {
+    setState(prev => {
+      if (!isPurchaseable(supplyId)) return prev;
+      const def = supplyById(supplyId);
+      if (!def || prev.supplies[supplyId]) return prev;
+      const result = withdraw({ credits: prev.credits, unbound: prev.ledgerUnbound }, def.price);
+      if (!result.paid) return prev;
+      const note = def.arrivalNote ? ` ${def.arrivalNote}` : '';
+      return withLog(
+        {
+          ...prev,
+          credits: result.credits,
+          ledgerUnbound: result.unbound,
+          supplies: { ...prev.supplies, [supplyId]: true }
+        },
+        `Supply order filed: ${def.name} (¤${def.price.toLocaleString()}).${note}`
+      );
+    });
+  }, []);
+
   const componentsCount = Object.values(state.components).filter(Boolean).length;
 
   /* ---------------- qualities ---------------- */
@@ -184,9 +210,11 @@ export function GameStateProvider({ children }) {
     componentsCount,
     deaths: state.deaths,
     day: state.day,
+    tier: state.promotion.tier,
     unlocks: state.promotion.unlocks,
-    zones: state.zones
-  }), [state.qualities, state.attention, componentsCount, state.deaths, state.day, state.promotion.unlocks, state.zones]);
+    zones: state.zones,
+    supplies: state.supplies
+  }), [state.qualities, state.attention, componentsCount, state.deaths, state.day, state.promotion.tier, state.promotion.unlocks, state.zones, state.supplies]);
 
   // Promotions are evaluated by the system, not requested by the player.
   useEffect(() => {
@@ -225,8 +253,10 @@ export function GameStateProvider({ children }) {
         componentsCount: Object.values(prev.components).filter(Boolean).length,
         deaths: prev.deaths,
         day: prev.day,
+        tier: prev.promotion.tier,
         unlocks: prev.promotion.unlocks,
-        zones: prev.zones
+        zones: prev.zones,
+        supplies: prev.supplies
       };
       if (zoneState(zone, ctx) !== 'open') return prev;
       return {
@@ -382,6 +412,7 @@ export function GameStateProvider({ children }) {
     availableZones,
     QUALITY_DEFS,
     COMPONENT_DEFS,
+    SUPPLY_DEFS,
     PROMOTIONS,
     ZONES,
     actions: {
@@ -389,6 +420,7 @@ export function GameStateProvider({ children }) {
       spendCredits,
       componentsCount,
       applyEffects,
+      purchaseSupply,
       enterZone,
       closeStorylet,
       resolveStorylet,

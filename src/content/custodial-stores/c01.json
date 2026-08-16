@@ -1,0 +1,26 @@
+{
+  "id": "custodial-01",
+  "zone": "custodial-stores",
+  "title": "The memo about the fence",
+  "body": "Custodial says the bolt cutters are out. You hold them. They are heavy and patient and older than the building. The memo about the annex fence — the one that says the fence is not there — is pinned above the shelf where they were not.",
+  "choices": [
+    {
+      "id": "memo",
+      "label": "Read the memo twice.",
+      "outcome": {
+        "text": "THE ANNEX SUB-BASEMENT ACCESS FENCE HAS BEEN REMOVED. NO FENCE EXISTS AT THIS LOCATION. The staples are fresh. The fence is not there. The cutters are in your hand.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "back",
+      "label": "Put them back. For now.",
+      "outcome": {
+        "text": "You put them back. The shelf takes them like a drawer taking a key. You will need them later. Something will need them.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

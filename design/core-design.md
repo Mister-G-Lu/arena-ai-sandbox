@@ -77,6 +77,43 @@ word size; cities do not have word sizes, **programs do**.
   to infinite credit. This is on purpose to hint that the world is a
   'simulation'."
 
+## P2b — Supplies and the horizon (the mundane economy, spendable)
+
+Salary finally buys something you can hold. The **municipal supply terminal**
+(the `SUPPLY` page) sells small, useful dispatcher goods — ground coffee, a
+night radio permit, a pocket torch, bolt cutters, a thermos, a box of smokes
+for the doorman. Each good is bought once for a fixed credit price, carried in
+the operator file, and opens a small one-card storylet on the Notices board.
+
+- Supplies are **the grind's legitimate role**: cheap, mundane, slightly useful,
+  and a reason a routine worker has money. They are never story-critical —
+  every zone expedition still runs on investigation, not purchases.
+- A supply is a requirement metric like any other (`requires: { coffee: 1 }`),
+  evaluated by the one checker. The save schema derives from `SUPPLY_DEFS`;
+  adding a good is one data edit.
+- The third-floor vending machine also stocks one permanent teaser
+  (THE MACHINE'S FAVOR) that is never for sale — the shop hints at future
+  stock the way everything else hints at future floors.
+
+The game also gives the player a **horizon**: things to look forward to, shown
+as gates rather than told as promises.
+
+- **Locked story segments** — a zone that is *listed* but sealed shows its
+  clearance on the card (`CLEARANCE REQUIRED: SENIOR OPERATOR CLEARANCE`), its
+  fiction note, and its requirement gap. The restricted-files drawer is the
+  first: visible from the Operator tier, unsealed by Senior clearance.
+- **Floor 12 lists on Shift 2 for every operator** — sealed, with its
+  requirements shown — so the expedition's existence is the carrot and the
+  promotion is the key.
+- **The clearance forecast** (under both boards) shows the next promotion with
+  the live gap, what it adds, and every locked zone on file. Hints are derived
+  from the same `PROMOTIONS`/`ZONES` tables the checker enforces, so they
+  cannot drift from the rules.
+- *Origin:* user direction — "give player hints of future and things to look
+  forward to; hint with a locked story segment requiring promotion... a shop
+  that we can use the credits on for basic resources... simple storylets we can
+  use our resources to access in the beginning."
+
 ## P3 — The Reinstatement (death's price)
 
 The Fallen London-chess analog, diegetic to this game's fiction:

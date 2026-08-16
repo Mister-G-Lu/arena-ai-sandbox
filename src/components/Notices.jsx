@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { loadAllStorylets, findCard, cardsInZone } from '../content/load';
 import { describeEffects } from '../game/qualities';
-import { requirementLabel, missingRequirements } from '../game/progression';
+import { clearanceLabel, requirementLabel, missingRequirements } from '../game/progression';
+import { supplyById } from '../game/shop';
+import HorizonPanel from './HorizonPanel';
 import './Notices.css';
 
 const BOARD_COPY = {
@@ -144,6 +146,9 @@ export default function Notices({ board = 'notices' }) {
             const exhausted = zone.onceEach && remaining === 0;
             const status = exhausted && zone.status !== 'complete' ? 'complete' : zone.status;
             const blockers = missingRequirements(zone.requires, requirementCtx);
+            const clearanceHeld = !zone.requiresUnlock || state.promotion.unlocks.includes(zone.requiresUnlock);
+            const needsSupplies = Object.keys(zone.requires ?? {})
+              .some((key) => supplyById(key) && !state.supplies[key]);
 
             return (
               <article key={zone.id} className={`zone-card zone-${status}`}>
@@ -164,10 +169,25 @@ export default function Notices({ board = 'notices' }) {
                 </div>
 
                 {status === 'locked' && (
-                  <p className="fine zone-requirement">
-                    REQUIRES: {requirementLabel(zone.requires)}
-                    {blockers.length > 0 ? ` — you have ${blockers.join(', ')}` : ''}
-                  </p>
+                  <div className="zone-requirement-stack">
+                    {!clearanceHeld && (
+                      <p className="fine zone-requirement">
+                        CLEARANCE REQUIRED: {clearanceLabel(zone.requiresUnlock)}
+                      </p>
+                    )}
+                    {zone.lockedNote && (
+                      <p className="fine zone-requirement">{zone.lockedNote}</p>
+                    )}
+                    <p className="fine zone-requirement">
+                      REQUIRES: {requirementLabel(zone.requires)}
+                      {blockers.length > 0 ? ` — you have ${blockers.join(', ')}` : ''}
+                    </p>
+                    {needsSupplies && (
+                      <a className="zone-supply-link" href="#shop">
+                        ▸ ORDER FROM SUPPLY
+                      </a>
+                    )}
+                  </div>
                 )}
 
                 {status === 'complete' && zone.closedNote && (
@@ -191,6 +211,8 @@ export default function Notices({ board = 'notices' }) {
             <p className="fine">{copy.empty}</p>
           )}
         </div>
+
+        <HorizonPanel />
 
         {card && (
           <div className="console storylet-console">

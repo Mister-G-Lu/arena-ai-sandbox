@@ -68,6 +68,28 @@
   color: #7c8bb0;
 }
 
+.zone-requirement-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zone-supply-link {
+  align-self: flex-start;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: #57d6c3;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(87, 214, 195, 0.4);
+  padding-bottom: 1px;
+}
+
+.zone-supply-link:hover {
+  color: #ffc66b;
+  border-bottom-color: rgba(255, 198, 107, 0.5);
+}
+
 .zone-card .btn {
   align-self: flex-start;
   margin-top: 4px;
@@ -168,6 +190,109 @@
   margin: 8px 24px 20px;
 }
 
+/* ---------- clearance forecast (the "what's next" hints) ---------- */
+
+.horizon-panel {
+  border: 1px solid rgba(255, 198, 107, 0.28);
+  background: linear-gradient(160deg, rgba(22, 17, 10, 0.6), rgba(8, 13, 28, 0.9));
+  margin-bottom: 24px;
+}
+
+.horizon-head {
+  border-bottom: 1px solid rgba(255, 198, 107, 0.15);
+}
+
+.horizon-head .console-status {
+  color: #ffc66b;
+}
+
+.horizon-row {
+  display: flex;
+  gap: 28px;
+  padding: 14px 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.07);
+}
+
+.horizon-row:last-of-type {
+  border-bottom: 0;
+}
+
+.horizon-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 170px;
+  max-width: 46ch;
+}
+
+.horizon-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.horizon-value {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #e2e9fb;
+  line-height: 1.55;
+}
+
+.horizon-missing {
+  color: #ffc66b;
+}
+
+.horizon-locked-cell {
+  max-width: none;
+  min-width: 100%;
+}
+
+.horizon-locked-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px 24px;
+}
+
+.horizon-locked-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 14px;
+  position: relative;
+}
+
+.horizon-locked-item::before {
+  content: '◇';
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: #57d6c3;
+  font-size: 0.7rem;
+}
+
+.horizon-locked-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  color: #e2e9fb;
+}
+
+.horizon-locked-req {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: #8fa3cc;
+}
+
+.horizon-note {
+  margin: 0;
+  padding: 10px 24px 14px;
+}
+
 @media (max-width: 640px) {
   .zone-board { grid-template-columns: 1fr; }
+  .horizon-row { flex-direction: column; gap: 12px; }
 }

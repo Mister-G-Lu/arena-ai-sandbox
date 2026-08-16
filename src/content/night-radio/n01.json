@@ -1,0 +1,35 @@
+{
+  "id": "night-radio-01",
+  "zone": "night-radio",
+  "title": "Receiving",
+  "body": "Dispatch's radio license ends at 03:00. Yours now runs to 06:00, which is when the license ends and the permit's fine print begins: THIS PERMIT DOES NOT AUTHORIZE RECEIVING. You plug in anyway, after the third task, and the channel is not empty.",
+  "choices": [
+    {
+      "id": "listen",
+      "label": "Listen.",
+      "outcome": {
+        "text": "A voice, faint, counting. Not dispatch's dispatchers. Not the day crew. Someone is counting streets, and when they reach forty-one thousand three hundred and twelve they start again.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "transmit",
+      "label": "Transmit.",
+      "outcome": {
+        "text": "The counting stops. A long pause. Then, very clearly, a voice you almost know: \"...again, Operator?\" The channel goes to static. It stays static.",
+        "qualities": { "Doubt": 1, "Attention": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "off",
+      "label": "Switch it off. The permit says receiving.",
+      "outcome": {
+        "text": "You file the permit. The fine print is very clear. The counting continues, quietly, in the wiring.",
+        "qualities": { "Routine": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

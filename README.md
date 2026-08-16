@@ -19,6 +19,7 @@ Consequences, requirements, and content are all data:
 - Outcomes are `effects` objects (`{ Doubt: 1 }`) filed through one pipeline (`src/game/qualities.ts` → `src/context/GameStateContext.jsx`).
 - Promotions and zones declare `requires` maps evaluated by one checker (`src/game/progression.ts`); no per-tier strings in JSX.
 - Storylets live in schema-validated JSON under `src/content/` and run through `src/components/Notices.jsx`.
+- The municipal supply terminal (`src/components/Shop.jsx`, goods in `src/game/shop.ts`) spends Salary on small useful things, each opening a Notices storylet; a clearance forecast under both boards hints at what promotion buys.
 - One versioned operator file (`src/lib/gameSave.ts`) backs local storage, import/export, and Supabase sync.
 - Credits are uncapped except by the machine's own 32-bit word — reaching it is the Overflow glitch (`src/game/ledger.ts`).
 - Content is text, not HTML: JSON, saves, and Supabase rows render through React interpolation, never `dangerouslySetInnerHTML`.

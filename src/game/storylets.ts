@@ -2,7 +2,18 @@ import { qualityDef } from './qualities';
 
 /** Zones that ship content decks in `src/content/<zone>/`. The content loader
  *  validates every configured zone's entries against this list. */
-export const ZONE_IDS = ['annex-order', 'routine', 'floor12'] as const;
+export const ZONE_IDS = [
+  'annex-order',
+  'routine',
+  'floor12',
+  'restricted-files',
+  'breakroom',
+  'night-radio',
+  'utility-closet',
+  'custodial-stores',
+  'window-ledge',
+  'doorman'
+] as const;
 export type ZoneId = (typeof ZONE_IDS)[number];
 
 export const STORYLET_KEYS = new Set(['id', 'zone', 'title', 'body', 'choices']);
