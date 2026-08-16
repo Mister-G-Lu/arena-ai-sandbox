@@ -95,6 +95,27 @@ export default function SaveManagement() {
         </p>
       )}
 
+      {persistence.remoteReset && !persistence.tabConflict && (
+        <div className="save-conflict" role="alert">
+          <p>
+            <strong>Another browser tab erased this operator file.</strong> This tab still holds
+            its copy in memory, but local saving is paused so neither tab can surprise the other.
+          </p>
+          <div className="save-summary-grid">
+            <FileSummary label="THIS TAB" game={state} savedAt={persistence.lastSavedAt} />
+          </div>
+          <div className="save-action-row">
+            <button
+              className="btn btn-primary btn-compact"
+              type="button"
+              onClick={actions.keepThisTabSave}
+            >
+              KEEP THIS TAB&apos;S COPY
+            </button>
+          </div>
+        </div>
+      )}
+
       {persistence.tabConflict && (
         <div className="save-conflict" role="alert">
           <p>

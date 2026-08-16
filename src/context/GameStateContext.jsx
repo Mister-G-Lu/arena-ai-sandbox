@@ -171,7 +171,13 @@ export function GameStateProvider({ children }) {
     recoveryError: boot.error,
     lastSavedAt: boot.envelope?.savedAt ?? null,
     hadLocalSaveAtBoot: boot.hadLocalSave,
-    tabConflict: null
+    tabConflict: null,
+    /**
+     * True when another tab erased the canonical operator file (a reset).
+     * There is no foreign copy to offer adoption of — only this tab's
+     * in-memory work and a paused writer.
+     */
+    remoteReset: false
   }));
   const firstPersistence = useRef(true);
   const stateRef = useRef(state);
@@ -188,7 +194,23 @@ export function GameStateProvider({ children }) {
 
   useEffect(() => {
     function onStorage(event) {
-      if (event.key !== GAME_SAVE_KEY || event.newValue == null) return;
+      if (event.key !== GAME_SAVE_KEY) return;
+      if (event.newValue == null) {
+        // The key disappeared: another tab reset the game. Without this branch
+        // the removal is invisible here, and this tab's next ordinary write
+        // would silently resurrect the file the operator just erased — the
+        // resetting tab would then read that resurrection as a foreign edit.
+        // Pause writes and surface the wipe instead.
+        localWritesBlocked.current = true;
+        setPersistence(prev => ({
+          ...prev,
+          status: 'conflict',
+          error: 'Another tab erased this operator file. Local saving is paused — keep this tab\'s copy to continue it here.',
+          tabConflict: null,
+          remoteReset: true
+        }));
+        return;
+      }
       try {
         const incoming = parseSaveJson(event.newValue);
         if (gameStateFingerprint(incoming.game) === gameStateFingerprint(stateRef.current)) {
@@ -200,7 +222,8 @@ export function GameStateProvider({ children }) {
           ...prev,
           status: 'conflict',
           error: 'Another tab changed this operator file. Choose a terminal before local saving continues.',
-          tabConflict: incoming
+          tabConflict: incoming,
+          remoteReset: false
         }));
       } catch (error) {
         // Invalid replacement bytes are just as dangerous to overwrite: hold
@@ -303,7 +326,8 @@ export function GameStateProvider({ children }) {
       status: 'ready',
       error: null,
       lastSavedAt: incoming.savedAt,
-      tabConflict: null
+      tabConflict: null,
+      remoteReset: false
     }));
     // This is a whole-file replacement, like import. Reconcile it with cloud
     // before autosave is allowed to resume.
@@ -312,7 +336,9 @@ export function GameStateProvider({ children }) {
   }, [persistence.tabConflict]);
 
   const keepThisTabSave = useCallback(() => {
-    if (!persistence.tabConflict) return false;
+    // Valid whenever local writes were paused by a foreign event — a rival
+    // tab's save, or a rival tab's reset, which has no save to adopt.
+    if (!persistence.tabConflict && !persistence.remoteReset) return false;
     localWritesBlocked.current = false;
     const result = writeLocalGameSave(stateRef.current);
     if (!result.ok) {
@@ -325,10 +351,11 @@ export function GameStateProvider({ children }) {
       status: 'saved',
       error: null,
       lastSavedAt: result.envelope.savedAt,
-      tabConflict: null
+      tabConflict: null,
+      remoteReset: false
     }));
     return true;
-  }, [persistence.tabConflict]);
+  }, [persistence.tabConflict, persistence.remoteReset]);
 
   const cloud = useCloudSave({
     state,

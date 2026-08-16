@@ -312,6 +312,61 @@ describe('effects pipeline', () => {
     expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(0);
   });
 
+  it('treats a cross-tab reset as a foreign event instead of resurrecting the erased file', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(42); });
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(42);
+
+    // Another tab runs resetGame(): the canonical key disappears there.
+    localStorage.removeItem(GAME_SAVE_KEY);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: null,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.remoteReset).toBe(true);
+
+    // This tab keeps its work in memory, but its next ordinary write must not
+    // silently resurrect the file the other tab just erased.
+    await act(async () => { api.actions.addCredits(1); });
+    expect(api.state.credits).toBe(43);
+    expect(localStorage.getItem(GAME_SAVE_KEY)).toBeNull();
+
+    // KEEP THIS TAB works even though there is no foreign copy to compare.
+    await act(async () => { expect(api.actions.keepThisTabSave()).toBe(true); });
+    expect(api.persistence.remoteReset).toBe(false);
+    expect(api.persistence.status).toBe('saved');
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(43);
+  });
+
+  it('a foreign write after a foreign reset reads as an ordinary tab conflict', async () => {
+    mount();
+    localStorage.removeItem(GAME_SAVE_KEY);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: null,
+      }));
+    });
+    expect(api.persistence.remoteReset).toBe(true);
+
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.game.credits = 88;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.remoteReset).toBe(false);
+    expect(api.persistence.tabConflict.game.credits).toBe(88);
+  });
+
   it('exports and imports the same canonical envelope used by cloud sync', async () => {
     mount();
     await act(async () => { api.actions.addCredits(321); });
