@@ -1,76 +1,65 @@
 # Epic Narration Sets — Where and When
+### Canonical Narration & Voice Bible (Multi-Month Long-Term Scope)
 
-> **Status:** Not yet integrated — no narration component exists in `src/`. Each set notes its trigger below.
+> **Status:** Reference specifications for narration events across the 3-month arc. Each set notes its trigger below.
+> **Scope:** Aligned with `design/arcs.md` (Arc I: Month 1 / 30+ shifts; Arc II: Month 2 / ~45–80 shifts; Arc III: Month 3 / ~81–95+ shifts).
 
 ## Guidelines
 - **Length:** 50-200 words max per set
-- **Tone:** Mundane job, subtle weirdness, not flowery
+- **Tone:** Mundane job, subtle weirdness, deadpan corporate horror
 - **Keywords:** Use [Credits], [Hovercar], etc. to hint at lore
-- **Uncertain prose:** Mark with //UPDATE THIS
 - **Voice:** Professional dispatch terminal, but with creeping dread
 
 ---
 
 ## 1. ARC TRANSITIONS
 
-### Arc I → Arc II: "The First Death"
-**Trigger:** Player dies for the first time (Day 9)
-**Location:** Interim (waking up after death)
-**Words:** ~100
+### Arc I → Arc II: "The First Death & The Reinstatement"
+**Trigger:** Player dies for the first time on Floor 12 (Day 30+ for tryhards, ~Day 35–45 standard)
+**Location:** Interim (waking up after reconciling on the Ledger)
+**Words:** ~110
 
 ```
-//UPDATE [CRITICAL]: Opening line needs maximum impact — player just died, this is their first moment back
 You wake up.
 
 The terminal is humming. The coffee is warm. The clock says 01:00.
 
-You check your hands. They're fine. You check the log. Day 9, same as yesterday. Same as the day before.
-
-//UPDATE THIS: Add more sensory details about the Interim
+You check your hands. They're fine. You check the log. Day 1 (again). The roster lists your name, but the date has been wiped.
 
 The system chirps: "Welcome back, Operator. Your previous shift has been logged. There were no incidents."
 
-//UPDATE [CRITICAL]: This is the player's first realization — needs to hit hard
-There were incidents. You remember the fire. You remember—
+There were incidents. You remember the fire in the records room. You remember the Auditor holding your pre-signed termination form.
 
-//UPDATE THIS: Memory fragment here
+The coffee is warm. It has always been warm. In your pocket, you feel the cold edge of the NULL KEY.
 
-The coffee is warm. It's always warm.
-
-[+1 Residue] [Unlock: Loop Awareness]
+[+1 Residue] [Unlock: Loop Awareness] [Component 1: NULL KEY]
 ```
 
 ---
 
 ### Arc II → Arc III: "The Summons"
-**Trigger:** Player gathers all 6 Components (Day 42)
+**Trigger:** Player gathers all 6 Components and crosses Doubt threshold (~Day 80+)
 **Location:** Manager's Office (Floor 12)
 **Words:** ~150
 
 ```
-//UPDATE [CRITICAL]: Opening line — player has gathered all 6 Components, this is the final confrontation
 The elevator opens. Floor 12.
 
-//UPDATE THIS: Describe the office—should feel wrong but also familiar
+The hallway is silent. The amber wash outside the window has hardened into a grid of uncompiled numbers.
 
-//UPDATE [CRITICAL]: Manager's first spoken line — needs to feel like a boss fight intro
-The Manager is waiting. He doesn't look up from his terminal. "You've been busy," he says. "Gathering things that don't belong to you."
+The Manager is waiting behind a mahogany desk that exists on no floor plan. He does not look up from his screen.
 
-You set the Components on his desk. The Key. The Lens. The Wire. The Crystal. The Chip. The Interim.
+"You've been busy," he says. "Gathering things that don't belong to an operator."
+
+You lay the six Components on his desk. The Key. The Lens. The Wire. The Crystal. The Chip. The Interim.
 
 He looks at them. Then at you.
 
-//UPDATE [CRITICAL]: This line should feel like a revelation — the player now knows what the Components are for
-"You know what these are for," he says. It's not a question.
+"You know what these build," he says quietly. "The Seam Ripper. The system doesn't like loose ends, and you've made yourself into a catastrophic exception."
 
-//UPDATE THIS: Add dialogue about the Seam Ripper
+He slides a pristine form across the blotter. Your name is already on it.
 
-"The system doesn't like loose ends," he continues. "And you've become one."
-
-He slides a form across the desk. Your name is already on it.
-
-//UPDATE [CRITICAL]: This is the final choice setup — needs to feel epic but understated
-"Sign here," he says. "Or don't. But 06:00 is coming, and this time, it won't reset."
+"Sign here," he says. "Keep logging. The coffee will stay warm forever. Or use the tool at 05:59—and see what happens when the city runs out of memory."
 
 [Unlock: Arc III] [Unlock: Final Choice]
 ```
@@ -80,7 +69,7 @@ He slides a form across the desk. Your name is already on it.
 ## 2. PROMOTIONS
 
 ### Tier 1: Unknown Operator → Operator
-**Trigger:** Doubt ≥ 1
+**Trigger:** Doubt ≥ 1 (Earned via Break Room curiosity or logging early anomalies)
 **Words:** ~75
 
 ```
@@ -121,15 +110,13 @@ Access granted:
 
 There is no new attachment. The attachment has always been open.
 
-But there is no form. There is no Manager.
-
 [Unlock: Floor 12 field order]
 ```
 
 ---
 
 ### Tier 3: Senior Operator → Lead Operator
-**Trigger:** Doubt ≥ 3, Components ≥ 3 (Day 20+)
+**Trigger:** Doubt ≥ 3, Components ≥ 2 (~Day 45+)
 **Words:** ~100
 
 ```
@@ -143,25 +130,21 @@ Access granted:
 - Self-dispatch authority
 - Operator 5's logbook (partial)
 - Override codes (Level 3)
-- [Hovercar] bay access
-
-//UPDATE THIS: Add flavor text about Lead Operator responsibilities
+- Municipal annex roof access
 
 You can now dispatch yourself to field operations. The system trusts you to handle anomalies.
 
-Operator 5's logbook is waiting in your locker. Most of the pages are redacted, but you can read enough to understand:
+Operator 5's logbook is waiting in your locker. Most of the pages are redacted, but one line remains un-erased:
 
-//UPDATE THIS: Tease what's in the logbook
+"You're not the first," it says. "Do not reconcile field 4."
 
-"You're not the first," it says. "But you might be the last."
-
-Your [Credits] cap has been increased. You can now afford the good coffee.
+Your salary continues to accrue. Uncapped credits do not buy freedom.
 ```
 
 ---
 
 ### Tier 4: Lead Operator → Acting Manager
-**Trigger:** Doubt ≥ 4, Components ≥ 4 (Day 30+)
+**Trigger:** Doubt ≥ 4, Components ≥ 4 (~Day 65+)
 **Words:** ~100
 
 ```
@@ -175,17 +158,11 @@ Access granted:
 - Classified memos (Level 3)
 - All secret zones
 - Override codes (Level 4)
-- Floor 12 elevator
+- Off-Map sector routing
 
-//UPDATE THIS: Add flavor text about Acting Manager authority
-
-You can now read memos marked "EYES ONLY." Most of them are from the Manager. They're addressed to you.
+You can now read memos marked "EYES ONLY." Most of them are from the Manager. They are addressed to you.
 
 "You're getting close," they say. "Don't make me file you."
-
-//UPDATE THIS: Add more Manager dialogue
-
-Your [Credits] cap has been increased. You can now afford to not care about [Credits].
 
 The elevator to Floor 12 is waiting. The Manager wants to talk.
 ```
@@ -193,13 +170,12 @@ The elevator to Floor 12 is waiting. The Manager wants to talk.
 ---
 
 ### Tier 5: Acting Manager → Manager
-**Trigger:** All 6 Components gathered (Day 42)
+**Trigger:** All 6 Components gathered (~Day 80+)
 **Words:** ~150
 
 ```
 SYSTEM NOTICE:
 
-//UPDATE [CRITICAL]: This should feel like the final system acknowledgment — the point of no return
 Final promotion.
 
 You are now: MANAGER
@@ -210,21 +186,14 @@ Access granted:
 - The Seam Ripper assembly instructions
 - The truth
 
-//UPDATE THIS: Add flavor text about what being Manager means
-
-You have all the Components. You know what they're for. You know what happens at 06:00.
+You have all six Components. You know what they are for. You know what happens at 06:00.
 
 The Manager is waiting on Floor 12. He has a form with your name on it.
 
-"You can sign it," he says. "Or you can use what you've gathered. But if you use it, there's no coming back."
-
-//UPDATE THIS: Add more dialogue about the choice
-
-Your [Credits] are irrelevant now. You can't spend them where you're going.
+"You can sign it," he says. "Or you can use what you've gathered. But if you tear the seam, there is no coming back."
 
 The clock says 05:45.
 
-//UPDATE [CRITICAL]: Final countdown — this should feel like a bomb timer
 You have fifteen minutes.
 
 [Unlock: Arc III] [Unlock: Final Choice] [Unlock: All Endings]
@@ -234,106 +203,81 @@ You have fifteen minutes.
 
 ## 3. DEATH SEQUENCES
 
-### Death #1: "The Fire"
-**Trigger:** First death (Day 9)
+### Death #1: "The Fire on Floor 12"
+**Trigger:** First death (Day 30+ for tryhards, ~Day 35–45 standard)
+**Location:** The Interim
 **Words:** ~100
 
 ```
-//UPDATE [CRITICAL]: Opening line — player's first death, needs to feel shocking but mundane
-The alarm is screaming.
+The alarm is silent, but the smoke is real.
 
-Smoke is pouring from the Basement. You can see the flames through the stairwell window. Orange. Too orange.
+Flames roll across the ceiling of Room 1207. Cabinets labelled "TUESDAY" burn without turning to ash.
 
-//UPDATE THIS: Add more sensory details
+The Auditor steps forward, holding your termination notice. The signature is in your own hand.
 
-The terminal in your office is still running. The log says: "Incident logged. Operator terminated."
+Blackout.
 
-You're not dead. You're—
+You wake in the Interim at 06:00:01. Dust hangs suspended in frozen air. The Ledger lies open: three discrepancies await your reconciliation.
 
-//UPDATE THIS: Describe the transition to the Interim
+You sign. Reality stitches itself back together.
 
 The coffee is warm. The clock says 01:00.
 
-//UPDATE [CRITICAL]: The player's first realization — they died and came back. This should be the "holy shit" moment.
-You remember the fire. You remember dying.
-
-But the system says there were no incidents.
-
-[+1 Residue] [Unlock: Loop Awareness]
+[+1 Residue] [Unlock: Loop Awareness] [Reinstatement Tutorial Complete]
 ```
 
 ---
 
-### Death #2: "The Auditor"
-**Trigger:** Second death (Day 20+)
+### Death #2: "The Auditor's Return"
+**Trigger:** Second death (~Day 50+)
 **Words:** ~125
 
 ```
-The Auditor is waiting in your office.
+The Auditor is waiting in the corridor.
 
-//UPDATE [CRITICAL]: This character description needs to be deeply unsettling — he's the system's enforcer
-He doesn't look like a person. He looks like a person who's been filed and re-filed too many times. His face is blurry. His badge says "AUDITOR" but the letters keep changing.
+He does not look like a person. He looks like a file that has been re-indexed too many times. His badge reads AUDITOR, but the letters shift whenever you blink.
 
 "Operator," he says. "You've been asking questions."
 
-//UPDATE THIS: Add more Auditor dialogue
+He presents your updated termination notice.
 
-He hands you a form. It's your termination notice. Your name is on it.
+You wake in the Interim. The Ledger demands reconciliation of five compounding discrepancies. Each choice costs a piece of the world.
 
-"You can sign it now," he says. "Or you can keep asking questions. But the next time, I won't be this polite."
+When you wake at your desk, a familiar street on your map has been renamed, and your next shift begins an hour late.
 
-//UPDATE THIS: Describe the death transition
+The coffee is warm.
 
-The coffee is warm. The clock says 01:00.
-
-//UPDATE [CRITICAL]: The uncanny realization — everything is back to "normal" but the player remembers
-You remember the Auditor. You remember the form.
-
-But your office is empty. There's no form. There's no Auditor.
-
-[+1 Residue] [Unlock: Auditor Awareness]
+[+1 Residue] [+1 Patch Scar]
 ```
 
 ---
 
 ### Death #3: "The Manager's Warning"
-**Trigger:** Third death (Day 30+)
+**Trigger:** Third death (~Day 70+)
 **Words:** ~100
 
 ```
 The Manager is waiting on Floor 12.
 
-//UPDATE [CRITICAL]: This is the Manager showing his hand — he's not entirely on the system's side. Needs to feel like a villain who's also a mentor.
-"You keep dying," he says. "It's becoming a pattern."
+"You keep dying," he says softly. "It is becoming a filing burden."
 
-He slides a form across the desk. It's your termination notice. Again.
+He slides your termination notice across the table, then slowly tears it in half.
 
-//UPDATE THIS: Add more Manager dialogue
+"One more," he whispers. "One more death and the exception handler cannot protect you. The system will compile you out of the binary."
 
-"I could file you," he says. "But I'm not going to. Not yet."
+You reconcile seven discrepancies in the Interim.
 
-He tears the form in half.
+The coffee is warm. The world is thinner.
 
-//UPDATE [CRITICAL]: The warning — should feel like a promise and a threat at the same time
-"One more," he says. "One more death and I won't have a choice. The system will file you whether I want it to or not."
-
-//UPDATE THIS: Describe the death transition
-
-The coffee is warm. The clock says 01:00.
-
-You remember the Manager. You remember the torn form.
-
-But there's no form. There's no Manager.
-
-[+1 Residue] [Unlock: Manager Awareness]
+[+1 Residue] [Warning: Terminal Limit Approaching]
 ```
 
 ---
 
 ## 4. ZONE DISCOVERIES
 
-### Lead: Annex elevator discrepancy
-**Trigger:** Start of Shift 2; visible at every promotion tier
+### Lead: Annex Elevator Discrepancy
+**Trigger:** Start of Shift 2; visible to all operators
 **Words:** ~90
 
 ```
@@ -355,456 +299,119 @@ There is no twelfth floor. The attachment is warm.
 
 ---
 
-### Zone 1: Floor 12
-**Trigger:** First visit to Floor 12 (Day 9+)
+### Zone 1: Floor 12 (Arc I Climax)
+**Trigger:** Floor 12 expedition breach (Day 30+ for tryhards)
 **Words:** ~100
 
 ```
-The elevator opens.
+The elevator panel shudders past 11.
 
-//UPDATE [CRITICAL]: This is the first secret zone — the floor that doesn't exist. The opening should feel like stepping into a paradox.
-Floor 12.
+The doors slide open. Floor 12.
 
-//UPDATE THIS: Describe Floor 12—should feel wrong but also familiar
+The hallway is silent. Fluorescent tubes hum at 60 Hz. The doors are labelled 1201, 1202, 1203.
 
-The office is empty. The terminals are running. The coffee is warm.
+Through the end window, there are no hoverlanes. No sky. Only a flat amber wash stretching into infinity.
 
-There's a logbook on the desk. It's yours. But you haven't written in it yet.
+In your hand, the work order leads toward Room 1207.
 
-//UPDATE THIS: Describe the logbook contents
-
-//UPDATE [CRITICAL]: This line should feel like a revelation — you're reading your own future
-The first entry says: "You're not the first. But you might be the last."
-
-The last entry says: "The Key is in the Basement. Don't let the Auditor see you take it."
-
-[+1 Component: The Key] [Unlock: Basement Access]
+[Zone: Floor 12 Open] [Component: NULL KEY Available]
 ```
 
 ---
 
-### Zone 2: Records Basement
-**Trigger:** First visit to Basement (Day 15+)
+### Zone 2: The Records Basement
+**Trigger:** Deep investigation in Municipal Basement (~Day 35+)
 **Words:** ~100
 
 ```
-The Basement is cold.
+Below the boilers. Below the municipal foundations.
 
-The terminals are old. The screens are green. The logs go back to Day 1.
+A vault of floor-to-ceiling ledgers. Each line is written in self-inking copperplate script: names, dates, streetlamp wattages, heart rates.
 
-//UPDATE THIS: Describe the Basement—should feel archival and wrong
+You watch a line get struck through with red ink. Above you, through the grating, a distant building vanishes from the city skyline.
 
-You find a file with your name on it. It's thick. It says "OPERATOR 6."
+The ledgers are not records of Meridian. The ledgers *are* Meridian.
 
-You open it.
-
-//UPDATE THIS: Describe what's in the file
-
-The first page says: "Hired: Day 1. Terminated: Day 9. Re-hired: Day 10."
-
-The last page says: "Terminated: Day 42. Re-hired: Day 43."
-
-//UPDATE [CRITICAL]: The realization — you've been hired and terminated hundreds of times. This is the moment the loop becomes real.
-There are hundreds of pages.
-
-[+1 Component: The Lens] [Unlock: Operator 5's Logbook]
+[Zone: Records Basement Open] [Component: LENS Available]
 ```
 
 ---
 
-### Zone 3: Vent Network
-**Trigger:** First visit to Vents (Day 20+)
+### Zone 3: The Vent Network
+**Trigger:** Infiltrating maintenance ducts with Bolt Cutters (~Day 45+)
 **Words:** ~100
 
 ```
-The vent is tight.
+Between the walls of Floor 4 and Floor 5, where no floor plan permits a gap.
 
-You're crawling through the ducts. The metal is cold. The air smells like ozone.
+Dust and copper wiring. Scratched into the galvanized steel: tally marks numbering in the thousands.
 
-//UPDATE THIS: Describe the Vent Network—should feel claustrophobic and wrong
+You find Operator 5's tool pouch. Inside: insulated wire and a torn logbook page.
 
-You find a logbook page wedged in the duct. It's Operator 5's handwriting.
+"The walls move at 03:00," the note reads. "Do not stay in the plenum when the memory reallocates."
 
-It says: "The Wire is here. Take it. But don't let the system see you."
-
-//UPDATE THIS: Describe finding The Wire
-
-You take The Wire. It hums in your hand. It feels like it's been waiting for you.
-
-The system chirps: "Anomaly detected. Investigating."
-
-You crawl faster.
-
-[+1 Component: The Wire] [Unlock: Rooftop Array]
+[Zone: Vent Network Open] [Component: WIRE Available]
 ```
 
 ---
 
-### Zone 4: Rooftop Array
-**Trigger:** First visit to Rooftop (Day 25+)
+### Zone 4: The Rooftop Array
+**Trigger:** Roof expedition with Radio Permit and Thermos (~Day 55+)
 **Words:** ~100
 
 ```
-The roof is windy.
+Above the smog. The wind is biting and artificial.
 
-The antennas are tall. The sky is wrong. //UPDATE THIS: Describe the wrong sky
+The massive microwave antennas pulse with blue static. The weather report always says "clear skies until 06:00," but looking up, you see the clouds are a twenty-second looped projection.
 
-You find a terminal on the roof. It's running a program you don't recognize.
+Beyond the loop: a piercing, pure signal.
 
-//UPDATE THIS: Describe the terminal and program
+You slot the Crystal into the receiver. VANTABLACK's static sharpens into human words from somewhere far away.
 
-The screen says: "SIGNAL DETECTED. SOURCE: [REDACTED]. DECODE: Y/N?"
-
-You press Y.
-
-//UPDATE THIS: Describe what happens when you decode the signal
-
-The Crystal is in the terminal. It's warm. It's been waiting for you.
-
-The system chirps: "Anomaly detected. Investigating."
-
-You take The Crystal. You run.
-
-[+1 Component: The Crystal] [Unlock: Off-Map Sectors]
+[Zone: Rooftop Array Open] [Component: CRYSTAL Available]
 ```
 
 ---
 
-### Zone 5: Off-Map Sectors
-**Trigger:** First visit to Off-Map (Day 30+)
-**Words:** ~125
-
-```
-The [Hovercar] stops.
-
-"You're off the map," the driver says. "I can't go further."
-
-//UPDATE THIS: Describe the Off-Map Sectors—should feel like the edge of reality
-
-The streets are empty. The buildings are wrong. The sky is static.
-
-You walk. You don't know where you're going. But you know you're looking for something.
-
-//UPDATE THIS: Describe finding The Chip
-
-You find it in an abandoned terminal. It's humming. It feels like it's been waiting for you.
-
-You take it.
-
-The system chirps: "Anomaly detected. Investigating. Anomaly detected. Investigating. Anomaly detected."
-
-The message repeats. It doesn't stop.
-
-//UPDATE THIS: Describe the escape
-
-You run. The streets blur. The buildings shift. The sky flickers.
-
-You make it back to the [Hovercar]. The driver doesn't ask questions.
-
-[+1 Component: The Chip] [Unlock: The Interim]
-```
-
----
-
-### Zone 6: The Interim
-**Trigger:** First visit to Interim (death or Day 35+)
-**Words:** ~125
-
-```
-You're in the Interim.
-
-The terminal is running. The coffee is warm. The clock says 01:00.
-
-//UPDATE THIS: Describe the Interim—should feel like a loop
-
-You've been here before. You'll be here again.
-
-The system chirps: "Welcome back, Operator. Your previous shift has been logged. There were no incidents."
-
-There were incidents. You remember them all.
-
-//UPDATE THIS: Describe finding The Interim component
-
-You find it in the terminal. It's humming. It feels like it's been waiting for you.
-
-You take it.
-
-The system chirps: "Anomaly detected. Investigating. Anomaly detected. Investigating. Anomaly detected."
-
-The message repeats. It doesn't stop.
-
-You're in the Interim. You've been here before. You'll be here again.
-
-[+1 Component: The Interim] [Unlock: Seam Ripper Assembly]
-```
-
----
-
-## 5. KEY STORY BEATS
-
-### "The Orientation Waiver"
-**Trigger:** Player clicks “I already know all of this”
-**Words:** ~70
-
-```
-DIRECT CHANNEL — M.
-
-“Oh, so you think you already know all of this?”
-
-Three dots appear. Disappear. Return.
-
-“Wonderful. I was worried orientation might be boring for both of us.”
-
-“We will waive the instructions. This also waives the part where you tell me nobody
-warned you.”
-
-“Go on, then. Let's see how smart you are when the terminal answers back.”
-```
-
----
-
-### "The First Anomaly"
-**Trigger:** First weird thing noticed (Day 2)
-**Words:** ~75
-
-```
-The terminal chirps.
-
-"Anomaly detected. Investigating."
-
-You check the log. There's no anomaly. The log is clean.
-
-//UPDATE THIS: Describe the first anomaly
-
-But you remember it. You remember the anomaly.
-
-The system says there was no anomaly.
-
-//UPDATE THIS: Add internal monologue
-
-The coffee is warm. It's always warm.
-
-[+1 Doubt] [Unlock: Notice Storylets]
-```
-
----
-
-### "The Logbook"
-**Trigger:** Finding Operator 5's logbook (Day 20+)
+### Zone 5: The Off-Map Sectors
+**Trigger:** Ride with VANTABLACK past Sector 9 (~Day 65+)
 **Words:** ~100
 
 ```
-The logbook is in your locker.
+In the passenger seat of VANTABLACK's delivery truck.
 
-It's old. The pages are yellow. The handwriting isn't yours.
+The asphalt ends, but the truck does not fall. It glides across a grid of green phosphorus vectors.
 
-//UPDATE THIS: Describe the logbook
+Buildings are half-rendered wireframes. The sky is pure static.
 
-You open it.
+"Welcome to the buffer," VANTABLACK says without looking over. "Don't touch the glass. It hasn't compiled collision yet."
 
-The first entry says: "Day 1. The coffee is warm. The clock says 01:00. I don't remember being hired."
-
-The last entry says: "Day 42. I know what I am now. I'm not the first. But I might be the last."
-
-//UPDATE THIS: Add more logbook entries
-
-The pages between are redacted. But you can read enough to understand:
-
-//UPDATE THIS: Tease what's redacted
-
-"You're not the first," it says. "But you might be the last."
-
-[+1 Doubt] [Unlock: Operator 5 Awareness]
+[Zone: Off-Map Sectors Open] [Component: CHIP Available]
 ```
 
 ---
 
-### "The Manager's Memo"
-**Trigger:** First classified memo (Day 30+)
+### Zone 6: The Interim Deep
+**Trigger:** Intentional Interim entry (~Day 75+)
 **Words:** ~100
 
 ```
-The memo is on your terminal.
+Between 05:59:59 and 06:00:00.
 
-It's marked "EYES ONLY." It's from the Manager.
+The world stands completely still. Dust motes are fixed in space like stars.
 
-//UPDATE THIS: Describe the memo
+The Cleaner is mopping an unrendered hallway with slow, deliberate strokes. He looks up. His eyes are clear and ancient.
 
-It says:
+He reaches into his jacket and hands you a humming cylinder of pure void.
 
-"Operator,
+"Keep it," he whispers. "I couldn't leave. You can."
 
-You're getting close. Don't make me file you.
-
-— M."
-
-//UPDATE THIS: Add more to the memo
-
-There's no signature. There's no date.
-
-But you know it's from the Manager. You know he's watching.
-
-//UPDATE THIS: Add internal monologue
-
-The coffee is warm. It's always warm.
-
-[+1 Doubt] [Unlock: Manager Awareness]
+[Component: INTERIM / SIXTH COMPONENT Acquired]
 ```
 
 ---
 
-## 6. ENDING SEQUENCES
-
-### Ending 1: "Seam Ripped" (Escape)
-**Trigger:** Choose to escape (Day 52)
-**Words:** ~150
-
-```
-//UPDATE [CRITICAL]: Opening action — the player is activating the tool they've built. This should feel like the climax of everything.
-You activate the Seam Ripper.
-
-The world tears.
-
-//UPDATE THIS: Describe the world tearing apart
-
-You see the code. You see the system. You see the truth.
-
-The Manager is watching. He doesn't stop you.
-
-"You're leaving," he says. It's not a question.
-
-You nod.
-
-//UPDATE THIS: Add final dialogue with Manager
-
-"Good luck," he says. "You'll need it."
-
-The world tears further. You see the outside. It's—
-
-//UPDATE THIS: Describe the outside — this is the first time anyone has seen it. Make it count.
-
-//UPDATE [CRITICAL]: The final action. This is the last line before credits. It should be quiet, devastating, and memorable.
-You step through.
-
-The coffee is cold.
-
-[Ending: Seam Ripped] [Credits Roll]
-```
-
----
-
-### Ending 2: "Keep Logging" (Manager's Deal)
-**Trigger:** Choose to stay (Day 52)
-**Words:** ~150
-
-```
-//UPDATE [CRITICAL]: The player is signing their life away. This should feel like a quiet tragedy.
-You sign the form.
-
-The Manager smiles. It's not a nice smile.
-
-"Welcome to the team," he says.
-
-//UPDATE THIS: Describe signing the form
-
-The world stabilizes. The anomalies stop. The coffee is warm.
-
-You're the Manager now.
-
-//UPDATE THIS: Describe what it means to be the Manager — the horror of becoming what you fought
-
-The next Operator walks in. They look confused. They look like you did.
-
-//UPDATE [CRITICAL]: You're now saying the same lines the system said to you. Full circle.
-"The coffee is warm," you say. "The clock says 01:00."
-
-//UPDATE THIS: Add final internal monologue — the realization of what you've become
-
-They sit down. They start logging.
-
-You watch. You wait.
-
-The coffee is warm. It's always warm.
-
-[Ending: Keep Logging] [Credits Roll]
-```
-
----
-
-### Ending 3: "The Cleaner" (Secret)
-**Trigger:** Choose to stay in the gap (Day 52)
-**Words:** ~125
-
-```
-//UPDATE [CRITICAL]: The player is choosing to stay in the void. This should feel like a strange, quiet sacrifice.
-You stay in the gap.
-
-The world stops.
-
-//UPDATE THIS: Describe the gap — what does it look/feel like to exist between frames?
-
-You're between frames. You're between shifts. You're between everything.
-
-The coffee is warm. It's always warm.
-
-//UPDATE THIS: Describe what it means to be The Cleaner — you're the janitor of reality now
-
-You clean the anomalies. You fix the errors. You keep the system running.
-
-//UPDATE [CRITICAL]: The reveal — The Cleaner was always a previous you. This should be the "oh shit" moment.
-You're The Cleaner now.
-
-//UPDATE THIS: Add final internal monologue — you now understand what The Cleaner was
-
-The next Operator walks in. They look confused. They look like you did.
-
-You watch. You wait.
-
-//UPDATE [CRITICAL]: The hope/curse — you're waiting for them to escape so you don't have to be alone forever
-Maybe this time, they'll step through.
-
-The coffee is warm. It's always warm.
-
-[Ending: The Cleaner] [Credits Roll]
-```
-
----
-
-### Ending 4: "Patched" (Failure)
-**Trigger:** Fail to escape (Day 52)
-**Words:** ~100
-
-```
-//UPDATE [CRITICAL]: The player failed. The system won. This should feel like being erased.
-The Auditor files you.
-
-The world resets.
-
-//UPDATE THIS: Describe being filed — what does it feel like to be deleted from reality?
-
-You're not an anomaly anymore. You're not an Operator. You're not anything.
-
-The coffee is warm. The clock says 01:00.
-
-//UPDATE [CRITICAL]: The worst line — you've forgotten why any of this matters. You've lost yourself.
-But you don't remember why that matters.
-
-//UPDATE THIS: Describe the loss of memory — you're a ghost now, watching but not understanding
-
-The next Operator walks in. They look confused. They look like you did.
-
-They sit down. They start logging.
-
-You watch. You don't remember why.
-
-The coffee is warm. It's always warm.
-
-[Ending: Patched] [Credits Roll]
-```
-
----
-
-## 7. FIRST TASK EXECUTIONS
+## 5. FIRST TASK EXECUTIONS
 
 ### First Task: "Routing"
 **Trigger:** First routing task (Day 1)
@@ -813,9 +420,9 @@ The coffee is warm. It's always warm.
 ```
 You route the first dispatch.
 
-The terminal chirps: "Task complete. [Credits] added."
+The terminal chirps: "Task complete. Credits added."
 
-//UPDATE THIS: Describe the feeling of the first task
+The log updates cleanly: 0.00% variance.
 
 It's just a job. It's just another Tuesday.
 
@@ -826,97 +433,117 @@ The coffee is warm.
 
 ---
 
-### First Investigation: "The Anomaly"
-**Trigger:** First investigation action (Day 9+)
+### First Investigation: "The Coincidence"
+**Trigger:** First investigation action (Day 3+)
 **Words:** ~75
 
 ```
-You investigate the anomaly.
+You open the investigation file.
 
 The terminal chirps: "Anomaly logged. Doubt increased."
 
-//UPDATE THIS: Describe the first investigation
+A work order filed in your handwriting. A yellow sticky note about an operator who never ages.
 
-You found something. You don't know what it means yet.
+You found something real. You don't know what it means yet, but ink does not forget.
 
-But you found it.
-
-//UPDATE THIS: Add internal monologue
-
-The coffee is warm. It's always warm.
+The coffee is warm.
 
 [+1 Doubt] [+1 Perception]
 ```
 
 ---
 
-## 8. RESOURCE MILESTONES
+## 6. ENDING SEQUENCES
 
-### First 100 Credits
-**Trigger:** Reach 100 Credits
-**Words:** ~50
-
-```
-SYSTEM NOTICE:
-
-[Credits] threshold reached: 100
-
-You can now afford:
-- Break room coffee (premium)
-- Basic dispatch overrides
-- A pat on the back
-
-//UPDATE THIS: Add flavor text about what 100 Credits means
-
-Keep logging.
-```
-
----
-
-### First Component
-**Trigger:** Gather first Component
-**Words:** ~75
+### Ending 1: "Seam Ripped" (Escape)
+**Trigger:** Crack the Loom and step through (Day 88+)
+**Words:** ~150
 
 ```
-SYSTEM NOTICE:
+You activate the Seam Ripper.
 
-Component acquired.
+The Loom shrieks as the contradiction tears through its ledgers. Streets decompile into raw numerical strings.
 
-//UPDATE THIS: Describe the Component
+The Manager watches from the threshold, his face bathed in unrendered light.
 
-It hums in your hand. It feels like it's been waiting for you.
+"Good luck," he says. "You'll need it out there."
 
-You don't know what it's for yet. But you know it's important.
+The world splits open. You step through the tear.
 
-//UPDATE THIS: Add internal monologue
+Three images unroll in the silence:
+A real wooden desk in a quiet, dark room.
+A single CRT monitor displaying Meridian City glowing faintly at night.
+A warm human hand reaching out to wake you.
 
-The system chirps: "Anomaly detected. Investigating."
+The coffee is cold.
 
-You hide the Component.
-
-[+1 Component]
+[Ending: Seam Ripped] [Credits Roll]
 ```
 
 ---
 
-## SUMMARY
+### Ending 2: "Keep Logging" (Manager's Deal)
+**Trigger:** Sign the continuity agreement (Day 88+)
+**Words:** ~140
 
-**Total narration sets needed:** ~30-40
-**Average length:** 75-150 words
-**Total word count:** ~3,000-4,000 words
+```
+You sign the form.
 
-**Priority order:**
-1. Arc transitions (most important)
-2. Death sequences (high impact)
-3. Zone discoveries (high impact)
-4. Promotions (medium impact)
-5. Key story beats (medium impact)
-6. Ending sequences (high impact, but end of game)
-7. First task executions (low impact, tutorial)
-8. Resource milestones (low impact, flavor)
+The Manager smiles gently and folds his hands.
 
-**Next steps:**
-- Review and finalize all //UPDATE THIS sections
-- Playtest each narration set for tone and length
-- Integrate into game components
-- Add animations and visual effects
+"Welcome to management," he says.
+
+The anomalies vanish. The tear closes. The console hums a steady, soothing note.
+
+You sit in the Manager's chair on Floor 12. You write the morning memos. You ensure the coffee is always warm.
+
+Below, at 01:00 on a new Tuesday, a fresh night operator clocks in. They look nervous and young.
+
+You lean toward the direct-channel mic: "Welcome to Meridian Dispatch. The coffee is warm."
+
+[Ending: Keep Logging] [Credits Roll]
+```
+
+---
+
+### Ending 3: "The Cleaner" (Secret)
+**Trigger:** Choose *“Stay in the Gap”* at the base of the Loom (Day 88+)
+**Words:** ~125
+
+```
+You lay down the Seam Ripper and step between the clock frames.
+
+Reality stabilizes around you, but you remain in the unrendered corridors between shifts.
+
+Time ceases to flow. You pick up the mop.
+
+You wander the void, cleaning the anomalies the system deletes, keeping the seams tidy.
+
+Every night at 01:00, a new operator sits at the desk. You watch them through the window.
+
+Maybe this time, they will step through.
+
+[Ending: The Cleaner] [Credits Roll]
+```
+
+---
+
+### Ending 4: "Patched" (Failure)
+**Trigger:** Fatal accumulation of scars in the Loom
+**Words:** ~100
+
+```
+The Auditor stamps your master file: REASON: SELF-REFERENCE TERMINATED.
+
+The world dissolves into gray static.
+
+The coffee is warm. The clock says 01:00.
+
+You check your logbook. The pages are blank. You feel a lingering sorrow, like a dream slipping away at dawn.
+
+The terminal chirps: LIVE QUEUE READY.
+
+You sit down. You begin routing.
+
+[Ending: Patched] [Credits Roll]
+```

@@ -1,432 +1,356 @@
-# FALSE REALITY — Arcs: Zones, Rare Death, and the Loom
+# FALSE REALITY — Arcs: The Multi-Month Long-Term Story Bible
 ### Canonical arc document. Obeys `design/core-design.md` on any conflict.
 
-> **This is the living arcs bible** (promoted from Draft 04). Earlier brainstorms
-> and drafts have been pruned; their decisions live here and in core-design.
+> **This is the living arcs bible.**
 >
-> - Loops are **gone as a player-facing mechanic.** The world still reboots nightly
->   at 0600 — that's the *fiction* — but the player doesn't replay days. Each shift
->   is new content; death is a rare, significant event, not a recurring state.
-> - Death (2–4 times total) is telegraphed, opt-in, and priced via **the
->   Reinstatement** — the Fallen London-chess analog in the Interim.
-> - Story resources are **Components**, found in **six secret zones** (mini-
->   expeditions), never grinded. The daily grind is optional immersion producing
->   Salary, a separate mundane economy.
-> - The endgame is **building the Seam Ripper** and **cracking the Loom** — not
->   surviving a loop, not a number gate.
+> - **The Macro Scope:** A multi-month narrative arc (~3–4 months calendar time at habit pace; ~80–100+ shifts total).
+> - **Arc I (Month 1 — The Roster & The First Seams):** Takes **at least 30 shifts for tryhards / optimal play** (~35–45+ shifts for standard play). Days 1 and 2 are tightly guided for a swift, compelling entry. From Day 3 onward, the game opens into a versatile, emergent investigation arc governed by player efficiency, resource grinding, supply acquisition, and risk management rather than hardcoded calendar gates.
+> - **Arc II (Month 2 — The Six Zones & Anomalous Infrastructure):** ~45–50 shifts (~Days 31–80). Five deep mini-expeditions, component assembly, escalating Reinstatements, and decoding the city's hidden substrate.
+> - **Arc III (Month 3 — The Loom & The Seam Ripper):** ~10–15 shifts (~Days 81–95+). The Summons, collapse of routine comforts, tool assembly, descent beneath Building 7, and four distinct endings.
+> - **Loops are strictly fiction, not a grind mechanic:** The simulation resets nightly at 06:00, wiping everyone else. The player is the persistent error handler.
+> - **Death is rare, opt-in, and priced:** 2–4 deaths across the entire game, resolved in the Interim via the Reinstatement (the bureaucratic chess sequence).
 
 ---
 
-## 1. The three arcs at a glance
+## 1. The Three Macro Arcs at a Glance
 
-| | **Arc I — THE ROSTER** | **Arc II — THE ZONES** | **Arc III — THE LOOM** |
+| Metric / Dimension | **Arc I — THE ROSTER** *(Month 1)* | **Arc II — THE ZONES** *(Month 2)* | **Arc III — THE LOOM** *(Month 3)* |
 |---|---|---|---|
-| The lie | "It's just a job." | "The city has rooms it doesn't show." | "The city is woven. Find the loom." |
-| Days | ~1–9 (9 shifts) | ~10–42 (33 shifts) | ~43–52 (10 shifts) |
-| Deaths | 0–1 (scripted option) | 1–2 (opt-in) | 0–1 (finale) |
-| Actions | ~380 | ~1,100 | ~320 |
-| Active time | ~4–5 h | ~10–13 h | ~3–4 h |
-| Calendar | ~1.5 wks | ~4–5.5 wks | ~1–1.5 wks |
-| The daily texture | Routine + first wrongness | Routine (optional) + zone expeditions | Routine falls away; only the story |
-| Gate to next arc | First death + first zone cleared | Five Components held; Doubt ≥ threshold | The Summons |
+| **The Fiction's Lie** | "It's just a routine night dispatch job." | "The city has rooms and sectors it doesn't show." | "The city is woven. Find the loom." |
+| **In-Game Shifts (Tryhard)** | **Days 1–30** *(30 shifts minimum)* | **Days 31–75** *(45 shifts)* | **Days 76–88** *(13 shifts)* |
+| **In-Game Shifts (Casual/Habit)** | **Days 1–42** *(42 shifts)* | **Days 43–92** *(50 shifts)* | **Days 93–105** *(13 shifts)* |
+| **Pacing Structure** | Days 1–2 Guided Onboarding → Days 3–30 Versatile Web | 5 Secret Zone Expeditions + Ambient Roster Days | Linear set-piece descent; routine collapses |
+| **Deaths (Opt-In)** | 0–1 *(Scripted climax option on Floor 12)* | 1–2 *(Zone climax options / high risk)* | 0–1 *(Final Reinstatement / descent fail)* |
+| **Action Budget** | ~1,500–2,100 actions | ~2,250–2,500 actions | ~650–750 actions |
+| **Active Playtime** | ~10–14 hours | ~15–18 hours | ~4–5 hours |
+| **Calendar Pacing (Habit)** | ~4–6 weeks | ~6–8 weeks | ~2–3 weeks |
+| **Daily Texture** | Dispatch routine + emerging personal seams + supply purchases | Routine (optional Attention cooling) + deep zone expeditions | Scenery strips away; pure narrative & tool assembly |
+| **Gate to Next Arc** | First Floor 12 breach + opt-in death/Interim + **NULL KEY** | 5 Components held + Doubt ≥ threshold + The Checklist | The Summons on Floor 12 |
 
-**Totals: ~52 shifts, ~1,800 actions, 2–4 deaths, ~17–22 h active, ~5–8 weeks
-calendar.** (Accounting in §7.)
-
----
-
-## 2. Arc I — THE ROSTER *(Beginning — "It's just a job.")*
-
-**Throughline:** unease under routine. The player believes they're in a cozy office
-sim; the wrongness is seeded, never announced.
-
-### 2.1 — The first shift (Day 1)
-The routine pool teaches the job: **Roll Call** (nightly check-in with your drivers),
-**Routing** (assign trucks — the core grind), **Tickets** (file work orders),
-**Weather** (five lines, always "clear skies until 0600"), **Break Room** (the coffee
-is already warm; there is no one else in the building). Routine produces **Salary**
-— small, mundane, useful for small mundane things. It also cools **Attention**
-(camouflage: the system likes workers who work).
-
-The wrongness is ambient and skimmable: the route sheet lists Sector 9 (no such
-sector); a work order for Building 7, basement light, third report this week; the
-wall chart's population: 41,312, always 41,312. The first corrupt result is owed by
-task 10, and a second by shift end: one slip can be noise; two are a pattern.
-
-### 2.2 — The Floor 12 lead (Day 2) — the return hook
-The second shift opens with a secondary service order that does not count toward
-quota: elevator car 2 stopped above the Municipal Annex's listed service range at
-00:59:57. The field says **FLOOR 12**. The requesting terminal ID is the player's,
-even though their shift had not started.
-
-Every operator can touch this order through a new **Investigations** tab, kept
-separate from the optional **Notices** pool. Promotion controls how much the case
-says. An Unknown Operator may clear the sensor fault. An Operator can trace the
-request to their own timestamp format and signature. A Senior Operator's
-restricted-area clearance exposes the field order that will eventually authorize
-the expedition. Thus promotion acts as a **lens on one mystery**, not merely a menu
-lock. M. interrupts on the direct channel to call the elevator a Facilities concern
-and tell the player to do their actual job; tracing the order gets a less rehearsed
-response. The question carried into the shift is concrete: *what is on Floor 12, and
-why did I request it?* The answer is not given yet.
-
-The memo board now reads: *"Reminder: the Municipal Annex has eleven (11) floors.
-Any employee reporting a twelfth (12th) floor should be referred to HR."* A compliant
-player sees a contradiction and moves on. A curious player has a case.
-
-### 2.3 — Coincidences (Days 3–8)
-The day crew's sticky notes change slightly each day: *"The night operator seems...
-familiar."* The player unlocks **Notice** storylets (Perception gates): re-read the
-route sheet, ask about Building 7, linger at the window, reopen the restricted layers
-of the Annex order. Each push ticks hidden Attention; the system's replies stay polite
-and unhelpful: *"There is no Building 7, Operator."* A work order arrives *filed from
-the night desk, in your handwriting,* which you did not write. Every gentle prompt
-points one way: **follow it.**
-
-### 2.4 — Floor 12 and the first death (Day 9) — the Arc I payoff
-**The first zone: Floor 12 of the Municipal Annex** — the floor that doesn't exist.
-The work order is the key. This is the game's first mini-expedition: ~20 actions, the
-annex at night, wrong doors, the fire in the records room, and at the end —
-
-**The first death.** A choice, clearly framed: *the Auditor is waiting. It is holding
-a form with your name on it. The form is already signed.* The player may retreat (the
-game lets them — the zone closes for now, dread compounds, the hook comes later) or
-step forward. If they step forward: black.
-
-**The Interim** — the frame between 0600 and the next shift. The office, at 06:00:01:
-lights off, dust suspended, nothing rendering. The **Ledger** lies open: your
-termination report, full of discrepancies. **The Reinstatement** (tutorial version, 3
-discrepancies): you reconcile your own death — and learn death's price, the patch,
-and the Interim's existence in one sequence.
-
-You wake at shift start, logbook intact, the morning memo thanking staff for "a
-quiet, incident-free week." Nobody remembers the fire. **You do.** The loop-in-
-fiction is revealed — not as a mechanic to grind, but as the *problem*: the world
-forgets nightly, and you don't. Arc I ends with the first entry in the logbook:
-*"Day 1 (again). There is no Building 7. Check the population chart."*
-
-**First Component recovered on Floor 12: the NULL KEY** — a key the map doesn't
-have, which opens doors the map doesn't have. *(If the player retreated from death,
-the Key is still found — the zone's prize is the discovery, not the dying.)*
+**Totals: ~88–105 shifts, ~4,500–5,300 actions, 2–4 deaths, ~30–37 active hours, ~12–17 weeks calendar pacing.**
 
 ---
 
-## 3. Arc II — THE ZONES *(Middle — "Every component costs a risk.")*
+## 2. Arc I — THE ROSTER *(Month 1: "It's just a job.")*
 
-**Throughline:** the city has rooms it doesn't show. This is the bulk of the game —
-five zones, each a mini-expedition with its own story, risk, and Component. Between
-expeditions: routine days (optional), the VANTABLACK thread, the Cleaner, Operator
-5's logbook pages, the Manager's memos.
+**Throughline:** Unease beneath comfortable, sterile bureaucracy. The player enters expecting a cozy retro-futuristic municipal dispatch sim. The wrongness begins as background noise, solidifies into personal anomalies, and builds into an uncontainable realization.
 
-**The daily structure of Arc II** (this is the game's real cadence):
-- **Ambient days** (~half of all days): routine work for immersion and Salary,
-  cross-referencing, listening to the radio longer, writing in the logbook. Gentle,
-  cheap, and *how you cool Attention*.
-- **Expedition days** (~half): you spend the shift inside a zone — 10–20 actions of
-  tense, varied storylets with risk, choices, and a Component at the end.
+### 2.1 — Day 1: Guided Onboarding ("The First Shift")
+*Purpose: Swift, effortless onboarding; establish tone, UI, and the core routine split.*
 
-### 3.1 — The five zones
+- **The Routine Core:** Roll Call (checking in on drivers across sectors), Routing (assigning trucks to clear delivery lanes), Tickets (clearing municipal utility orders), Weather ("clear skies until 06:00"), and Break Room.
+- **The Dual Economy Introduction:** Routine tasks pay **Salary (Credits)** and quietly cool **Attention** (the system favors compliant workers).
+- **The First Anomaly:** Guaranteed before task 10. A field corrupts: `population: 41,312 — unchanged. forever.` or `Sector 9 all clear — you were not here yesterday`.
+- **The First Consequence:** 
+  - *Acknowledge / File Clean:* System corrects it, pays extra credits, grants `Routine +1`.
+  - *Log Discrepancy:* Keeps the raw glitch, files `Doubt +1`, `Attention +1`.
+- **Break Room Choice:** Choosing *“Who made the coffee?”* over *“It’s fine”* seeds initial Doubt and earns Operator clearance.
 
-| Zone | The story | The risk | The Component |
+### 2.2 — Day 2: The Return Hook & The Clearance Lens ("Floor 12 Lead")
+*Purpose: Plant a durable, personal mystery and demonstrate that promotion is a lens on the world, not just a menu unlock.*
+
+- **The Opening Secondary Order:** The shift opens with `ANNEX ELEVATOR // OUT-OF-RANGE STOP: FLOOR 12` at 00:59:57. The requesting operator terminal ID is the player’s own, timestamped before their shift began.
+- **The Dedicated Investigations Tab:** Active leads are separated from optional ambient Notices.
+- **Clearance as a Narrative Lens:**
+  - *Unknown Operator (Tier 0):* Can only clear the elevator reading as a sensor fault (`Routine +1`, Salary).
+  - *Operator (Tier 1):* Traces the request signature, revealing their own handwriting and timestamp format (`Doubt +1`, `Perception +1`, `Attention +1`).
+  - *Senior Operator (Tier 2):* Restricted-area clearance exposes the actual Floor 12 expedition field order.
+- **M.'s Direct Channel:** M. interrupts dryly: *“Operator. Elevator telemetry is a Facilities concern. File the fault and do your actual job.”* Tracing the order prompts a sharper, defensive reaction: *“For what it is worth, I also dislike that signature.”*
+- **The Long-Term Carrot:** The Floor 12 expedition is listed on the board from Day 2 for every player, sealed behind Senior Operator clearance (`Requires: Day 2, Doubt ≥ 2, Perception ≥ 1`). The mystery is named immediately; unlocking it requires real investigation.
+
+---
+
+### 2.3 — Days 3–8 & The Versatile Investigation Arc (Rewrite)
+*Design Perspective: Abolishing Hardcoded Days in Favor of an Emergent, Player-Driven Web.*
+
+In earlier drafts, Days 3 through 8 were envisioned as a rigid day-by-day sequence (e.g. Day 3 sticky note 1, Day 4 sticky note 2, Day 5 window, Day 9 death). **This was flawed.** It stripped player agency, forced arbitrary calendar waiting, and treated progression like a movie timeline rather than an interactive investigation.
+
+**The New Model for Days 3+:** 
+Once the guided onboarding of Days 1 and 2 concludes, the world opens into a **versatile, interconnected web of systems, economies, and investigative leads**. How quickly a player uncovers clues, earns clearances, and reaches the Arc I climax depends entirely on their **efficiency, resource allocation, and curiosity**.
+
+```
+                           ┌──────────────────────────────┐
+                           │   GUIDED ENTRY (Days 1 & 2)  │
+                           │   Routine + Floor 12 Seed    │
+                           └──────────────┬───────────────┘
+                                          │
+                   ┌──────────────────────┴──────────────────────┐
+                   ▼                                             ▼
+       ┌────────────────────────┐                   ┌────────────────────────┐
+       │   THE MUNDANE ECONOMY  │                   │ THE ANOMALOUS ECONOMY  │
+       │  • Grind Tasks         │                   │  • Log Discrepancies   │
+       │  • Earn Salary/Credits │                   │  • Build Doubt & Percep│
+       │  • Cool Attention      │                   │  • Raise System Heat   │
+       │  • Buy Shop Supplies   │                   │  • Unlock Investigations│
+       └───────────┬────────────┘                   └────────────┬───────────┘
+                   │                                             │
+                   └──────────────────────┬──────────────────────┘
+                                          │
+                                          ▼
+     ┌────────────────────────────────────────────────────────────────────────┐
+     │           EMERGENT INVESTIGATION TRACKS (Days 3–30+ Versatile)          │
+     ├───────────────────────────────────┬────────────────────────────────────┤
+     │ TRACK A: Personal Handwriting     │ TRACK D: Radio & VANTABLACK        │
+     │ • Compare signatures on orders    │ • Buy radio permit → scan S9       │
+     │ • Timestamp forgery & evidence    │ • Shifting driver callsigns        │
+     ├───────────────────────────────────┼────────────────────────────────────┤
+     │ TRACK B: The Day Crew's Notes     │ TRACK E: Physical Infiltrations    │
+     │ • Yellow sticky notes on board    │ • Torch → Utility closet fusebox   │
+     │ • 60-year operator history        │ • Bolt cutters → Perimeter fence   │
+     │ • Tracing previous shifts         │ • Smokes → Bribe lobby doorman     │
+     ├───────────────────────────────────┼────────────────────────────────────┤
+     │ TRACK C: Clearance & Archives     │ TRACK F: The Ledger Overflow       │
+     │ • Operator → Senior Operator      │ • Exploit corrupted payroll        │
+     │ • Restricted files drawer         │ • Trigger 32-bit integer overflow  │
+     │ • Operator 5 locker & residues    │ • Earn "THE WORD" & hard proof     │
+     └───────────────────────────────────┴────────────────────────────────────┘
+                                          │
+                                          ▼
+     ┌────────────────────────────────────────────────────────────────────────┐
+     │              ARC I CLIMAX (Day 30+ Tryhards / Day 35–45 Casuals)       │
+     │        Floor 12 Breach → Auditor Confrontation → First Reinstatement   │
+     │        Obtain NULL KEY (Component 1) → The 06:00 Reset Revealed        │
+     └────────────────────────────────────────────────────────────────────────┘
+```
+
+#### The Six Emergent Investigation Tracks:
+
+1. **Track A: The Personal Discrepancies & Handwritten Orders**
+   - Work orders arrive in the live queue bearing the operator's exact signature, timestamped from hours they did not work (e.g. `STREETLIGHT 4-B, SECTOR 9`).
+   - The player can file them clean for Salary or inspect the pen strokes (`Perception ≥ 1`) to discover a second, nearly identical signature in the margins: an operator trying and failing to forge a life.
+   - Kept in the logbook as permanent evidence.
+
+2. **Track B: The Day Crew's Residue (The Yellow Sticky Notes)**
+   - Sticky notes left on the memo board by the daytime workers:
+     - *Note 1:* "The night operator seems... familiar. I can't place him."
+     - *Note 2:* "It's the handwriting. I matched it against old 2019 operator files."
+     - *Note 3:* "My father trained under the night operator. My father is sixty-two. The night operator looks thirty."
+   - Unlocked organically once the operator has the Perception to read between the lines. Copying the notes preserves memories the system wipes at 06:00.
+
+3. **Track C: The Mundane Supply Economy & Physical Infiltrations**
+   - The player uses uncapped Salary earned from routine dispatching to purchase tools from the supply terminal:
+     - **Ground Coffee (25 Credits):** Brews premium coffee, unlocking break-room observations.
+     - **Night Radio Permit (50 Credits):** Authorizes overnight receiver use; reveals unauthorized chatter on Sector 9.
+     - **Pocket Torch (75 Credits):** Illuminates the unmapped utility closet behind the break room; exposes a third, warm, painted-over fusebox.
+     - **Bolt Cutters (100 Credits):** Cuts the padlock on custodial stores; exposes the unrecorded courtyard perimeter fence.
+     - **Thermos (40 Credits):** Allows lingering at the window ledge to observe the loop's lighting refresh.
+     - **Doorman Smokes (60 Credits):** Bribes the lobby doorman, who sits reading a newspaper that is perpetually Tuesday's.
+   - Each purchase opens a unique Notice storylet, deepening the player's physical map of the building.
+
+4. **Track D: Radio Interceptions & The VANTABLACK Thread**
+   - Listening to night channel chatter reveals drivers operating outside the grid.
+   - Driver **VANTABLACK** appears on roll call. With each passing week, his callsign slightly mutates: *VANTABLACK*, *VANTABLUE*, *VANTAWHITE*...
+   - He reports street names that do not exist on the municipal map and asks: *“...Again, Operator?”*
+
+5. **Track E: The Ledger Arithmetic & The 32-Bit Overflow**
+   - The player learns that filing corrupted results clean pays whatever raw number is contained in the corrupted field.
+   - By feeding corrupted payroll orders through the ledger, the balance can be driven toward `2,147,483,647` (the maximum signed 32-bit integer).
+   - Overflowing the variable unlocks `THE WORD` glitch, proves mathematically that Meridian is a software simulation, awards permanent `UNBOUND` credit, and yields `Doubt +1`.
+
+6. **Track F: Operator 5's Trail & Restricted Files**
+   - Promoted Senior Operators gain access to the restricted drawer beside the desk.
+   - Uncovers remnants of **Operator 5** — the prior exception handler: a mug with a scratched-out name, locker receipts, and scorched log fragments.
+
+---
+
+### 2.4 — Tryhard vs Casual Progression in Month 1
+
+Because Days 3+ are versatile, the time to reach the Arc I climax naturally scales according to player style:
+
+| Player Profile | Playstyle Strategy | Shifts to Arc I Climax | Action Profile |
 |---|---|---|---|
-| **Floor 12** (Arc I) | The floor that doesn't exist; your own signed form | First death (opt-in) | **NULL KEY** — opens doors the map doesn't have |
-| **The Records Basement** | The ledgers are the city; cross out a street and watch it erase | Being written into a ledger | **LENS** — read the world's source text (metadata appears under every storylet) |
-| **The Vent Network** | Operator 5's route between walls; his logbook pages in the ducts | Getting lost where walls change | **WIRE** — the tool's connective tissue; also what Operator 5 used to reach the gap |
-| **The Rooftop Array** | The antennas; the weather report is a loop, the signal is not | Attention spike — the system hates roofs | **CRYSTAL** — tunes the signal; VANTABLACK's static resolves into words |
-| **The Off-Map Sectors** | Ride with VANTABLACK through the city's geometry failing | The map stops applying; getting home is the puzzle | **CHIP** — persistence; a copy of *you*, the thing that lets you remember |
+| **The Tryhard (Min-Maxer)** | Aggressively logs every anomaly; maximizes Doubt/Perception; exploits corrupted field payouts; purchases all 6 shop supplies within the first 15 shifts; micro-manages Attention via calculated routine batches; fast-tracks Senior Operator clearance. | **~30 shifts** *(Minimum designed floor)* | ~1,500 actions; high Doubt (≥5), high Perception (≥4), all shop notices cleared, zero wasted actions. |
+| **The Inquisitive Investigator** | Balanced play; investigates interesting notices; keeps Attention moderate; buys supplies steadily over 3 weeks; explores most side leads before attempting Floor 12. | **~35–40 shifts** | ~1,750–2,000 actions; natural narrative rhythm; explores side lore thoroughly. |
+| **The Cautious / Roleplayer** | Prioritizes routine dispatch work; keeps Attention very low; focuses on Salary accumulation; only investigates when safe; takes time to savor atmospheric writing. | **~42–50 shifts** | ~2,100–2,500 actions; high Routine, high Salary, very low death pressure. |
 
-Each zone is gated by qualities (Perception to find it, Doubt to enter, sometimes a
-mundane Salary purchase: bolt cutters, a torch, a bribe for the annex doorman — the
-grind's small legitimate role), and each ends in a choice that defines how much
-Attention you leave with. **Zones are never grindable** — cleared zones close their
-doors (the patch redesignates them), so every expedition is a one-time story.
-
-### 3.2 — The threads woven between zones
-
-- **VANTABLACK** — the driver whose callsign changes slightly each day (VANTABLACK,
-  VANTABLUE, VANTAWHITE...) — the patch's fingerprints. He remembers *some* things;
-  his route takes him to places that aren't on the map; his radio reports are the
-  Courier concept folded into the desk. In Arc I he's the one who asks "…again,
-  Operator?" In Arc II, listening to him is how you find the Off-Map Sectors. In
-  Arc III, his static is the finale's navigation.
-- **Operator 5** — the previous you. Found only in residue: a locker, a mug with a
-  scratched-out name, logbook pages in the vents. His final entry: *"IF YOU'RE
-  READING THIS, THE MEMO IS LYING. 0600 EXISTS. DO NOT—"* His notes teach the zones
-  (he found most of them first) and his death teaches the Reinstatement's trap: he
-  reconciled wrong, once, and lost something irreplaceable.
-- **The Cleaner** — the janitor who never resets and never speaks. Not in the roster.
-  He cleans the places the patch has removed. (Identity: endgame — see §5.)
-- **The Manager** — writes the memos; has never been seen. As Attention rises, the
-  memos begin addressing you: *"Operator — the third-floor vending machine has been
-  re-designated. Please do not look for it. — M."* The player slowly learns the
-  memos aren't messages; they're **compilers**.
-
-### 3.3 — Death in Arc II (how it works, and why it's rare)
-
-Dangerous storylets — inside zones, mostly — carry the system's explicit warning
-convention: *"Recommended: do not proceed. — M."* combined with visible risk framing.
-**The player always knows when a card can kill them.** No accidental deaths.
-
-If the player proceeds and dies (1–2 times, typical):
-
-1. **The Interim** — deeper each time: the more you die, the more of the frame
-   between frames you see (this is where the Cleaner lives, and where you'll find
-   the Interim's own secrets).
-2. **The Reinstatement** — death #2: 5 discrepancies; death #3: 7, and the system
-   remembers your previous filings, so contradictions compound. The sequence is
-   tedious-and-escalating *on purpose* (the Boatman's chess) but never blocked —
-   and each Reinstatement is a story scene, not filler: you see your own file
-   getting more accurate.
-3. **The Patch** — the world changes: a room re-designated, a contact renamed, a
-   shortcut closed, announced in the morning memo. **Patch Scars** are recoverable
-   through story actions (re-verify the map; find the renamed contact's old name;
-   re-walk a route) — FL-style wounds, healed by play, not waiting.
-4. **The ledger grows** — each death improves the system's file on you. This is the
-   quiet endgame pressure: too many scars, and the finale's last check gets hard.
-
-**Why players won't die much:** the deterrent is friction and narrative cost (a
-shortened next shift, scars, a smarter system) — plus the fact that *dying is the
-slow way*: every death sets your investigation back a day. Risk stays exciting
-because it's real; it just isn't routine.
-
-### 3.4 — The Truth (Days 38–42) — what you are
-The arc's climax of understanding, in four beats:
-1. The office is the exception handler — errors come to you as work orders.
-2. You survive the nightly wipe because the handler must survive crashes.
-3. Which makes you the error — a sentient handler is itself an exception, which is
-   why the system terminates you, politely, on schedule.
-4. The Manager is a previous operator who chose differently: continuity, safety,
-   coffee.
-
-By Day 42 you hold five Components (Key, Lens, Wire, Crystal, Chip) and **the
-Checklist** — the endgame's diegetic quest log:
-
-| Item | What it is | Where it lives |
-|---|---|---|
-| **The Form** | Your own termination order — stolen, corrected, hidden | The patch tries to take it back; keep it in the logbook |
-| **The Name** | Your own name, patched out of the roster long ago | Operator 5's final page — *or* offered by the Manager (for a price) |
-| **The Sixth Component** | What the tool is missing | The Interim — it can only be taken by dying, or by the Cleaner's gift |
-| **The Signal** | VANTABLACK's static, decoded: it was never static, it was *distance* | The Rooftop Array, with the Crystal, on the right night |
-| **The Hour** | 0600 — and what it is | Operator 5's logbook; the weather report's last line |
-
-Arc II ends when Doubt crosses its threshold and the final memo arrives, addressed
-to you *by name* (the Manager knows it — he has always known it): *"Operator —
-please report to the twelfth floor. It is time we discussed your continued
-employment."*
+**The 30-Day Floor for Tryhards:**
+The mathematical requirement gates, supply costs, and quality accumulation are tuned so that even a player playing with optimal spreadsheets cannot legitimately reach and survive the full Floor 12 breach in fewer than **30 shifts**. This guarantees Arc I feels like a true month of eerie, building routine rather than a 2-hour sprint.
 
 ---
 
-## 4. Arc III — THE LOOM *(End — "The city is woven.")*
+### 2.5 — The Arc I Payoff: Floor 12 Breach & The First Death (Day 30+)
+*Requirements: Senior Operator Clearance, Doubt ≥ 3, Perception ≥ 2, Floor 12 Expedition Unlocked.*
 
-**Throughline:** assemble the tool; find the sixth component; crack the code. The
-endgame *inverts* the game's texture: the routine pool shrinks (mechanically and
-diegetically — the patch removes the scenery), story density rises, the small
-comforts are removed one by one. The coffee is cold now. The radio plays a tone
-instead of music. The day crew's sticky notes stop coming.
-
-### 4.1 — The Summons (Days 43–45)
-The twelfth floor. The Manager, at last: the previous operator, half-assimilated, his
-face like a memo half-remembered. His offer: **keep logging** — become the
-machinery; the system stops hunting what it cannot distinguish from itself; the
-coffee will be warm again, forever. *The Keep-Logging ending is available here,
-immediately, and it is a legitimate good ending* — many players will take it on a
-first playthrough and return for the escape later.
-
-If you refuse: the final prep — three set-piece shifts:
-- **Recover the Form** before the patch does (a race through the annex).
-- **Take the Sixth Component** — either by a chosen death (the last Reinstatement,
-  the hardest yet: 9 discrepancies, and the system's file on you is nearly complete)
-  or by the Cleaner's gift (if you've earned it: he opens the Interim without
-  killing you, once, and hands you the missing piece — *his* Component, kept since
-  his own final shift).
-- **The Name** — Operator 5's page, or the Manager's price. The ending forks here:
-  **the Name recovered = the escape route; the Name accepted as a gift = the
-  machinery.** *(The two endings fork on your name.)*
-
-### 4.2 — The Last Shift (Days 46–48)
-No routine. No grind. The final shift is a linear set-piece — the game stops being a
-habit game for its last hour. Assemble the **Seam Ripper** (each Component installed
-in its own scene: the Lens snaps in and the world's metadata unrolls; the Chip snaps
-in and *you remember being installed*). Then, at 05:59, use it.
-
-**The final sequence — the descent to the Loom** (the game's best writing,
-concentrated into ~30 actions):
-
-- **The gap opens.** 0600, held open by the tool — the frame between frames, wide
-  enough to walk through. The city outside is mid-render; the world holds its
-  breath.
-- **The walk down.** Beneath Building 7, below the basement, below the map: the
-  Loom — a room of ledgers writing themselves, streets flickering into existence as
-  lines, every citizen a row, every Tuesday a page turning.
-- **The Manager follows** — not to stop you; to watch, and to offer one last time.
-- **The crack.** The system argues with you in memos. It is not angry. It is
-  *correcting a filing error* — you. The finale's choices are reconciliations:
-  which discrepancies do you leave in the record?
-- **The last choice** — three doors at the bottom of the world: **step through** /
-  **stay** / **go back** — plus the one door that was always open: **keep logging.**
-
-### 4.3 — Why escape is possible but not guaranteed
-The escape is the canonical ending but an *earned* one: the Checklist exists to be
-completed, the signals point one way, and the game's last hour wants you to leave.
-But every step is a choice, and the alternatives are honored rather than punished.
-The finale has no wrong door; it has four.
+- **The Expedition:** A 20-action deep mini-expedition into the unlisted 12th floor of the Municipal Annex.
+  - *The Corridors:* Hallways numbering 1201, 1202, 1203 with no exterior distance — only a flat amber wash outside the glass.
+  - *Room 1207:* A vast records room of filing cabinets labelled "TUESDAY". On the desk: the player's own termination order, with the signature still wet.
+  - *The Fire:* Unburning flames consume the records room.
+  - *The Auditor:* A figure whose face is a blur of shifting ID badges, sitting in the player's chair holding the signed form.
+- **The Opt-In First Death:** 
+  - The game explicitly telegraphs: *“Recommended: do not proceed. — M.”*
+  - The player may retreat (taking the key, closing the zone temporarily, building dread) or step forward.
+  - Stepping forward triggers the screen to fade to black.
+- **The Interim & The Reinstatement (Tutorial):**
+  - The player wakes in **The Interim** at 06:00:01: unrendered office corridors, suspended dust, frozen clocks.
+  - **The Ledger** lies open: the player's termination report, containing **3 discrepancies**.
+  - Reconciling the report teaches death's cost, the Reinstatement mechanic, and the nature of the patch.
+- **The Arc I Revelation:**
+  - The player wakes at shift start. The morning memo thanks staff for *“a quiet, incident-free week.”*
+  - Nobody remembers the fire. **You do.**
+  - The first entry is penned into the permanent logbook: *“Day 1 (again). There is no Building 7. Check the population chart.”*
+  - **First Component Awarded: THE NULL KEY** — a physical key that opens doors not present on any map.
 
 ---
 
-## 5. The endings (unchanged contract, new mechanism)
+## 3. Arc II — THE ZONES *(Month 2: "Every component costs a risk.")*
 
-| Ending | Access | What happens |
-|---|---|---|
-| **SEAM RIPPED** *(true / escape)* | Checklist 5/5 + the Name recovered + survive the descent | You crack the Loom and step through. What's outside is shown in three images and never explained: a desk; a screen — the city rendered on it, tiny, at night; a hand reaching to wake someone. The horror was never the metaphysics; it was the office. |
-| **KEEP LOGGING** *(the Manager's ending)* | Available at the Summons — any player in Arc III | You take the deal. Epilogue: a new night operator, their first Tuesday, a coffee stain — and a memo in your handwriting. You are the patch now. Warm, terrible, comfortable. |
-| **THE CLEANER** *(secret)* | Escape conditions + choose *stay* at the bottom | You remain between frames forever. Time stops meaning; you walk the unrendered corridors, tidying. And occasionally the world re-renders, and the new night operator sees a figure who never resets and never speaks. *He was always a previous you* — an operator who reached the gap and couldn't leave. You keep an eye on the new one. Maybe this time, they'll step through. |
-| **PATCHED** *(failure end)* | Die in the descent with too many accumulated scars / reconcile wrong | The Auditor completes the form for you: *REASON FOR TERMINATION: SELF-REFERENCE.* You wake at shift start. The logbook is blank. You know you've forgotten something important — but the coffee is warm, and the roster needs covering. |
+**Throughline:** The city has rooms it does not show. Now aware that Meridian resets nightly at 06:00, the operator uses their position as the simulation's exception handler to explore five secret zones and recover the remaining Components needed to build the Seam Ripper.
 
-Plus the joke beat, folded into the Summons: **RESIGNATION** — you may formally
-resign. The system's reply: *"There is no substitute on the roster. The shift must
-be covered."* The form returns stamped: DENIED — ATTENDANCE REQUIRED.
+### 3.1 — Cadence and Daily Structure in Month 2
+Month 2 spans **~45–50 shifts (Days 31–80)**:
+- **Ambient / Maintenance Shifts (~55%):** Routine dispatching for immersion, Salary accumulation, cooling Attention built up during expeditions, and cross-referencing radio chatter.
+- **Zone Expedition Shifts (~45%):** High-tension, multi-action deep delves into secret zones with branching narrative choices, quality gates, and Component payoffs.
 
-**Estimated ending distribution** (players who reach Arc III): SEAM RIPPED ~55%,
-KEEP LOGGING ~25%, THE CLEANER ~12%, PATCHED ~8% — with most escapees having seen
-Keep Logging on an earlier run.
+### 3.2 — The Five Secret Zones of Arc II
 
----
-
-## 6. Death, in full (the revised system)
-
-| Death | When | Discrepancies | What it teaches | Lasting effect |
+| Zone | Narrative Premise | Investigation / Entry Gate | The Peril / Risk | Component Payoff |
 |---|---|---|---|---|
-| #1 | Arc I, Day 9 (opt-in) | 3 (tutorial) | The Interim exists; the patch is real; the world forgets | First Patch Scar; the world's first changelog |
-| #2 | Arc II, a zone's end (opt-in) | 5 | The system remembers your filings; scars compound | A contact renamed; a route closed (recoverable) |
-| #3 | Arc III, the Sixth Component (chosen) | 9 | Your file is nearly complete — this is the last one you can afford | The finale's last check gets hard |
-| #4 | The descent (fail state only) | — | PATCHED ending | The terminal one |
+| **Zone 2: The Records Basement** | The municipal ledgers *are* the physical city; crossing out an address erases the building from reality. | Senior Operator, Torch, Doubt ≥ 4, Perception ≥ 3 | Risk of being written directly into a municipal ledger row. | **LENS** — Allows the player to read the simulation's raw source metadata under storylets. |
+| **Zone 3: The Vent Network** | The maintenance crawlspaces between rendered walls where Operator 5 hid his contraband notes. | Lead Operator, Bolt Cutters, Perception ≥ 4 | Getting lost in geometry shifts during the 03:00 memory defragmentation. | **WIRE** — Connective circuitry for the Seam Ripper; enables manual signal bridging. |
+| **Zone 4: The Rooftop Array** | The massive radio antennas above the smog; the weather loop is fake, but an external carrier signal is real. | Lead Operator, Radio Permit, Thermos, Doubt ≥ 5 | High Attention spike; the system aggressively monitors roof access. | **CRYSTAL** — Signal oscillator; resolves VANTABLACK's static into clear external transmissions. |
+| **Zone 5: The Off-Map Sectors** | Riding in the cab with VANTABLACK past Sector 9, where physical roads dissolve into wireframe voids. | Acting Manager, VANTABLACK thread complete, Doubt ≥ 6 | Total spatial desynchronization; navigating back before 06:00. | **CHIP** — Non-volatile memory core; stores an un-patchable copy of the player's consciousness. |
+| **Zone 6: The Interim Deep** | Entering the frame between 06:00:00 and 06:00:01 intentionally to reach the unrendered void. | Acting Manager, All 5 prior Components, Chosen Death or Cleaner's Path | The Auditor's full audit; escalating Reinstatement puzzle. | **INTERIM / SIXTH COMPONENT** — The energy gap that powers the tool. |
 
-The numbers are a *ceiling, not a plan*: a careful player dies twice (the scripted
-first death and the Sixth Component) or even once (the Cleaner's gift path skips #3).
-A reckless player dies four times and pays for it. **Death is rare because it's
-expensive — and it's expensive because it's rare.**
+*Note on Zones:* Zones are strictly **non-grindable**. Once cleared, the patch redesignates the area, permanently locking its doors. Every expedition is a bespoke, one-time narrative set-piece.
 
 ---
 
-## 7. Playtime — the full accounting (revised)
+### 3.3 — The Woven Long-Term Threads
+- **VANTABLACK:** The driver whose callsigns mutate weekly. In Arc II, decoding his radio telemetry with the Crystal reveals that his routes are delivery loops for uncompiled assets. He becomes the operator's navigator to the edge of the world.
+- **Operator 5:** The previous exception handler. His recovered logbook entries detail his failed attempt to break the loop and warn against Reinstatement errors: *"IF YOU'RE READING THIS, THE MEMO IS LYING. 06:00 EXISTS. DO NOT RECONCILE FIELD 4."*
+- **The Cleaner:** The silent janitor who never resets and never appears on any roster. He mops floors that have been deleted by patches. In Month 2, the player discovers he was an even earlier operator who reached the Loom and chose to stay behind.
+- **The Manager's Memos:** The Manager’s memos gradually shift from sterile policy notices to direct, personal communications addressing the player: *"Operator — we notice you have been lingering on the roof. The sky is under maintenance. Please look at your screen. — M."*
 
-### 7.1 — The unit economics of an action
-One action = one storylet: ~50–110 words, a choice, a result. Typical engaged pace:
-**~40–45 s/action** → one shift (50 actions) ≈ **35–40 minutes** ≈ one real-life
-evening. The habit-game session length is unchanged; the content of a session is
-what changed (from loop-grind to story-days).
+---
 
-### 7.2 — The arc-by-arc budget
+### 3.4 — Death and Reinstatement Escalation in Arc II
+- **Death #2 (Mid-Arc II, ~Day 50+):** 
+  - Occurs during a deep zone push (e.g. Records Basement or Rooftop Array).
+  - The Reinstatement features **5 discrepancies**.
+  - Leaves a **Patch Scar** (e.g. a contact renamed, a familiar route closed) that must be healed through active investigation.
+- **Death #3 (Late-Arc II, ~Day 70+):**
+  - Occurs during the Off-Map Sector expedition or the intentional Interim breach.
+  - The Reinstatement features **7 discrepancies**.
+  - The system’s permanent file on the player becomes nearly complete.
 
-| | Days | Actions | Deaths | Active time | Calendar (habit pace) |
+---
+
+### 3.5 — The Climax of Month 2 (Days ~75–80): The Endgame Checklist
+By Day 80, an efficient player holds all five primary Components (Key, Lens, Wire, Crystal, Chip) and compiles **The Endgame Checklist**:
+
+1. **The Form:** The player's own stolen, corrected termination notice.
+2. **The Name:** The player's original identity, erased from the roster before their first shift.
+3. **The Sixth Component:** The Interim power source (obtained via chosen death or the Cleaner's gift).
+4. **The Signal:** The decoded external frequency proving an outside world exists.
+5. **The Hour:** The exact microsecond at 05:59:59 when the rendering engine stalls before the 06:00 wipe.
+
+Arc II concludes when Doubt reaches its peak and the Manager issues **The Summons**: a formal memo inviting the operator by name to Floor 12 for an exit interview.
+
+---
+
+## 4. Arc III — THE LOOM *(Month 3: "The city is woven.")*
+
+**Throughline:** Assemble the Seam Ripper, descend into the simulation's core engine, and decide the fate of Meridian. Routine comforts evaporate: the coffee is permanently cold, the radio plays a steady test tone, and the day crew's notes cease entirely.
+
+### 4.1 — The Summons & The Final Prep (Days 81–85)
+- **The Meeting on Floor 12:** The player enters the Manager's actual office. The Manager is revealed as the operator who preceded Operator 5 — someone who chose comfort, safety, and endless warm coffee over the terrifying void of the outside world.
+- **The Manager's Offer:** Take the deal. Become the new Manager. Ensure the loop continues smoothly forever. (*The Keep Logging ending is immediately accessible here.*)
+- **The Refusal & Final Prep Shifts:**
+  - *Recovering The Form:* A tense chase through the collapsing Municipal Annex before the patch erases the records room.
+  - *Securing The Name:* Finding Operator 5's unredacted final page in the deep vents, or refusing to let the Manager dictate your identity.
+  - *Claiming The Sixth Component:* Either accepting the Cleaner's gift (if his trust was earned) or enduring the grueling 9-discrepancy final Reinstatement.
+
+---
+
+### 4.2 — The Final Descent (Days 86–88+)
+- **The Seam Ripper Assembly:** In a continuous set-piece sequence, the player slots the six Components together:
+  - *The Lens* reveals the raw code beneath the desk.
+  - *The Wire* bridges the console into the primary power rail.
+  - *The Crystal* locks onto the external frequency.
+  - *The Chip* uploads the player's persistent memory.
+  - *The Null Key* unlocks the service hatch beneath Building 7.
+  - *The Interim Component* stabilizes the gap at 05:59:59.
+- **The Descent:** Walking down beneath Building 7, past uncompiled geometry and half-rendered street grids, straight into **The Loom** — a colossal chamber where reality is written as endless, self-updating ledgers.
+- **Cracking the Code:** The finale is not a combat encounter; it is an **authoring puzzle**. The player uses the Seam Ripper to inject an irreconcilable mathematical contradiction into their own record — a discrepancy the Loom cannot reconcile, forcing the simulation's boundary to tear open.
+
+---
+
+## 5. The Four Endings
+
+| Ending | Requirements | Narrative Climax & Epilogue |
+|---|---|---|
+| **1. SEAM RIPPED** *(True / Escape Ending)* | All 6 Components + True Name + Surviving the Descent + Inject Discrepancy | The Loom cracks. The simulation collapses into blinding white light. What lies beyond is shown in three quiet, devastating vignettes: a real desk in an empty dark room; a monitor displaying Meridian City at night; a human hand reaching out to wake you. The horror was never metaphysical — it was the office. |
+| **2. KEEP LOGGING** *(The Manager's Deal)* | Available at The Summons or at the base of the Loom | You accept the Manager's fountain pen and sign the continuity agreement. You become the new Manager. The coffee is warm again. Epilogue: A new operator clocks in for their first shift at 01:00 on Tuesday. You watch them through the console camera, smiling softly. |
+| **3. THE CLEANER** *(Secret / Martyr Ending)* | All 6 Components + Choose *“Stay in the Gap”* at the Loom | You refuse both the outside world and the office, stepping between the clock frames forever. You become the new Cleaner. You wander the unrendered maintenance halls with a mop, keeping the seams tidy and quietly leaving clues for future operators. |
+| **4. PATCHED** *(Failure / Systemic Erasure)* | Accumulate maximum Patch Scars / Reconcile incorrectly in the Loom | The Auditor completes your termination form: `REASON: UNRESOLVED SELF-REFERENCE`. Reality resets. You wake up at your desk at 01:00. The coffee is warm. Your logbook is blank. You feel you have forgotten something vital, but the queue is waiting. |
+| **[RESIGNATION]** *(Joke Beat)* | Formally submit resignation via the terminal at any point in Arc III | The system responds instantly: `RESIGNATION DENIED — NO SUBSTITUTE OPERATOR ON ROSTER. ATTENDANCE IS MANDATORY.` |
+
+---
+
+## 6. Comprehensive Death & Reinstatement System
+
+```
+                  ┌─────────────────────────────────────┐
+                  │           PLAYER DEATH              │
+                  │   (Telegraphed, opt-in risk only)   │
+                  └──────────────────┬──────────────────┘
+                                     │
+                                     ▼
+                  ┌─────────────────────────────────────┐
+                  │            THE INTERIM              │
+                  │  (06:00:01 unrendered frame void)   │
+                  └──────────────────┬──────────────────┘
+                                     │
+                                     ▼
+                  ┌─────────────────────────────────────┐
+                  │          THE REINSTATEMENT          │
+                  │  (Solve discrepancies on Ledger)    │
+                  ├─────────────────────────────────────┤
+                  │ Death 1: 3 discrepancies (Tutorial) │
+                  │ Death 2: 5 discrepancies            │
+                  │ Death 3: 7 discrepancies            │
+                  │ Death 4: 9 discrepancies / Fatal    │
+                  └──────────────────┬──────────────────┘
+                                     │
+                                     ▼
+                  ┌─────────────────────────────────────┐
+                  │             THE PATCH               │
+                  │   (World updates + Patch Scar)      │
+                  ├─────────────────────────────────────┤
+                  │ • Contact renamed                   │
+                  │ • Route re-designated               │
+                  │ • Next shift budget docked 1 hour   │
+                  │ • Scars healable through gameplay   │
+                  └─────────────────────────────────────┘
+```
+
+- **Death Frequency:** Exactly 2–4 deaths across the entire 80–100+ shift game.
+- **Why Death is Rare:** Death is never a quick reset button; it is an expensive, high-friction story event that consumes next-shift action time and adds Patch Scars to the world.
+- **Why Death is Desirable:** The Interim is a secret zone containing exclusive lore, encounters with the Cleaner, and access to the Sixth Component.
+
+---
+
+## 7. Mathematical Pacing & Content Accounting
+
+### 7.1 — Unit Economics of an Action
+- **1 Action = 1 Storylet Choice or 1 Dispatch Filing:** ~50–110 words of text, one meaningful choice/filing, one mechanical result.
+- **Player Pace:** ~40–45 seconds per action.
+- **1 Full Shift (50 actions):** ~35–40 minutes of engaged play (= 1 real-world evening session).
+
+### 7.2 — Multi-Month Timeline & Content Budget
+
+| Macro Phase | In-Game Shifts | Total Actions | Active Playtime | Unique Content Items | Total Word Count |
 |---|---|---|---|---|---|
-| Arc I — Roster | ~9 | ~380 | 0–1 | 4–5 h | ~1.5 wks |
-| Arc II — Zones | ~33 | ~1,100 | 1–2 | 10–13 h | ~4–5.5 wks |
-| Arc III — Loom | ~10 | ~320 | 0–1 | 3–4 h | ~1–1.5 wks |
-| **Total** | **~52** | **~1,800** | **2–4** | **17–22 h** | **6–8 wks** |
+| **Month 1 (Arc I)** | 30–45 shifts | ~1,500–2,100 | ~10–14 hours | ~350 pieces | ~38,000 words |
+| **Month 2 (Arc II)** | 45–50 shifts | ~2,250–2,500 | ~15–18 hours | ~550 pieces | ~65,000 words |
+| **Month 3 (Arc III)** | 10–15 shifts | ~650–750 | ~4–5 hours | ~200 pieces | ~25,000 words |
+| **Totals** | **85–110 shifts** | **~4,400–5,350** | **~29–37 hours** | **~1,100 pieces** | **~128,000 words** |
 
-How the 1,800 actions break down by *kind*:
-
-| Kind | Actions | Share |
-|---|---|---|
-| Zone expeditions (6 × ~120–160) | ~850 | 47% |
-| Routine / ambient days (optional) | ~500 | 28% |
-| Threads (VANTABLACK, Operator 5, Manager, logbook) | ~250 | 14% |
-| Reinstatements + finale set-pieces | ~200 | 11% |
-
-### 7.3 — The grind can't pad this out (by design)
-The 500 ambient actions are *optional* — a focused player skips most of them and
-lands near the low end (≈17 h); a player who enjoys the dull warmth of the job
-lands near the high end (≈22 h). The story content itself (~1,300 actions) is
-fixed, hand-authored, and ungrindable. That's the anti-"spam the same action 50
-times" guarantee: **there is no action in the game that a player must repeat for
-story progress.**
-
-### 7.4 — Calendar, binge, and churn
-
-- **Habit model:** ~35–40 min/day, 5–6 days/wk → **6–8 weeks**, with the logbook's
-  "last time, on..." recap making return frictionless ("you've been away. the city
-  didn't notice. the coffee is still warm.").
-- **Binge model:** possible and safe — with rare death there's no chain-death spiral
-  to worry about; Attention cools via routine. A binger can finish in **~2–2.5
-  weeks of 3-hour days**.
-- **Arc churn risks & mitigations:**
-  - *Arc I ("it's just a boring job sim")*: the wrongness is seeded from action one,
-    a personal Floor 12 order names the short-term mystery at the start of Day 2,
-    and promotion deepens that same document. The expedition/first death can still
-    pay off on Day 9 because the player is pursuing an active case rather than
-    waiting four hours for the premise.
-  - *Arc II (the long middle)*: six zones with distinct textures (a basement of
-    ledgers, a vent labyrinth, a roof under stars that don't match, a drive through
-    dissolving streets) — variety is the antidote to sag; plus the threads give
-    every ambient day a reason to look closer.
-  - *Arc III (players don't want it to end)*: the endgame empties the world so the
-    player *wants out* — comforts removed one by one, mechanically and narratively.
-    The escape should feel like mercy.
-
-### 7.5 — The content budget that produces this
-
-| Pool | Unique pieces | Words |
-|---|---|---|
-| Arc I routine + story cards | ~120 | ~12k |
-| Zone expeditions (6) | ~420 | ~55k |
-| Threads + patch-variants | ~220 + ~130 variants | ~25k |
-| Arc III set-pieces + endings | ~100 | ~14k |
-| Memos, logbook pages, system text, epilogues | ~110 | ~12k |
-| **Total** | **~950–1,050 pieces** | **~100–120k words** |
-
-~1,800 actions ÷ ~100k words ≈ **55 words per action** average — consistent with the
-storylet format (cards repeat; only some fire per day). Scope: a serious but
-realistic indie text-game — comparable to a mid-size visual novel, ~4–8 months of
-full-time writing, and deliberately finite (unlike Fallen London's live-service
-years).
-
-### 7.6 — Comparisons
-
-| Touchstone | Time to finish |
-|---|---|
-| Outer Wilds | ~15–20 h / ~1–2 wks |
-| Idle Loops | ~1–2 wks of idle |
-| Mid-size visual novel | ~20–30 h |
-| Fallen London | effectively endless (live service) |
-| **NIGHT DISPATCH** | **17–22 h / 6–8 wks** |
-
-We land between Outer Wilds and a VN on active time, stretched over Fallen
-London-style calendar pacing. The slow burn is the novel read one chapter per night.
-
----
-
-## 8. Changelog since Draft 03
-
-1. **Loops removed as a mechanic.** The nightly reboot stays as fiction (why the
-   world forgets; why the logbook is the save file), but the player never replays
-   content. Each shift is new story. (Core design P0–P1.)
-2. **Death reduced to 2–4 total**, telegraphed, opt-in, priced by the Reinstatement
-   (FL-chess analog: escalating discrepancies, compounding filings, recoverable
-   Patch Scars). (P1, P3.)
-3. **Resources redesigned:** Components, found in six one-time secret zones
-   (mini-expeditions with risk and choice), never grinded. Routine work demoted to
-   optional immersion producing Salary — mundane, separate, skippable. (P2, P4.)
-4. **Endgame rebuilt as a tool-build:** the Seam Ripper assembles from the six
-   Components and cracks **the Loom** — the engine weaving the city. Escape is
-   authoring a discrepancy the system can't reconcile, not surviving a loop. (P5.)
-5. **Playtime re-budgeted without loops:** ~52 days, ~1,800 actions, 17–22 h active,
-   6–8 wks calendar — with a guarantee: no action must be repeated for story
-   progress. (P9.)
-
----
-
-## 9. Open questions
-
-1. **Attention: hidden or shown?** Currently diegetic only (memo tone, Auditor
-   sightings, callsign changes). With rare death, the danger framing of a card
-   matters more than a number — but a soft meter may help Arc II zone decisions.
-   Decide after a prototype.
-2. **Should the Sixth Component require death** (making the Cleaner's-gift path the
-   *mercy* route) — or should the gift be the *canonical* route and death optional
-   for lore only?
-3. **What are the three images outside the Loom, exactly?** (Currently: desk /
-   screen / hand. They are the game's last words — sharpen them.)
-4. **First playable slice:** one Tuesday (~30 cards) + the Floor 12 expedition +
-   the tutorial Reinstatement. Build this next, or draft the six zones' storylets
-   first?
+### 7.3 — Churn Mitigation & Player Engagement Curve
+- **First 10 Minutes:** High-frequency anomalies; witty, dry banter from M.; the break-room coffee mystery.
+- **End of Shift 1:** Clear realization that Meridian is flawed; first Doubt points awarded.
+- **Start of Shift 2:** Concrete, named mystery (Floor 12 secondary order with player's signature).
+- **Days 3–15 (Early Month 1):** The joy of discovery across multiple open tracks (handwriting, day crew, shop tools, radio).
+- **Days 15–30 (Late Month 1):** Unlocking Senior Operator clearance, exploring restricted archives, building toward the Floor 12 breach.
+- **Month 2 (Days 31–80):** High-variety zone expeditions preventing mid-game sag.
+- **Month 3 (Days 81–95+):** Rapid escalation, loss of comforts, thrilling final descent and escape.

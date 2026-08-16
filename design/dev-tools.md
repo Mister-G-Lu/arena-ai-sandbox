@@ -4,15 +4,15 @@
 > **The short answer to "does email login make this hard?":** No — because dev access
 > should never be an *account* in the first place. Login is about **identity**; dev
 > mode is about **capability**. Bind the cheats to the build and the device, not to a
-> user row in a database. Then a dev can warp to Day 43 while signed out, signed in as
+> user row in a database. Then a dev can warp to Day 80 while signed out, signed in as
 > a fresh account, or signed in as a real player's copied save.
 
 ---
 
 ## 1. The problem
 
-FALSE REALITY is ~52 shifts, ~1,800 actions, 6 zones, 4 endings and 2–4 deaths
-(P9, P8, P1). Reaching the Summons legitimately is **15+ hours of play**. Nobody can
+FALSE REALITY is ~85–110 shifts, ~4,400–5,300 actions, 6 zones, 4 endings and 2–4 deaths
+(P9, P8, P1). Reaching the Summons legitimately is **30+ hours of play**. Nobody can
 test Arc III that way, and nobody should try. Every content change to a late storylet
 needs a 5-second path to "put me there, in that exact state, now."
 
@@ -134,16 +134,17 @@ Not "set 14 fields by hand" — one button that lands you in a *coherent* state,
 half of testing Arc III is discovering that Arc III breaks when `name` is unset.
 
 ```js
-{ id: 'summons', label: 'Arc III — The Summons (Day 43)',
-  patch: { arc: 3, shift: { day: 43 }, components: ALL_BUT_SIXTH,
+{ id: 'summons', label: 'Arc III — The Summons (Day 80)',
+  patch: { arc: 3, shift: { day: 80 }, components: ALL_BUT_SIXTH,
            qualities: { doubt: 9, perception: 6 }, zones: { …cleared } } }
 ```
 
-Ship a warp for every beat that has ever had a bug: Day 1 cold open, Day 5 first
-Notice, Day 9 Floor 12, first death / the Interim, mid-Arc-II (3 components), Arc II
-gate (5 + Doubt threshold), the Summons, the Last Shift, the descent, and each of the
-four endings. Each warp is ~6 lines. **Warps are content, and they live in version
-control** — that's what makes them shareable and reviewable in a PR.
+Ship a warp for every beat that has ever had a bug: Day 1 cold open, Day 2 Floor 12 lead,
+Days 3+ first Notice / Handwriting case, Day 30 Floor 12 breach & first death / Interim,
+mid-Arc-II (3 components), Arc II gate (5 + Doubt threshold), the Summons (Day 80),
+the Last Shift, the descent, and each of the four endings. Each warp is ~6 lines. **Warps are
+content, and they live in version control** — that's what makes them shareable and reviewable
+in a PR.
 
 ## 7. Safety rails (cheap, worth it)
 
