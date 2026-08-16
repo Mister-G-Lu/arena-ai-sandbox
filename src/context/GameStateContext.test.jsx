@@ -245,6 +245,17 @@ describe('effects pipeline', () => {
     expect(api.state.credits).toBe(321);
   });
 
+  it('anchors zero-timestamp imports instead of regenerating from the epoch', async () => {
+    mount();
+    const imported = JSON.parse(api.actions.exportGameSave());
+    imported.game.actions = 0;
+    imported.game.actionsLastTick = 0;
+
+    await act(async () => { api.actions.importGameSave(JSON.stringify(imported)); });
+    expect(api.state.actions).toBe(0);
+    expect(api.state.actionsLastTick).toBeGreaterThan(0);
+  });
+
   it('refuses an invalid imported save without replacing live state', async () => {
     mount();
     await act(async () => { api.actions.addCredits(12); });

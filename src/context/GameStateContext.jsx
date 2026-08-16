@@ -59,6 +59,16 @@ function commitTank(state, tank) {
 }
 
 /**
+ * Bring a state loaded from any persistence boundary onto the local clock.
+ * `lastTick: 0` is the additive-schema sentinel for "not anchored yet", never
+ * permission to regenerate from the Unix epoch.
+ */
+function hydrateActionTank(state, now = Date.now()) {
+  const anchored = state.actionsLastTick > 0 ? state : { ...state, actionsLastTick: now };
+  return commitTank(anchored, accrue(tankOf(anchored), now));
+}
+
+/**
  * Charge the tank for one action and apply `mutate` only if it paid.
  *
  * Every consequential verb in the game funnels through here, so there is
@@ -150,15 +160,7 @@ function commitLedger(prev, result) {
 
 export function GameStateProvider({ children }) {
   const [boot] = useState(() => loadLocalGameSave());
-  const [state, setState] = useState(() => {
-    // A save written before the tank existed (or a fresh file) has no anchor.
-    // Anchoring at boot rather than at the epoch stops the first read from
-    // accruing a full tank out of nothing.
-    const loaded = boot.state;
-    const now = Date.now();
-    const anchored = loaded.actionsLastTick > 0 ? loaded : { ...loaded, actionsLastTick: now };
-    return commitTank(anchored, accrue(tankOf(anchored), now));
-  });
+  const [state, setState] = useState(() => hydrateActionTank(boot.state));
   const [devMode] = useState(() => detectDevMode());
   // Re-renders the HUD countdown once a second. State itself accrues lazily on
   // read, so this timer is presentation only — nothing depends on it firing.
@@ -265,12 +267,12 @@ export function GameStateProvider({ children }) {
 
   const replaceGameState = useCallback((nextState) => {
     const envelope = createStoredSaveEnvelope(nextState);
-    setState(parseStoredSaveEnvelope(envelope).game);
+    setState(hydrateActionTank(parseStoredSaveEnvelope(envelope).game));
   }, []);
 
   const importGameSave = useCallback((text) => {
     const loaded = parseSaveJson(text);
-    setState(loaded.game);
+    setState(hydrateActionTank(loaded.game));
     // A new operator file is now live; Records must be re-read, not overwritten.
     setCloudRecheck((n) => n + 1);
     return loaded.game;
@@ -284,7 +286,7 @@ export function GameStateProvider({ children }) {
     if (!incoming) return false;
     localWritesBlocked.current = false;
     skipNextPersistence.current = true;
-    setState(incoming.game);
+    setState(hydrateActionTank(incoming.game));
     setPersistence(prev => ({
       ...prev,
       status: 'ready',
@@ -632,7 +634,7 @@ export function GameStateProvider({ children }) {
 
   const resetGame = useCallback(() => {
     clearLocalGameSave();
-    setState(createInitialGameState());
+    setState(hydrateActionTank(createInitialGameState()));
   }, []);
 
   /* ---------------- dev capability ---------------- */
