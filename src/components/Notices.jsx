@@ -254,13 +254,16 @@ export default function Notices({ board = 'notices' }) {
                 return (
                   <button
                     key={choice.id}
-                    className="btn btn-ghost storylet-choice"
+                    className={`btn btn-ghost storylet-choice${choice.death ? ' storylet-choice-death' : ''}`}
                     type="button"
                     onClick={() => choose(choice)}
                     disabled={cardCosts && actionTank.empty}
                   >
                     <span className="storylet-choice-label">{choice.label}</span>
                     <span className="storylet-choice-meta">
+                      {choice.death && (
+                        <span className="storylet-choice-danger">LETHAL // THIS CHOICE KILLS</span>
+                      )}
                       {effects && <span className="storylet-choice-effects">{effects}</span>}
                       <span className="storylet-choice-cost">
                         {cardCosts ? '1 ACTION' : 'REREAD — FREE'}

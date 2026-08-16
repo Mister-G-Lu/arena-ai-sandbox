@@ -439,6 +439,35 @@ describe('opening narrative', () => {
     expect(save().credits).toBeGreaterThan(beforeDay2);
   }, 60000);
 
+  it('telegraphs and records the first opt-in death', async () => {
+    const state = createInitialGameState();
+    state.day = 2;
+    state.orientation = { completed: true, skipped: false, taskRecorded: true };
+    state.promotion = { ...state.promotion, tier: 2 };
+    state.qualities = { ...state.qualities, doubt: 2, perception: 1 };
+    state.zones = { floor12: 'open' };
+    state.currentStorylet = { zone: 'floor12', storyletId: 'floor12-05' };
+    state.seenStorylets = ['floor12-01', 'floor12-02', 'floor12-03', 'floor12-04'];
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#investigations';
+
+    render(<App />);
+    await tick(100);
+    expect(document.body.textContent).toContain('LETHAL // THIS CHOICE KILLS');
+    expect(button('Step forward')).toHaveClass('storylet-choice-death');
+
+    await click('Step forward');
+    await tick(200);
+    const after = save();
+    expect(after.deaths).toBe(1);
+    expect(after.attention).toBe(0);
+    expect(after.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-06' });
+    expect(after.logbook.some((entry: { text: string }) => entry.text.includes('TERMINATION 1'))).toBe(true);
+  });
+
   it('walks Doubt into Floor 12 and pays out the first Component', async () => {
     render(<App />);
     await runOrientation('WHO MADE IT?');

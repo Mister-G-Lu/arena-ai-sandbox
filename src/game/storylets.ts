@@ -17,7 +17,15 @@ export const ZONE_IDS = [
 export type ZoneId = (typeof ZONE_IDS)[number];
 
 export const STORYLET_KEYS = new Set(['id', 'zone', 'title', 'body', 'choices']);
-export const CHOICE_KEYS = new Set(['id', 'label', 'outcome', 'next', 'endZone', 'completeZone']);
+export const CHOICE_KEYS = new Set([
+  'id',
+  'label',
+  'outcome',
+  'next',
+  'endZone',
+  'completeZone',
+  'death',
+]);
 export const OUTCOME_KEYS = new Set(['text', 'qualities']);
 
 export interface Outcome {
@@ -32,6 +40,8 @@ export interface Choice {
   next?: string;
   endZone?: boolean;
   completeZone?: boolean;
+  /** Explicit, opt-in lethal choice. It must transition into aftermath content. */
+  death?: boolean;
 }
 
 export interface Storylet {
@@ -114,6 +124,10 @@ export function validateChoice(raw: unknown, label = 'choice'): Choice {
     }
     choice.completeZone = obj.completeZone;
   }
+  if (obj.death !== undefined) {
+    if (typeof obj.death !== 'boolean') throw new SchemaError(`${label}.death must be a boolean`);
+    choice.death = obj.death;
+  }
   return choice;
 }
 
@@ -158,6 +172,10 @@ export function validateStoryGraph(
         throw new SchemaError(
           `${card.id}.${choice.id} must declare exactly one of next, endZone, or completeZone`,
         );
+      }
+
+      if (choice.death && !choice.next) {
+        throw new SchemaError(`${card.id}.${choice.id} death must transition to aftermath content`);
       }
 
       if (choice.next) {

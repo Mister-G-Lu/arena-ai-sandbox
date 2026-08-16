@@ -477,6 +477,27 @@ export function GameStateProvider({ children }) {
           ? charged
           : applyEffectsToState(charged, selectedChoice.outcome?.qualities);
 
+        if (selectedChoice.death && !alreadySeen) {
+          const deathNumber = next.deaths + 1;
+          next = withLog(
+            next,
+            `TERMINATION ${deathNumber} // You remember the interval the city removed. ` +
+              'The operator file remained open because you did.',
+            {
+              deaths: deathNumber,
+              // Death is a patch boundary, not an accidental chain-death loop.
+              // The lethal choice was explicit; the next investigation begins
+              // with the system watching from a clean baseline.
+              attention: 0,
+              discoveries: [...next.discoveries, {
+                day: next.day,
+                text: `THE INTERIM ${deathNumber}: the frame after termination and before shift start. The city forgot. You did not.`,
+                timestamp: Date.now()
+              }]
+            }
+          );
+        }
+
         const seenStorylets = charged.seenStorylets.includes(storylet.id)
           ? charged.seenStorylets
           : [...charged.seenStorylets, storylet.id];

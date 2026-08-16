@@ -161,6 +161,33 @@ describe('effects pipeline', () => {
     expect(api.state.seenStorylets.filter((id) => id === 'floor12-01')).toHaveLength(1);
   });
 
+  it('records an explicitly lethal choice once and enters its aftermath', async () => {
+    mount();
+    await act(async () => { api.actions.applyEffects({ Attention: 8 }); });
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.currentStorylet = { zone: 'floor12', storyletId: 'floor12-05' };
+    saved.game.zones.floor12 = 'open';
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    const forward = {
+      id: 'forward',
+      outcome: { qualities: { Attention: 3, Doubt: 1 } },
+      next: 'floor12-06',
+      death: true,
+    };
+    const card = { id: 'floor12-05', zone: 'floor12', choices: [forward] };
+    await act(async () => { api.actions.resolveStorylet(card, forward); });
+
+    expect(api.state.deaths).toBe(1);
+    expect(api.state.attention).toBe(0);
+    expect(api.state.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-06' });
+    expect(api.state.discoveries.some((entry) => entry.text.includes('THE INTERIM 1'))).toBe(true);
+    expect(api.state.logbook.some((entry) => entry.text.includes('TERMINATION 1'))).toBe(true);
+
+    await act(async () => { api.actions.resolveStorylet(card, forward); });
+    expect(api.state.deaths).toBe(1);
+  });
+
   it('promotes automatically — the player never asks for a promotion', async () => {
     mount();
     expect(api.state.promotion.tier).toBe(0);
