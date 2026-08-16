@@ -109,6 +109,13 @@ describe('opening narrative', () => {
     expect(resource('Credits')).toBe('0');
   });
 
+  it('keeps Components off the resource bar until the first one is discovered', async () => {
+    render(<App />);
+    // A fresh operator has found nothing; the counter would only raise questions.
+    expect(resource('Components')).toBeNull();
+    expect(document.body.textContent).not.toContain('0/6');
+  });
+
   it('files the break-room answer as a real consequence', async () => {
     render(<App />);
     await runOrientation('WHO MADE IT?');

@@ -38,23 +38,26 @@ export default function ResourceBar() {
           </div>
         </div>
 
-        {/* Components */}
-        <div className="resource-item components">
-          <span className="resource-icon">⚙</span>
-          <div className="resource-info">
-            <span className="resource-label">Components</span>
-            <span className="resource-value">{componentsCount}/{COMPONENT_DEFS.length}</span>
-            <div className="component-dots">
-              {Object.entries(components).map(([name, acquired]) => (
-                <div
-                  key={name}
-                  className={`component-dot ${acquired ? 'acquired' : ''}`}
-                  title={`${name.toUpperCase()} ${acquired ? '(acquired)' : '(missing)'}`}
-                />
-              ))}
+        {/* Components — hidden until the first one is discovered.
+            The counter appearing out of nowhere IS the reveal. */}
+        {componentsCount > 0 && (
+          <div className="resource-item components">
+            <span className="resource-icon">⚙</span>
+            <div className="resource-info">
+              <span className="resource-label">Components</span>
+              <span className="resource-value">{componentsCount}/{COMPONENT_DEFS.length}</span>
+              <div className="component-dots">
+                {Object.entries(components).map(([name, acquired]) => (
+                  <div
+                    key={name}
+                    className={`component-dot ${acquired ? 'acquired' : ''}`}
+                    title={`${name.toUpperCase()} ${acquired ? '(acquired)' : '(missing)'}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Day */}
         <div className="resource-item day">
