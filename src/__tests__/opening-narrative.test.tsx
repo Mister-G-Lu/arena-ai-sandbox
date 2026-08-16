@@ -89,6 +89,16 @@ async function executeUntilCorrupt(maxTries = 40): Promise<boolean> {
   return false;
 }
 
+async function finishCurrentShift() {
+  while (button('EXECUTE TASK')) {
+    await click('EXECUTE TASK');
+    await tick(1200);
+    if (button('LOG THE DISCREPANCY')) await click('FILE AS CLEAN');
+    else await click('ACKNOWLEDGE RESULT');
+    await tick(100);
+  }
+}
+
 describe('opening narrative', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -136,7 +146,7 @@ describe('opening narrative', () => {
     expect(navLabels.some((l) => l?.includes('NOTICES'))).toBe(true);
   });
 
-  it('keeps Notices unreachable for an incurious operator', async () => {
+  it('keeps Notices unreachable for an incurious operator during Shift 1', async () => {
     render(<App />);
     await runOrientation("IT'S FINE");
     await tick(100);
@@ -148,6 +158,39 @@ describe('opening narrative', () => {
     await tick(100);
     // The gate redirects rather than rendering an empty page.
     expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+  });
+
+  it('posts the Floor 12 lead to every operator at the start of Shift 2', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 2;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
+    expect(document.body.textContent).toContain('NOTICES · NEW');
+
+    await go('notices');
+    await tick(100);
+    const zoneTitles = Array.from(document.querySelectorAll('.zone-card h3'))
+      .map((title) => title.textContent);
+    expect(zoneTitles).toEqual(['Annex elevator discrepancy']);
+
+    await click('▸ OPEN');
+    await tick(100);
+    await click('Trace the request');
+    await tick(200);
+
+    const filed = save();
+    expect(filed.zones['annex-order']).toBe('complete');
+    expect(filed.qualities.doubt).toBe(1);
+    expect(filed.qualities.perception).toBe(1);
+    expect(filed.promotion.title).toBe('Operator');
+    expect(document.body.textContent).not.toContain('NOTICES · NEW');
   });
 
   it('recovers from a story pointer removed by a content update', async () => {
@@ -330,11 +373,32 @@ describe('opening narrative', () => {
     const afterNotices = save();
     expect(afterNotices.qualities.doubt).toBeGreaterThanOrEqual(2);
     expect(afterNotices.qualities.perception).toBeGreaterThanOrEqual(1);
-    expect(afterNotices.promotion.title).toBe('Senior Operator');
+    // Curiosity alone cannot surface the restricted expedition during Shift 1.
+    expect(afterNotices.promotion.title).toBe('Operator');
+    expect(document.body.textContent).not.toContain('Floor 12');
+
+    await go('console');
+    await finishCurrentShift();
+    await click('BEGIN NEXT SHIFT');
+    await tick(200);
+
+    // Shift 2 names the mystery immediately, before another quota begins.
+    expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
+    expect(save().promotion.title).toBe('Senior Operator');
 
     await go('notices');
     await tick(100);
+    expect(document.body.textContent).toContain('Annex elevator discrepancy');
     expect(document.body.textContent).toContain('Floor 12');
+
+    // Resolve the universal lead first. It personalizes the order, while the
+    // promotion earned above determines whether the expedition is also shown.
+    const lead = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('Annex elevator discrepancy')) as HTMLElement;
+    await act(async () => { (lead.querySelector('button') as HTMLButtonElement).click(); });
+    await tick(100);
+    await click('Trace the request');
+    await tick(200);
 
     // Run the expedition, retreating at the first telegraphed death.
     const zoneButtons = Array.from(document.querySelectorAll('.zone-card')) as HTMLElement[];

@@ -6,11 +6,11 @@ import { cardsInZone, findCard, loadAllStorylets } from './load';
 describe('content pipeline', () => {
   const cards = loadAllStorylets();
 
-  it('loads 12 validated cards — 6 per live zone', () => {
-    expect(cards).toHaveLength(12);
-    for (const zone of ZONE_IDS) {
-      expect(cardsInZone(cards, zone)).toHaveLength(6);
-    }
+  it('loads every live deck, including the one-card Shift 2 lead', () => {
+    expect(cards).toHaveLength(13);
+    expect(cardsInZone(cards, 'annex-order')).toHaveLength(1);
+    expect(cardsInZone(cards, 'routine')).toHaveLength(6);
+    expect(cardsInZone(cards, 'floor12')).toHaveLength(6);
   });
 
   it('keeps the content zone list pinned to the configured zones', () => {

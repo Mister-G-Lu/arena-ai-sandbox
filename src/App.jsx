@@ -13,11 +13,15 @@ import { GameStateProvider, useGameState } from './context/GameStateContext';
 function GameShell() {
   const { page, navigate } = useRouter();
   const { state } = useGameState();
+  // Shift 2 posts a mandatory-visible secondary order even for an operator who
+  // has not earned normal Notice clearance. Promotion still controls how much
+  // of the board — and of Floor 12 — the operator can investigate.
+  const noticesOpen = state.day >= 2 || state.promotion.unlocks.includes('notice-storylets');
   // Pages can be gated by state; a locked page redirects to its prerequisite.
   const PAGE_GATES = {
     console: { open: state.orientation.completed, fallback: 'first-shift' },
     notices: {
-      open: state.orientation.completed && state.promotion.unlocks.includes('notice-storylets'),
+      open: state.orientation.completed && noticesOpen,
       fallback: state.orientation.completed ? 'console' : 'first-shift'
     }
   };

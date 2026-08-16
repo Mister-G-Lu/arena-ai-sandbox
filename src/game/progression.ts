@@ -114,8 +114,11 @@ export const PROMOTIONS: PromotionDef[] = [
     tier: 2,
     title: 'Senior Operator',
     unlocks: ['restricted-areas', 'deeper-investigation'],
-    requires: { doubt: 2, perception: 1 },
-    memo: 'SENIOR OPERATOR. Restricted areas are now listed on your terminal. They were always listed. — M.',
+    // The first shift establishes the job; the second is allowed to reveal
+    // what the job has been hiding. Even a highly curious orientation cannot
+    // surface the full Floor 12 expedition before its Shift 2 lead arrives.
+    requires: { day: 2, doubt: 2, perception: 1 },
+    memo: 'SENIOR OPERATOR. Restricted areas are now listed on your terminal. The Annex attachment has always been open. — M.',
   },
   {
     tier: 3,
@@ -166,6 +169,8 @@ export interface ZoneDef {
   entry: string;
   /** Quality/metric thresholds required to enter. */
   requires?: Record<string, number>;
+  /** Thresholds required before the zone is listed at all. */
+  visibleRequires?: Record<string, number>;
   /** Promotion unlock flag required to even see the zone listed. */
   requiresUnlock?: string;
   /** Component awarded the first time the zone completes. */
@@ -178,6 +183,19 @@ export interface ZoneDef {
 }
 
 export const ZONES: ZoneDef[] = [
+  {
+    id: 'annex-order',
+    title: 'Annex elevator discrepancy',
+    kicker: 'SECONDARY ORDER // SHIFT 2',
+    blurb:
+      'Car 2 registered an out-of-range stop three seconds before your shift began. The service field says FLOOR 12. It also says you requested it.',
+    entry: 'annex-order-01',
+    visibleRequires: { day: 2 },
+    requires: { day: 2 },
+    onceEach: true,
+    closedNote:
+      'The discrepancy is filed. The attachment remains on your record; what it reveals depends on your clearance.',
+  },
   {
     id: 'routine',
     title: 'The Routine Pool',
@@ -197,7 +215,7 @@ export const ZONES: ZoneDef[] = [
       'The Municipal Annex has eleven floors. The elevator panel disagrees, quietly, at exactly the height where a twelfth would be.',
     entry: 'floor12-01',
     requiresUnlock: 'restricted-areas',
-    requires: { doubt: 2, perception: 1 },
+    requires: { day: 2, doubt: 2, perception: 1 },
     component: 'key',
     componentLabel: 'NULL KEY',
     closedNote:
@@ -211,7 +229,10 @@ export function zoneById(id: string): ZoneDef | undefined {
 
 /** Zones the operator is allowed to know about at all. */
 export function visibleZones(ctx: RequirementCtx): ZoneDef[] {
-  return ZONES.filter((z) => !z.requiresUnlock || ctx.unlocks.includes(z.requiresUnlock));
+  return ZONES.filter((z) =>
+    meetsRequirements(z.visibleRequires, ctx) &&
+    (!z.requiresUnlock || ctx.unlocks.includes(z.requiresUnlock)),
+  );
 }
 
 export function zoneState(zone: ZoneDef, ctx: RequirementCtx): ZoneState {

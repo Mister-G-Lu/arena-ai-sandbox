@@ -145,29 +145,38 @@ function timeForCompletedTasks(completedTasks) {
   return formatTime(Math.min(60 + completedTasks * 6, 360));
 }
 
+function shiftInitializationText({ day, tasksCompleted, annexOrderComplete }) {
+  const remaining = Math.max(0, MAX_TASKS - tasksCompleted);
+  if (day === 1 && tasksCompleted > 0) {
+    return `ORIENTATION RECORD RECEIVED // TASK VERIFIED // QUOTA: ${remaining} // LIVE QUEUE OPEN.`;
+  }
+  if (day >= 2 && !annexOrderComplete) {
+    return `SHIFT INITIALIZED // QUOTA: ${remaining} // SECONDARY ORDER POSTED: ANNEX ELEVATOR, OUT-OF-RANGE STOP 12.`;
+  }
+  return `SHIFT INITIALIZED // COFFEE: WARM // QUOTA: ${remaining} // LIVE QUEUE OPEN.`;
+}
+
 export default function Console() {
   const { state, actions } = useGameState();
   const [phase, setPhase] = useState('ready');
   const [pendingTask, setPendingTask] = useState(null);
-  const [logs, setLogs] = useState(() => {
-    const remaining = Math.max(0, MAX_TASKS - state.tasksCompleted);
-    const isHandoff = state.day === 1 && state.tasksCompleted > 0;
-
-    return [{
-      id: 'shift-initialized',
-      timestamp: timeForCompletedTasks(state.tasksCompleted),
-      type: 'system',
-      text: isHandoff
-        ? `ORIENTATION RECORD RECEIVED // TASK VERIFIED // QUOTA: ${remaining} // LIVE QUEUE OPEN.`
-        : `SHIFT INITIALIZED // COFFEE: WARM // QUOTA: ${remaining} // LIVE QUEUE OPEN.`
-    }];
-  });
+  const [logs, setLogs] = useState(() => [{
+    id: 'shift-initialized',
+    timestamp: timeForCompletedTasks(state.tasksCompleted),
+    type: 'system',
+    text: shiftInitializationText({
+      day: state.day,
+      tasksCompleted: state.tasksCompleted,
+      annexOrderComplete: state.zones['annex-order'] === 'complete'
+    })
+  }]);
   const logRef = useRef(null);
   const processingTimer = useRef(null);
 
   const tasksRemaining = Math.max(0, MAX_TASKS - state.tasksCompleted);
   const minutes = Math.min(60 + state.tasksCompleted * 6, 360);
   const shiftComplete = tasksRemaining === 0;
+  const annexOrderPending = state.day >= 2 && state.zones['annex-order'] !== 'complete';
   const nextAssignment = TASK_ORDERS[state.tasksCompleted % TASK_ORDERS.length];
 
   useEffect(() => {
@@ -279,7 +288,11 @@ export default function Console() {
       id: `day-${state.day + 1}-initialized`,
       timestamp: '01:00',
       type: 'system',
-      text: `SHIFT INITIALIZED // COFFEE: WARM // QUOTA: ${MAX_TASKS} // LIVE QUEUE OPEN.`
+      text: shiftInitializationText({
+        day: state.day + 1,
+        tasksCompleted: 0,
+        annexOrderComplete: state.zones['annex-order'] === 'complete'
+      })
     }]);
   }
 
@@ -324,6 +337,25 @@ export default function Console() {
               <span>{phase === 'result' ? 'ACKNOWLEDGMENT DUE' : shiftComplete ? 'SHIFT COMPLETE' : 'CLEAR UNTIL 06:00'}</span>
             </div>
           </div>
+
+          {annexOrderPending && (
+            <aside className="secondary-order" aria-labelledby="annex-order-title">
+              <div>
+                <div className="secondary-order-kicker">SECONDARY ORDER // DOES NOT COUNT TOWARD QUOTA</div>
+                <div className="secondary-order-title" id="annex-order-title">
+                  ANNEX ELEVATOR // OUT-OF-RANGE STOP: FLOOR 12
+                </div>
+                <p>
+                  Car 2 stopped above its listed service range at 00:59:57. The request
+                  carries your terminal ID. Clearance determines how much of the attachment
+                  the system will admit exists.
+                </p>
+              </div>
+              <a className="btn btn-primary btn-compact" href="#notices">
+                ▸ REVIEW ORDER
+              </a>
+            </aside>
+          )}
 
           <div className="log" ref={logRef} aria-label="Dispatch log" aria-live="polite">
             {logs.map(log => (

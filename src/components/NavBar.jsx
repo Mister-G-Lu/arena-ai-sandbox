@@ -10,8 +10,14 @@ export default function NavBar({ currentPage, onNavigate }) {
     state.orientation.completed
       ? { page: 'console', icon: '▣', label: 'CONSOLE' }
       : { page: 'first-shift', icon: '◈', label: 'FIRST SHIFT' },
-    state.promotion.unlocks.includes('notice-storylets')
-      ? { page: 'notices', icon: '✦', label: 'NOTICES' }
+    (state.day >= 2 || state.promotion.unlocks.includes('notice-storylets'))
+      ? {
+          page: 'notices',
+          icon: '✦',
+          label: state.day >= 2 && state.zones['annex-order'] !== 'complete'
+            ? 'NOTICES · NEW'
+            : 'NOTICES'
+        }
       : null,
     { page: 'profile', icon: '◉', label: 'PROFILE' },
   ].filter(Boolean);

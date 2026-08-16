@@ -80,7 +80,7 @@ He slides a form across the desk. Your name is already on it.
 ## 2. PROMOTIONS
 
 ### Tier 1: Unknown Operator → Operator
-**Trigger:** First death (Day 9)
+**Trigger:** Doubt ≥ 1
 **Words:** ~75
 
 ```
@@ -93,21 +93,18 @@ You are now recognized as: OPERATOR
 Access granted:
 - Notice storylets
 - First investigation actions
-- Basic dispatch overrides
+- Secondary-order source fields
 
-//UPDATE [CRITICAL]: This line should feel ominous — being "seen" by the system is both good and bad
-Your file has been opened. The system is watching.
+Your file has been opened. This is a privilege granted to files that require
+further review.
 
-//UPDATE THIS: Add flavor text about what "Operator" means in this world
-
-//UPDATE [CRITICAL]: Closing line — first promotion, should feel like both a reward and a trap
-Welcome to the roster.
+Welcome to the roster. You were already on it.
 ```
 
 ---
 
 ### Tier 2: Operator → Senior Operator
-**Trigger:** Doubt ≥ 2, Deaths ≥ 1 (Day 15+)
+**Trigger:** Shift 2+, Doubt ≥ 2, Perception ≥ 1
 **Words:** ~75
 
 ```
@@ -118,17 +115,15 @@ Performance review complete.
 You have been promoted to: SENIOR OPERATOR
 
 Access granted:
-- Restricted areas (Basement, Vent Network)
+- Restricted areas
 - Deeper investigation actions
-- Override codes (Level 2)
+- Annex elevator attachment, service stop 12
 
-//UPDATE THIS: Add flavor text about Senior Operator perks
+There is no new attachment. The attachment has always been open.
 
-Your [Credits] cap has been increased. You can now access the break room coffee machine without a keycard.
+But there is no form. There is no Manager.
 
-The day crew left a note: "Don't stay late."
-
-You've been staying late.
+[Unlock: Floor 12 field order]
 ```
 
 ---
@@ -336,6 +331,29 @@ But there's no form. There's no Manager.
 ---
 
 ## 4. ZONE DISCOVERIES
+
+### Lead: Annex elevator discrepancy
+**Trigger:** Start of Shift 2; visible at every promotion tier
+**Words:** ~90
+
+```
+SECONDARY ORDER — MUNICIPAL ANNEX, ELEVATOR CAR 2
+
+At 00:59:57, the car stopped above Floor 11.
+
+SERVICE FIELD: FLOOR 12
+REQUESTING OPERATOR: [CURRENT TERMINAL ID]
+
+You were not on shift at 00:59:57.
+
+Clearance determines what happens next. An Unknown Operator may clear the field as
+a sensor fault. An Operator may trace the request to a signature shaped like their
+own. A Senior Operator may open the field attachment.
+
+There is no twelfth floor. The attachment is warm.
+```
+
+---
 
 ### Zone 1: Floor 12
 **Trigger:** First visit to Floor 12 (Day 9+)

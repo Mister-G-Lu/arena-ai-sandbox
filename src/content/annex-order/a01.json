@@ -1,0 +1,26 @@
+{
+  "id": "annex-order-01",
+  "zone": "annex-order",
+  "title": "A stop outside service",
+  "body": "SECONDARY ORDER — Municipal Annex, elevator car 2. At 00:59:57 the car stopped above Floor 11. The service field reads FLOOR 12. Requesting operator: your terminal ID. You were not on shift yet.",
+  "choices": [
+    {
+      "id": "clear",
+      "label": "Clear it as an out-of-range sensor fault.",
+      "outcome": {
+        "text": "The field corrects itself to FLOOR 11 before your confirmation finishes. For one frame, a restricted attachment reads: FIELD VISIT — SENIOR OPERATOR ONLY.",
+        "qualities": { "Routine": 1, "Salary": 2 }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "trace",
+      "label": "Trace the request before filing it.",
+      "outcome": {
+        "text": "The request carries your terminal ID, your timestamp format, and a signature shaped like yours. The attachment ends at a clearance seal: SENIOR OPERATOR. A new line appears in your file: PROMOTION REVIEW ACTIVE.",
+        "qualities": { "Doubt": 1, "Perception": 1, "Attention": 1 }
+      },
+      "completeZone": true
+    }
+  ]
+}
