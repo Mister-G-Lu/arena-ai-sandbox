@@ -6,11 +6,8 @@ import { TASKS_PER_SHIFT, shouldTriggerAnomaly } from '../game/dispatch';
 
 const MAX_TASKS = TASKS_PER_SHIFT;
 
-/**
- * Consequence table for filing a result. Data, not branches: every filing verb
- * carries its own effects, payout rule and residue line, so adding a verb (or a
- * third way to file, later) is an entry here.
- */
+/** Consequence table for filing a result: every verb carries its own effects,
+ *  payout rule and residue line, so adding a filing verb is one entry here. */
 const FILINGS = {
   clean: {
     id: 'clean',
@@ -215,17 +212,15 @@ export default function Console() {
         type: task.isCorrupt ? 'corrupt' : ''
       }]);
       setPhase('result');
-      // A corrupted result is NOT silently smoothed over any more. The record
-      // stays wrong until the operator decides what to do with it — that
-      // decision is the game.
+      // A corrupted record stays wrong until the operator decides what to do
+      // with it — that decision is the game.
     }, reducedMotion ? 100 : 900);
   }
 
   /**
    * File the pending result. `verb` is a key of FILINGS; everything else is
    * derived from data so the console never hardcodes a reward or a quality.
-   */
-  function fileResult(verb) {
+   */  function fileResult(verb) {
     if (phase !== 'result' || !pendingTask) return;
     const filing = FILINGS[verb] ?? FILINGS.clean;
     const filedClean = verb !== 'discrepancy';

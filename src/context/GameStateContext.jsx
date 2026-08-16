@@ -35,10 +35,10 @@ function withLog(prev, text, extra = {}) {
   };
 }
 
-/**
- * Apply a normalised effects map to a state object. Single code path for
- * orientation choices, console discrepancies and storylet outcomes.
- */
+  /**
+   * Apply a normalised effects map to state. Single code path for orientation
+   * choices, console discrepancies and storylet outcomes.
+   */
 function applyEffectsToState(prev, rawEffects) {
   const effects = normalizeEffects(rawEffects);
   if (Object.keys(effects).length === 0) return prev;
@@ -105,8 +105,8 @@ export function GameStateProvider({ children }) {
   /**
    * Bumped whenever a whole new operator file is loaded (file import). Cloud
    * sync re-runs its Records check with autosave disarmed first, so an import
-   * can surface as a two-copies-disagree prompt instead of silently
-   * overwriting the remote file 800ms later.
+   * surfaces as a two-copies-disagree prompt instead of silently overwriting
+   * the remote file.
    */
   const [cloudRecheck, setCloudRecheck] = useState(0);
 
@@ -213,7 +213,7 @@ export function GameStateProvider({ children }) {
 
   /**
    * Open a zone. `entryOverride` lets the caller resume a partly-read pool
-   * (the next unread notice) without the zone config knowing about progress.
+   * (the next unread notice).
    */
   const enterZone = useCallback((zoneId, entryOverride) => {
     setState(prev => {
@@ -243,13 +243,10 @@ export function GameStateProvider({ children }) {
   }, []);
 
   /**
-   * Resolve a storylet choice: apply its effects, remember the card, advance or
-   * close the zone, and award the zone's Component when it completes.
-   *
-   * A card's consequences file once, on first read. Re-reading a card (Floor
-   * 12 stays open until you either take the stairs or reach the end) replays
-   * the fiction but not the payoff — otherwise an expedition is a quality farm
-   * and Attention, the hidden death meter, is maxable in two loops.
+   * Resolve a storylet choice: apply its effects, remember the card, advance
+   * or close the zone, and award the zone's Component when it completes.
+   * Consequences file once, on first read — a re-read replays the fiction
+   * only, or an expedition becomes a quality farm.
    */
   const resolveStorylet = useCallback((storylet, choice) => {
     setState(prev => {
@@ -332,8 +329,8 @@ export function GameStateProvider({ children }) {
   }, []);
 
   /**
-   * File a task result. `effects` and `payout` are computed by the caller from
-   * data (see src/game/payouts.ts) so the console holds no balance numbers.
+   * File a task result. `effects` and `payout` are computed by the caller
+   * (see src/game/payouts.ts) so the console holds no balance numbers.
    */
   const fileTaskResult = useCallback(({
     effects,

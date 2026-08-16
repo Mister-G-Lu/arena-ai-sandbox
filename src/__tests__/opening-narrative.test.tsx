@@ -1,10 +1,8 @@
 /**
- * INTEGRATION — the opening narrative, walked end to end.
- *
- * This is the adversarial click-through kept as a regression test: orientation,
- * the first filed consequence, the console discrepancy decision, the promotion
- * it earns, the notices it unlocks, and the Floor 12 expedition that pays out
- * the game's first Component.
+ * INTEGRATION — the opening narrative, walked end to end. The adversarial
+ * click-through kept as a regression test: orientation, the first filed
+ * consequence, the discrepancy decision, the promotion it earns, notices, and
+ * the Floor 12 expedition that pays out the first Component.
  */
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';

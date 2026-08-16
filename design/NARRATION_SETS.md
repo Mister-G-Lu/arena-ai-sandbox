@@ -1,5 +1,7 @@
 # Epic Narration Sets — Where and When
 
+> **Status:** Not yet integrated — no narration component exists in `src/`. Each set notes its trigger below.
+
 ## Guidelines
 - **Length:** 50-200 words max per set
 - **Tone:** Mundane job, subtle weirdness, not flowery

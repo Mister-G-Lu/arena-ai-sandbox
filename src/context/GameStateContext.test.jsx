@@ -1,9 +1,7 @@
 /**
- * The overflow easter egg, at the state level.
- *
- * There is no button for this. It is reachable only by pushing the municipal
- * ledger past its 32-bit word — which is exactly the point: the reward for
- * breaking the number is the knowledge that there *is* a number.
+ * The overflow easter egg, at the state level. No button reaches it — only
+ * pushing the ledger past its 32-bit word, because the reward for breaking
+ * the number is knowing there is a number.
  */
 import React from 'react';
 import { render, act } from '@testing-library/react';

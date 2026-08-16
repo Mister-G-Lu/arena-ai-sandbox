@@ -2,7 +2,8 @@
 
 This is the short operational guide. Read this before changing state, saves, content,
 or deployment. It is intentionally explicit enough for a human or coding agent to
-follow without reconstructing the repository history.
+follow without reconstructing the repository history. All paths below are relative
+to the repository root.
 
 ## Commands that must pass
 

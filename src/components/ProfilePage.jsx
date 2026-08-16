@@ -8,11 +8,9 @@ import SaveManagement from './SaveManagement';
 import './ProfilePage.css';
 
 /**
- * Quality unlock captions, keyed by quality and threshold. These are
- * *teasers*, not claims: promotions and zones are gated by declarative
- * `requires` maps evaluated in data, and a quality level alone never unlocks
- * anything. The profile renders them dimmed and checkmark-free so it cannot
- * advertise a ✓ for a door the data did not actually open.
+ * Quality unlock teasers — promotions and zones are gated by declarative
+ * `requires` maps; a quality alone unlocks nothing. Rendered dimmed and
+ * checkmark-free so the profile never advertises a ✓ the data didn't open.
  */
 const QUALITY_UNLOCKS = {
   doubt: [
