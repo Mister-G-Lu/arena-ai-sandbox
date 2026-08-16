@@ -1525,6 +1525,18 @@ h2 {
   75% { transform: translateX(-1px); opacity: 0.7; }
 }
 
+/* Generic corruption *arrives* glitching: the moment a record comes back
+   wrong is a visual event, not just red text. The animation runs once on
+   mount (150ms, twice), then the line sits still — persistent jitter would
+   turn a wrong record into a broken page. Deliberate contrast: personal
+   lines do NOT flicker. They are the opposite of noise — precise, in your
+   own hand — and the horror is that they hold still. (Both are silenced by
+   the prefers-reduced-motion block above.) */
+.log-line.corrupt:not(.personal),
+.task-card .task-result.corrupt:not(.personal) {
+  animation: fx-flicker 150ms steps(2) 2;
+}
+
 /* ====================================================================
    REACT COMPONENT ADDITIONS
    ==================================================================== */
