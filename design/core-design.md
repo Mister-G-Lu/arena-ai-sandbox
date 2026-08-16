@@ -136,6 +136,15 @@ The Fallen London-chess analog, diegetic to this game's fiction:
 
 Warm, deadpan, paperwork-horror with black humor. The system is **indifferent, not
 malicious** — the city is polite about your death. The coffee is already warm.
+
+**The system and M. do not have the same voice.** System text is sterile, certain,
+and impersonal. M. is the human pressure valve: dry, impatient, occasionally funny,
+and a little too quick to answer questions the Manager supposedly does not care
+about. Direct-channel interruptions should feel like a boss leaning into the cubicle,
+not another lore memo. Use them sparingly (roughly one or two memorable exchanges per
+shift); the humor should expose M.'s anxiety or agenda, never turn every anomaly into
+a quip.
+
 Touchstones: Fallen London (chassis), Outer Wilds (investigation), Westworld (the
 host becomes aware), Severance/SOMA (the self as a function), Control/SCP
 (bureaucratic horror), Papers Please (the desk).

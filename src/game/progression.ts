@@ -165,6 +165,8 @@ export interface ZoneDef {
   title: string;
   kicker: string;
   blurb: string;
+  /** Which terminal surface owns this content. */
+  board: 'notices' | 'investigations';
   /** First storylet id in `src/content/<zone>/`. */
   entry: string;
   /** Quality/metric thresholds required to enter. */
@@ -189,6 +191,7 @@ export const ZONES: ZoneDef[] = [
     kicker: 'SECONDARY ORDER // SHIFT 2',
     blurb:
       'Car 2 registered an out-of-range stop three seconds before your shift began. The service field says FLOOR 12. It also says you requested it.',
+    board: 'investigations',
     entry: 'annex-order-01',
     visibleRequires: { day: 2 },
     requires: { day: 2 },
@@ -202,6 +205,7 @@ export const ZONES: ZoneDef[] = [
     kicker: 'NOTICES // OPTIONAL',
     blurb:
       'Ordinary work, read twice. The pool is where a careful operator finds the seams: a basement in a building that is not on the map, a population that does not move.',
+    board: 'notices',
     entry: 'routine-01',
     requiresUnlock: 'notice-storylets',
     onceEach: true,
@@ -213,6 +217,7 @@ export const ZONES: ZoneDef[] = [
     kicker: 'EXPEDITION // UNLISTED',
     blurb:
       'The Municipal Annex has eleven floors. The elevator panel disagrees, quietly, at exactly the height where a twelfth would be.',
+    board: 'investigations',
     entry: 'floor12-01',
     requiresUnlock: 'restricted-areas',
     requires: { day: 2, doubt: 2, perception: 1 },

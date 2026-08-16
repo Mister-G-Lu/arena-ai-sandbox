@@ -5,14 +5,31 @@ import { describeEffects } from '../game/qualities';
 import { requirementLabel, missingRequirements } from '../game/progression';
 import './Notices.css';
 
+const BOARD_COPY = {
+  notices: {
+    title: 'NOTICES',
+    lede: 'Work that Dispatch did not assign. Everything here is optional, which is how the system knows who is only pretending to be tired.',
+    empty: 'Nothing is posted tonight. Notices appear for operators who have started noticing. Keep working. Or do not — the difference is the point.',
+    footer: '// NOTICES ARE NEVER REQUIRED. THE SYSTEM PREFERS OPERATORS WHO WORK.'
+  },
+  investigations: {
+    title: 'INVESTIGATIONS',
+    lede: 'Cases that exist because the official result did not. Clearance changes what the terminal admits; management would prefer that you call this coincidence.',
+    empty: 'No open cases. This is the expected result. M. would like you to stop checking.',
+    footer: '// INVESTIGATION IS OUTSIDE YOUR JOB DESCRIPTION. THIS HAS NOT STOPPED YOU.'
+  }
+};
+
 /**
- * The storylet runner — deliberately thin. Content lives in
- * src/content/<zone>/*.json, validated by src/game/storylets.ts; consequences
- * file through the one effects pipeline. Adding a zone or card is a data change.
+ * The shared storylet runner behind the Notices and Investigations tabs.
+ * Content declares which board owns it; consequences still file through the
+ * one effects pipeline.
  */
-export default function Notices() {
+export default function Notices({ board = 'notices' }) {
   const { state, actions, availableZones, requirementCtx } = useGameState();
   const [lastOutcome, setLastOutcome] = useState(null);
+  const copy = BOARD_COPY[board] ?? BOARD_COPY.notices;
+  const boardZones = availableZones.filter((zone) => zone.board === board);
 
   // Content is schema-validated at load; a bad card fails loudly, never by
   // setting state during render.
@@ -25,7 +42,14 @@ export default function Notices() {
   }, []);
 
   const current = state.currentStorylet;
-  const card = current ? findCard(cards, current.storyletId) : undefined;
+  const savedCard = current ? findCard(cards, current.storyletId) : undefined;
+  const currentBelongsHere = Boolean(
+    current && boardZones.some((zone) => zone.id === current.zone),
+  );
+  const card = currentBelongsHere ? savedCard : undefined;
+  const otherBoard = current && savedCard && !currentBelongsHere
+    ? availableZones.find((zone) => zone.id === current.zone)?.board
+    : null;
 
   /** Serve the first card in the zone the operator has not already resolved. */
   function nextCardId(zone) {
@@ -67,11 +91,8 @@ export default function Notices() {
   return (
     <section className="section page active">
       <div className="wrap">
-        <h2>NOTICES</h2>
-        <p className="section-lede">
-          Work that Dispatch did not assign. Everything here is optional, which is
-          how the system knows who is only pretending to be tired.
-        </p>
+        <h2>{copy.title}</h2>
+        <p className="section-lede">{copy.lede}</p>
 
         {loadError && (
           <div className="console notice-error">
@@ -84,7 +105,7 @@ export default function Notices() {
           </div>
         )}
 
-        {current && !card && (
+        {current && !savedCard && (
           <div className="console notice-error" role="alert">
             <div className="console-head">
               <span className="dot"></span>
@@ -101,8 +122,24 @@ export default function Notices() {
           </div>
         )}
 
+        {otherBoard && (
+          <div className="console cross-board-order" role="status">
+            <div className="console-head">
+              <span className="dot"></span>
+              ANOTHER FILE IS OPEN
+              <span className="console-status">▣ HELD</span>
+            </div>
+            <p className="fine">
+              Finish or close the order on the {otherBoard === 'notices' ? 'Notices' : 'Investigations'} tab before opening another.
+            </p>
+            <a className="btn btn-ghost btn-compact" href={`#${otherBoard}`}>
+              RETURN TO OPEN FILE
+            </a>
+          </div>
+        )}
+
         <div className="zone-board">
-          {availableZones.map((zone) => {
+          {boardZones.map((zone) => {
             const remaining = remainingIn(zone);
             const exhausted = zone.onceEach && remaining === 0;
             const status = exhausted && zone.status !== 'complete' ? 'complete' : zone.status;
@@ -150,11 +187,8 @@ export default function Notices() {
             );
           })}
 
-          {availableZones.length === 0 && (
-            <p className="fine">
-              Nothing is listed tonight. Notices appear for operators who have started
-              noticing. Keep working. Or do not — the difference is the point.
-            </p>
+          {boardZones.length === 0 && (
+            <p className="fine">{copy.empty}</p>
           )}
         </div>
 
@@ -210,9 +244,7 @@ export default function Notices() {
           </div>
         )}
 
-        <p className="fine console-note">
-          // NOTICES ARE NEVER REQUIRED. THE SYSTEM PREFERS OPERATORS WHO WORK.
-        </p>
+        <p className="fine console-note">{copy.footer}</p>
       </div>
     </section>
   );

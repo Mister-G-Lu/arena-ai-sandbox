@@ -1026,6 +1026,13 @@ h2 {
   font-size: 0.78rem;
   line-height: 1.55;
 }
+.secondary-order .manager-aside {
+  margin-top: 11px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 198, 107, 0.5);
+  color: var(--amber);
+  font-style: italic;
+}
 .secondary-order .btn { flex: 0 0 auto; }
 
 .task-workflow {
@@ -1543,6 +1550,16 @@ h2 {
 
 .orient-content .dim {
   color: var(--faint);
+}
+
+.manager-conversation .orient-content {
+  padding: 18px 20px;
+  border-left: 3px solid var(--amber);
+  background: linear-gradient(90deg, rgba(255, 198, 107, 0.07), transparent 65%);
+}
+
+.manager-conversation-actions {
+  margin-top: 2px;
 }
 
 .orient-response {

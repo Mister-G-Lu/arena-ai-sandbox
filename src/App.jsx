@@ -13,15 +13,17 @@ import { GameStateProvider, useGameState } from './context/GameStateContext';
 function GameShell() {
   const { page, navigate } = useRouter();
   const { state } = useGameState();
-  // Shift 2 posts a mandatory-visible secondary order even for an operator who
-  // has not earned normal Notice clearance. Promotion still controls how much
-  // of the board — and of Floor 12 — the operator can investigate.
-  const noticesOpen = state.day >= 2 || state.promotion.unlocks.includes('notice-storylets');
   // Pages can be gated by state; a locked page redirects to its prerequisite.
+  // Notices are a promotion privilege. Investigations appear to everyone when
+  // the Shift 2 Annex case arrives, then promotion controls their depth.
   const PAGE_GATES = {
     console: { open: state.orientation.completed, fallback: 'first-shift' },
     notices: {
-      open: state.orientation.completed && noticesOpen,
+      open: state.orientation.completed && state.promotion.unlocks.includes('notice-storylets'),
+      fallback: state.orientation.completed ? 'console' : 'first-shift'
+    },
+    investigations: {
+      open: state.orientation.completed && state.day >= 2,
       fallback: state.orientation.completed ? 'console' : 'first-shift'
     }
   };
@@ -43,7 +45,8 @@ function GameShell() {
         {visiblePage === 'home' && <Hero />}
         {visiblePage === 'first-shift' && <FirstShift />}
         {visiblePage === 'console' && <Console />}
-        {visiblePage === 'notices' && <Notices />}
+        {visiblePage === 'notices' && <Notices key="notices" board="notices" />}
+        {visiblePage === 'investigations' && <Notices key="investigations" board="investigations" />}
         {visiblePage === 'profile' && <ProfilePage />}
       </main>
 

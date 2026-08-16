@@ -53,6 +53,13 @@ The player learns the mechanics **by doing them**, not by being told about them.
 - What does "memory integrity: unverified" mean?
 - Why does the roster say "1 operator pending" if you're already hired?
 
+**Waiver branch:** If the player chooses **I ALREADY KNOW ALL OF THIS**, the game no
+longer silently skips to the queue. M. opens an unscheduled direct channel:
+*“Oh, so you think you already know all of this? … Let's see how smart you are when
+the terminal answers back.”* The player may accept the waiver or back down and begin
+orientation. This makes skipping itself a character beat and establishes that M. can
+speak like a person, not only issue memos.
+
 ---
 
 #### **Step 1: Memo from M.**
@@ -315,6 +322,7 @@ The tutorial's text is hardcoded in English. For localization, the text could be
 - [x] Final step scrolls to console
 - [x] Status bar updates correctly
 - [x] Reduced motion preference is respected
+- [x] Waiving orientation opens M.'s direct channel before the player confirms the skip
 - [x] JS syntax is valid (verified with `node -c`)
 - [x] HTML structure is valid (all IDs present)
 - [ ] Playtest: Does the tutorial feel like part of the game, not a tutorial?

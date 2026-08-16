@@ -59,13 +59,16 @@ quota: elevator car 2 stopped above the Municipal Annex's listed service range a
 00:59:57. The field says **FLOOR 12**. The requesting terminal ID is the player's,
 even though their shift had not started.
 
-Every operator can touch this order; promotion controls how much it says. An Unknown
-Operator may clear the sensor fault. An Operator can trace the request to their own
-timestamp format and signature. A Senior Operator's restricted-area clearance
-exposes the field order that will eventually authorize the expedition. Thus
-promotion acts as a **lens on one mystery**, not merely a menu lock. The question
-carried into the shift is concrete: *what is on Floor 12, and why did I request it?*
-The answer is not given yet.
+Every operator can touch this order through a new **Investigations** tab, kept
+separate from the optional **Notices** pool. Promotion controls how much the case
+says. An Unknown Operator may clear the sensor fault. An Operator can trace the
+request to their own timestamp format and signature. A Senior Operator's
+restricted-area clearance exposes the field order that will eventually authorize
+the expedition. Thus promotion acts as a **lens on one mystery**, not merely a menu
+lock. M. interrupts on the direct channel to call the elevator a Facilities concern
+and tell the player to do their actual job; tracing the order gets a less rehearsed
+response. The question carried into the shift is concrete: *what is on Floor 12, and
+why did I request it?* The answer is not given yet.
 
 The memo board now reads: *"Reminder: the Municipal Annex has eleven (11) floors.
 Any employee reporting a twelfth (12th) floor should be referred to HR."* A compliant

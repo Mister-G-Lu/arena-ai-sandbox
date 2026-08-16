@@ -62,6 +62,14 @@ describe('promotions', () => {
 });
 
 describe('zones', () => {
+  it('keeps routine notices separate from active investigations', () => {
+    expect(Object.fromEntries(ZONES.map((zone) => [zone.id, zone.board]))).toEqual({
+      'annex-order': 'investigations',
+      routine: 'notices',
+      floor12: 'investigations',
+    });
+  });
+
   it('reveals the universal Annex order on Shift 2 while promotion controls the rest', () => {
     expect(visibleZones(ctx())).toHaveLength(0);
     expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).toEqual(['annex-order']);

@@ -124,6 +124,22 @@ describe('opening narrative', () => {
     expect(document.body.textContent).not.toContain('0/6');
   });
 
+  it('turns the orientation waiver into a direct, snarky exchange with M.', async () => {
+    render(<App />);
+    await go('first-shift');
+    await click('I ALREADY KNOW ALL OF THIS');
+    await tick(400);
+
+    expect(document.body.textContent).toContain('Oh, so you think you already know all of this?');
+    expect(document.body.textContent).toContain('Let’s see how smart you are');
+    expect(save().orientation.completed).toBe(false);
+
+    await click('I KNOW WHAT I’M DOING');
+    await tick(100);
+    expect(save().orientation).toEqual({ completed: true, skipped: true, taskRecorded: false });
+    expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+  });
+
   it('files the break-room answer as a real consequence', async () => {
     render(<App />);
     await runOrientation('WHO MADE IT?');
@@ -156,7 +172,10 @@ describe('opening narrative', () => {
 
     await go('notices');
     await tick(100);
-    // The gate redirects rather than rendering an empty page.
+    // Both story surfaces redirect until their own opening condition exists.
+    expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+    await go('investigations');
+    await tick(100);
     expect(document.body.textContent).toContain('OPERATOR CONSOLE');
   });
 
@@ -172,10 +191,12 @@ describe('opening narrative', () => {
 
     render(<App />);
     expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
-    expect(document.body.textContent).toContain('NOTICES · NEW');
+    expect(document.body.textContent).toContain('INVESTIGATIONS · NEW');
+    expect(document.body.textContent).not.toContain('NOTICES');
 
-    await go('notices');
+    await go('investigations');
     await tick(100);
+    expect(document.body.textContent).toContain('INVESTIGATIONS');
     const zoneTitles = Array.from(document.querySelectorAll('.zone-card h3'))
       .map((title) => title.textContent);
     expect(zoneTitles).toEqual(['Annex elevator discrepancy']);
@@ -190,7 +211,29 @@ describe('opening narrative', () => {
     expect(filed.qualities.doubt).toBe(1);
     expect(filed.qualities.perception).toBe(1);
     expect(filed.promotion.title).toBe('Operator');
-    expect(document.body.textContent).not.toContain('NOTICES · NEW');
+    expect(document.body.textContent).not.toContain('INVESTIGATIONS · NEW');
+    // The trace itself earns Operator status, exposing ordinary Notices beside
+    // the now-filed investigation.
+    expect(document.body.textContent).toContain('NOTICES');
+  });
+
+  it('holds an open Notice when the player checks Investigations', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 2;
+    state.qualities.doubt = 1;
+    state.promotion.tier = 1;
+    state.currentStorylet = { zone: 'routine', storyletId: 'routine-01' };
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#investigations';
+
+    render(<App />);
+    expect(document.body.textContent).toContain('ANOTHER FILE IS OPEN');
+    expect(document.body.textContent).toContain('RETURN TO OPEN FILE');
+    expect(document.body.textContent).not.toContain('SAVED ORDER COULD NOT BE RESTORED');
   });
 
   it('recovers from a story pointer removed by a content update', async () => {
@@ -386,10 +429,12 @@ describe('opening narrative', () => {
     expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
     expect(save().promotion.title).toBe('Senior Operator');
 
-    await go('notices');
+    await go('investigations');
     await tick(100);
     expect(document.body.textContent).toContain('Annex elevator discrepancy');
     expect(document.body.textContent).toContain('Floor 12');
+    expect(Array.from(document.querySelectorAll('.zone-card h3')).map((h) => h.textContent))
+      .not.toContain('The Routine Pool');
 
     // Resolve the universal lead first. It personalizes the order, while the
     // promotion earned above determines whether the expedition is also shown.

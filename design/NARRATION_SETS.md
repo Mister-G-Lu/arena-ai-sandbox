@@ -542,6 +542,27 @@ You're in the Interim. You've been here before. You'll be here again.
 
 ## 5. KEY STORY BEATS
 
+### "The Orientation Waiver"
+**Trigger:** Player clicks “I already know all of this”
+**Words:** ~70
+
+```
+DIRECT CHANNEL — M.
+
+“Oh, so you think you already know all of this?”
+
+Three dots appear. Disappear. Return.
+
+“Wonderful. I was worried orientation might be boring for both of us.”
+
+“We will waive the instructions. This also waives the part where you tell me nobody
+warned you.”
+
+“Go on, then. Let's see how smart you are when the terminal answers back.”
+```
+
+---
+
 ### "The First Anomaly"
 **Trigger:** First weird thing noticed (Day 2)
 **Words:** ~75

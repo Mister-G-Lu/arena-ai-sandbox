@@ -350,9 +350,13 @@ export default function Console() {
                   carries your terminal ID. Clearance determines how much of the attachment
                   the system will admit exists.
                 </p>
+                <p className="manager-aside">
+                  M. // “Elevators occasionally become ambitious. We do not reward initiative
+                  here. File it and return to your actual job.”
+                </p>
               </div>
-              <a className="btn btn-primary btn-compact" href="#notices">
-                ▸ REVIEW ORDER
+              <a className="btn btn-primary btn-compact" href="#investigations">
+                ▸ INVESTIGATE
               </a>
             </aside>
           )}
