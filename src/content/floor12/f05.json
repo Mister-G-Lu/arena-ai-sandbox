@@ -18,7 +18,7 @@
       "id": "back",
       "label": "Do not proceed. Take the key. Leave.",
       "outcome": {
-        "text": "The Auditor does not follow. In the envelope: the NULL KEY — a key the map doesn't have. The zone's prize is the discovery, not the dying.",
+        "text": "The Auditor does not follow. In the envelope: the NULL KEY — a key the map doesn't have. You are still alive to file it.",
         "qualities": { "Perception": 1 }
       },
       "completeZone": true

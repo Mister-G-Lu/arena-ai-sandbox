@@ -2,7 +2,7 @@
   "id": "handwritten-01",
   "zone": "handwritten-order",
   "title": "FILED FROM THE NIGHT DESK",
-  "body": "A work order, timestamped 03:12, filed from your terminal. REPLACE STREETLIGHT 4-B, SECTOR 9. SIGNED: [your name], NIGHT OPERATOR. The signature is yours — the same tilt, the same crossing, the same habit of underlining the first letter. You were at the terminal at 03:12. The queue has no memory of this order. The queue is certain it has no memory. It is still in the tray, warm, like the coffee, like the key in your pocket.",
+  "body": "A work order, timestamped 03:12, filed from your terminal. REPLACE STREETLIGHT 4-B, SECTOR 9. SIGNED: [your name], NIGHT OPERATOR. The signature is yours — the same tilt, the same crossing, the same habit of underlining the first letter. You were at the terminal at 03:12. The queue has no memory of this order. The queue is certain it has no memory. It is still in the tray, warm, like the coffee, like something held a moment ago.",
   "choices": [
     {
       "id": "compare",

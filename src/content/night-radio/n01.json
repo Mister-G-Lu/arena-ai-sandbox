@@ -2,7 +2,7 @@
   "id": "night-radio-01",
   "zone": "night-radio",
   "title": "Receiving",
-  "body": "Dispatch's radio license ends at 03:00. Yours now runs to 06:00, which is when the license ends and the permit's fine print begins: THIS PERMIT DOES NOT AUTHORIZE RECEIVING. You plug in anyway, after the third task, and the channel is not empty.",
+  "body": "Dispatch's radio license ends at 03:00. Your permit runs to 06:00, which is where the fine print begins: THIS PERMIT DOES NOT AUTHORIZE RECEIVING. You plug in anyway, after the third task, and the channel is not empty.",
   "choices": [
     {
       "id": "listen",
