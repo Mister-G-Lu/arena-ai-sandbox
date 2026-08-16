@@ -265,10 +265,18 @@ export function GameStateProvider({ children }) {
   /**
    * Resolve a storylet choice: apply its effects, remember the card, advance or
    * close the zone, and award the zone's Component when it completes.
+   *
+   * A card's consequences file once, on first read. Re-reading a card (Floor
+   * 12 stays open until you either take the stairs or reach the end) replays
+   * the fiction but not the payoff — otherwise an expedition is a quality farm
+   * and Attention, the hidden death meter, is maxable in two loops.
    */
   const resolveStorylet = useCallback((storylet, choice) => {
     setState(prev => {
-      let next = applyEffectsToState(prev, choice.outcome?.qualities);
+      const alreadySeen = prev.seenStorylets.includes(storylet.id);
+      let next = alreadySeen
+        ? prev
+        : applyEffectsToState(prev, choice.outcome?.qualities);
 
       const seenStorylets = prev.seenStorylets.includes(storylet.id)
         ? prev.seenStorylets

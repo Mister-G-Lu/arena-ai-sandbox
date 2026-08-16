@@ -134,6 +134,22 @@ describe('effects pipeline', () => {
     expect(api.state.qualities).not.toHaveProperty('nonsense');
   });
 
+  it('files a resolved card\'s consequences once — replays do not farm qualities', async () => {
+    mount();
+    const card = { id: 'floor12-01', zone: 'floor12' };
+    const press = { outcome: { qualities: { Doubt: 1, Attention: 1 } }, endZone: true };
+
+    await act(async () => { api.actions.resolveStorylet(card, press); });
+    expect(api.state.qualities.doubt).toBe(1);
+    expect(api.state.attention).toBe(1);
+    expect(api.state.currentStorylet).toBeNull();
+
+    await act(async () => { api.actions.resolveStorylet(card, press); });
+    expect(api.state.qualities.doubt).toBe(1);
+    expect(api.state.attention).toBe(1);
+    expect(api.state.seenStorylets.filter((id) => id === 'floor12-01')).toHaveLength(1);
+  });
+
   it('promotes automatically — the player never asks for a promotion', async () => {
     mount();
     expect(api.state.promotion.tier).toBe(0);
