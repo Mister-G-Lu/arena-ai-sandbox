@@ -9,11 +9,11 @@
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import App from '../App';
-
-const SAVE_KEY = 'fr:player-progress:v1';
+import { GAME_SAVE_KEY, parseStoredSaveEnvelope } from '../lib/gameSave';
 
 function save() {
-  return JSON.parse(localStorage.getItem(SAVE_KEY) ?? '{}');
+  const raw = JSON.parse(localStorage.getItem(GAME_SAVE_KEY) ?? '{}');
+  return parseStoredSaveEnvelope(raw).game;
 }
 
 function resource(label: string): string | null {

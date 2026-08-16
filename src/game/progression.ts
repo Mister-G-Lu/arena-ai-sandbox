@@ -10,6 +10,24 @@
  * (see src/game/ledger.ts); rank buys *clearance*, not headroom.
  */
 
+export interface ComponentDef {
+  id: string;
+  label: string;
+}
+
+/**
+ * Canonical component inventory. Save validation and every component counter are
+ * derived from this table, so adding a component is one data edit.
+ */
+export const COMPONENT_DEFS: ComponentDef[] = [
+  { id: 'key', label: 'NULL KEY' },
+  { id: 'lens', label: 'LENS' },
+  { id: 'wire', label: 'WIRE' },
+  { id: 'crystal', label: 'CRYSTAL' },
+  { id: 'chip', label: 'CHIP' },
+  { id: 'interim', label: 'INTERIM' },
+];
+
 export interface RequirementCtx {
   qualities: Record<string, number>;
   attention: number;
