@@ -3,7 +3,13 @@ import React from 'react';
 function StationCheck({ day, actionsRemaining }) {
   return (
     <div className="orient-content">
-      {'Your console is active. Four readouts. Read them.\n\n'}
+      {'The window is still there. You are still at the desk.\nThe feed is not the city — it is the city after it has been made listable.\n\n'}
+      <span className="warn">YOUR ROLE: DISPATCHER — NOT DRIVER, NOT PATROL</span>
+      {'\n  '}
+      <span className="dim">
+        {'You do not carry. You clear. You verify. You file.\n  Trucks, lights, radios, rain — they become lines. Lines become “CLEAR.”'}
+      </span>
+      {'\n\nYour console is active. Four readouts. Read them.\n\n'}
       <span className="warn">SHIFT DAY: {day}</span>
       {'\n  '}
       <span className="dim">
@@ -19,13 +25,13 @@ function StationCheck({ day, actionsRemaining }) {
       <span className="warn">ACTIONS REMAINING: {actionsRemaining}</span>
       {'\n  '}
       <span className="dim">
-        {'Fifty results must be logged and acknowledged.\n  Dispatch releases them one at a time.'}
+        {'Fifty results must be logged and acknowledged.\n  Dispatch releases them one at a time.\n  That is the whole job. The city is the receipt.'}
       </span>
       {'\n\n'}
       <span className="warn">STATUS: CLEAR</span>
       {'\n  '}
       <span className="dim">It will stay clear. It always stays clear.</span>
-      {'\n\nEverything is as it should be.\nEverything is as it has '}
+      {'\n\nOutside, the lanes keep moving. In here, you keep authorizing them to have moved.\nEverything is as it should be.\nEverything is as it has '}
       <em>always</em>
       {' been.'}
     </div>

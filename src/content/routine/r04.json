@@ -2,13 +2,13 @@
   "id": "routine-04",
   "zone": "routine",
   "title": "On-time performance",
-  "body": "All trucks on schedule. On-time performance: 100.0%. It has never been 99.9. You are invited to be proud of this.",
+  "body": "All trucks on schedule. On-time performance: 100.0%. It has never been 99.9. You are invited to be proud of this. Outside, the hoverlanes keep their river of light under the limit — or just over it — and the city’s compliance looks beautiful from this high. Inside, the stamp is the only proof it happened.",
   "choices": [
     {
       "id": "proud",
       "label": "Be proud. Stamp 100.0%.",
       "outcome": {
-        "text": "The stamp is worn in the shape of those digits. No other stamp exists in the drawer.",
+        "text": "The stamp is worn in the shape of those digits. No other stamp exists in the drawer. Through the window, a cutter passes without hurry — nothing to chase, nothing out of place. The number remains perfect.",
         "qualities": { "Routine": 1, "Salary": 2 }
       },
       "endZone": true

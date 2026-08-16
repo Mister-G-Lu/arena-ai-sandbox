@@ -64,6 +64,9 @@ export default function Hero() {
             <p className="lede">
               Fifty tasks. 01:00 to 06:00. One live city feed. The coffee was waiting before you arrived.
             </p>
+            <p className="hero-vista">
+              Outside, the neon skylines are filled with hovercars threatening to break past the speed limit. Police cutters wail overhead, chasing the delivery drones that stitch the night in quiet, obedient lines. You are not out there. You are at the desk that authorizes it — a dispatcher, not a driver — and the city only moves when you say it did.
+            </p>
             <div className="cta-row">
               <a className="btn btn-primary" href={shiftTarget}>
                 {state.orientation.completed ? '▸ RETURN TO CONSOLE' : '▸ BEGIN FIRST SHIFT'}
@@ -107,6 +110,13 @@ export default function Hero() {
             </div>
             <div className="feed-live"><span></span> LIVE FEED // TUESDAY // 01:00</div>
           </header>
+
+          <div className="feed-vista" aria-hidden="true">
+            <p>
+              <strong>01:00 — EXTERNAL FEED:</strong> The neon skylines bleed into rain-slick glass. Hovercars ride their lanes too fast, a river of light that never quite keeps the limit. Delivery drones thread the gaps in quiet lines. A police cutter holds over the annex, searchlight painting floor 11 amber — holding on nothing, holding too long. The towers breathe. You file.
+            </p>
+            <span>YOU ARE NOT IN THE SKY. YOU ARE AT THE DESK THAT SAYS THE SKY IS CLEAR.</span>
+          </div>
 
           <div className="dispatch-deck">
             <article className="deck-panel directive-panel">

@@ -4,7 +4,7 @@ import { describeEffects } from '../game/qualities';
 function BreakRoomCopy() {
   return (
     <div className="orient-content">
-      {'The break room is through the door behind your station.\n\nThe light is on. The coffee is warm. The pot is full.\nThere is no one else in the building.\nThere is never anyone else in the building.\n\nYou did not turn on the coffee maker.\nThe coffee maker was already on.\nIt was on when you arrived.\n'}
+      {'The break room is through the door behind your station.\n\nThe light is on. The coffee is warm. The pot is full.\nThere is no one else in the building.\nThere is never anyone else in the building.\n\nThrough the narrow window, the hoverlanes are still moving — a silent river of light thirty stories up, threatening the limit. A cutter wails somewhere beyond the annex, far enough to be weather. In here, the pot keeps steaming without a heater you can find.\n\nYou did not turn on the coffee maker.\nThe coffee maker was already on.\nIt was on when you arrived.\n'}
       <span className="warn">It was on before you arrived.</span>
       {'\n\nHow do you feel about the coffee?'}
     </div>

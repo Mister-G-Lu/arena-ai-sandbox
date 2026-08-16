@@ -2,13 +2,13 @@
   "id": "routine-05",
   "zone": "routine",
   "title": "VANTABLACK",
-  "body": "Roll call. VANTABLACK again — or is it VANTABLUE tonight? The letters on the sheet have been written over. The radio is waiting.",
+  "body": "Roll call. VANTABLACK again — or is it VANTABLUE tonight? The letters on the sheet have been written over. The radio is waiting. Through the window, the night asphalt of Sector 9 holds a single pair of tail-lights where the map says no road goes. He is already out there.",
   "choices": [
     {
       "id": "copy",
       "label": "Copy. Keep it moving.",
       "outcome": {
-        "text": "\"Copy.\" He does not say all clear. He does not say anything else.",
+        "text": "\"Copy.\" He does not say all clear. He does not say anything else. The tail-lights hold, then ease forward into a street that will not be on your next work order.",
         "qualities": { "Routine": 1, "Salary": 1 }
       },
       "endZone": true
@@ -17,7 +17,7 @@
       "id": "name",
       "label": "Use the name on the sheet, whatever it is.",
       "outcome": {
-        "text": "You say it. He laughs, once, like a man who has heard his own eulogy. \"Again, Operator?\"",
+        "text": "You say it. He laughs, once, like a man who has heard his own eulogy. \"Again, Operator?\" The tail-lights dip — as if the car smiled — and the radio ticks with the wind between towers.",
         "qualities": { "Doubt": 1, "Perception": 1, "Attention": 1 }
       },
       "endZone": true
