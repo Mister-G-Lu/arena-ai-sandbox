@@ -8,7 +8,7 @@ You are the night operator at Meridian Central Dispatch. Fifty tasks a shift. At
 - **Tech stack:** React 19 + Vite + vanilla CSS (migrated from static HTML)
 - **Design docs:** [`design/`](design/) — core design bible and drafts (⚠ full spoilers)
 - **Narration system:** [`NARRATION_SETS.md`](NARRATION_SETS.md) — all story text with critical lines marked for polish
-- **Latest review:** [`design/adversarial-review-01.md`](design/adversarial-review-01.md) — integration pass on the opening narrative, and what the current PR fixes
+- **Latest review:** [`design/adversarial-review-02.md`](design/adversarial-review-02.md) — second adversarial pass: economy exploits, cloud-save integrity, honest UI, and what the current PR fixes ([round 1](design/adversarial-review-01.md) covered the opening narrative)
 - **Developer handoff:** [`DEVELOPMENT.md`](DEVELOPMENT.md) — canonical save, Supabase config, content safety, tests, and deployment
 
 ## Architecture
