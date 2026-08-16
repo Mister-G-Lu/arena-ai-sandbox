@@ -80,5 +80,6 @@ content pipeline, and a test runner with teeth.
   live in `.env.production` and must never contain a secret/service-role key.
 - JSON narrative is plain text and renders through React interpolation. Rich
   local terminal copy is JSX/structured data, never executable HTML strings.
-- GitHub Pages is built from source by `.github/workflows/pages.yml`; `docs/`
-  remains the checked build artifact for simple branch-based fallback hosting.
+- GitHub workflow templates live in `ops/github-workflows/`; install them under
+  `.github/workflows/` when the GitHub connection has workflow permission. `docs/`
+  remains the checked build artifact for branch-based fallback hosting.

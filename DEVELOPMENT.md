@@ -12,7 +12,7 @@ npm run check
 ```
 
 `npm run check` runs TypeScript, ESLint, tests with enforced coverage, and the
-production build. Pull requests run the same gate in `.github/workflows/ci.yml`.
+production build. The ready-to-install GitHub workflow template lives at `ops/github-workflows/ci.yml`.
 
 ## Canonical runtime and save
 
@@ -125,7 +125,8 @@ for scripts, event attributes, `javascript:` URLs, SVG, and malformed markup.
 ## Deployment
 
 `npm run build` writes GitHub Pages output to `docs/`. In repository Settings →
-Pages, set **Build and deployment / Source** to **GitHub Actions** once. The custom
-Pages workflow then builds from source and deploys that directory. CI also checks
-that the committed `docs/` build is current, so rebuild it in the final commit of
-a pull request.
+Pages, install the two files from `ops/github-workflows/` under
+`.github/workflows/`, then set **Build and deployment / Source** to **GitHub
+Actions**. They are templates because this coding connection cannot push active
+workflow files without GitHub workflow permission. Until installed, run
+`npm run check` locally and rebuild `docs/` in the final pull-request commit.
