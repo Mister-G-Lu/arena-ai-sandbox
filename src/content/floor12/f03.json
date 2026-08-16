@@ -1,0 +1,17 @@
+{
+  "id": "floor12-03",
+  "zone": "floor12",
+  "title": "The records room",
+  "body": "Cabinets to the ceiling. Every drawer labelled TUESDAY. In the middle of the room: a desk, a form, a pen. The form already has your name. The signature line is blank.",
+  "choices": [
+    {
+      "id": "read",
+      "label": "Read the form.",
+      "outcome": {
+        "text": "REASON FOR TERMINATION: — the rest is still being written, in a hand that looks like yours if you were in a hurry.",
+        "qualities": { "Doubt": 1, "Attention": 1 }
+      },
+      "next": "floor12-04"
+    }
+  ]
+}

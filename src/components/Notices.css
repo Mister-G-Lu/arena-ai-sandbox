@@ -1,0 +1,161 @@
+/* NOTICES — zone board + storylet runner.
+   Built on the existing console/terminal design language: same panel chrome,
+   same amber-on-navy palette, same monospace kickers. */
+
+.zone-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin: 28px 0 32px;
+}
+
+.zone-card {
+  position: relative;
+  border: 1px solid rgba(87, 214, 195, 0.22);
+  background: linear-gradient(160deg, rgba(12, 20, 40, 0.95), rgba(8, 13, 28, 0.95));
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.zone-card h3 {
+  margin: 0;
+  font-family: 'Orbitron', system-ui, sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  color: #ffc66b;
+}
+
+.zone-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #b8c6e6;
+}
+
+.zone-kicker {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  color: #57d6c3;
+  opacity: 0.85;
+}
+
+.zone-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+.zone-status-pill {
+  border: 1px solid currentColor;
+  padding: 2px 8px;
+  color: #8fa3cc;
+}
+
+.zone-status-open { color: #57d6c3; }
+.zone-status-locked { color: #6b7899; }
+.zone-status-complete { color: #ffc66b; }
+
+.zone-prize { color: #ffc66b; }
+.zone-remaining { color: #8fa3cc; }
+
+.zone-requirement {
+  margin: 0;
+  color: #7c8bb0;
+}
+
+.zone-card .btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.zone-card.zone-locked { opacity: 0.72; }
+.zone-card.zone-complete { border-color: rgba(255, 198, 107, 0.3); }
+
+/* ---------- storylet ---------- */
+
+.storylet-console,
+.storylet-outcome {
+  margin-bottom: 24px;
+}
+
+.storylet-body {
+  padding: 22px 24px 6px;
+}
+
+.storylet-body h3 {
+  margin: 0 0 10px;
+  font-family: 'Orbitron', system-ui, sans-serif;
+  font-size: 1.15rem;
+  color: #ffc66b;
+  letter-spacing: 0.03em;
+}
+
+.storylet-body p {
+  margin: 0;
+  line-height: 1.7;
+  color: #cdd8f0;
+}
+
+.storylet-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 24px 24px;
+}
+
+.storylet-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+.storylet-choice-label { font-weight: 500; }
+
+.storylet-choice-effects {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: #57d6c3;
+  opacity: 0.85;
+}
+
+.storylet-outcome-text {
+  padding: 18px 24px 0;
+  margin: 0;
+  line-height: 1.7;
+  color: #e2e9fb;
+}
+
+.storylet-outcome .fine,
+.storylet-outcome .btn {
+  margin: 12px 24px 20px;
+}
+
+.notice-error {
+  border-color: rgba(255, 111, 111, 0.5);
+  margin-bottom: 24px;
+}
+
+.notice-error .fine {
+  padding: 16px 24px 20px;
+  color: #ff9c9c;
+}
+
+.notice-error > .btn {
+  margin: 0 24px 20px;
+}
+
+@media (max-width: 640px) {
+  .zone-board { grid-template-columns: 1fr; }
+}

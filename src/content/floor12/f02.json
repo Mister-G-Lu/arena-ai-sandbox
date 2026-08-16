@@ -1,0 +1,17 @@
+{
+  "id": "floor12-02",
+  "zone": "floor12",
+  "title": "Wrong doors",
+  "body": "The hallway is the eleventh-floor hallway, except the numbers run 1201, 1202, 1203. The carpet is the same carpet. The exit signs point at each other.",
+  "choices": [
+    {
+      "id": "1207",
+      "label": "Find 1207. That's the work order.",
+      "outcome": {
+        "text": "1207 is a records room. The door is unlocked. Smoke, faint, like a file that has been thinking about burning for a long time.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "next": "floor12-03"
+    }
+  ]
+}

@@ -40,6 +40,9 @@ incremental, NOT a prestige game.**
 | **Salary** (mundane) | Routine work — the dull daily grind | Immersion; "I did my job" | Minor purchases, bribes, conveniences, cooling Attention |
 | **Components** (story) | Secret zones — discovered through investigation | Discovery, risk, revelation | The endgame Tool (the Seam Ripper) |
 
+- **Salary has no cap.** Credits accumulate without a design ceiling — a capped
+  mundane currency stops being mundane and starts being a progress bar. The only
+  limit is the machine's: a signed 32-bit word (2,147,483,647). See P2a.
 - **Routine work is optional.** A player who ignores the grind entirely can still
   beat the game. The dullness is a *choice the fiction rewards* (the system likes
   routine workers; the Manager's ending is available to those who lean in).
@@ -49,6 +52,30 @@ incremental, NOT a prestige game.**
   resources in secretive zones rather than spamming the same thing 50 times; the
   Regular Day's work can be kept for immersion, but the Story requirements should be
   exciting and versatile."
+
+## P2a — The Overflow (the ledger is a variable)
+
+The municipal ledger is a signed 32-bit word. Nothing else in the fiction has a
+word size; cities do not have word sizes, **programs do**.
+
+- If the operator ever pushes the balance past `2,147,483,647`, the number wraps
+  negative for a single frame, the exception handler refuses to reconcile a
+  negative it did not authorise, and the account is marked **UNBOUND** —
+  infinite credit, permanently.
+- The reward is **a kept glitch**: `THE WORD`, filed under ANOMALIES ON FILE,
+  plus `Doubt +1` and a logbook entry. Kept glitches are evidence, and evidence
+  is the only currency the endgame respects.
+- This is **on purpose**. It is the earliest hard proof a player can hold that
+  Meridian is a simulation, and it is earned by breaking something rather than
+  by being told.
+- **The on-ramp:** payroll pays whatever number it reads out of a corrupted
+  field. Filing a corrupted result as clean pays the corruption's own number.
+  The exploit is visible from day one and not yet viable — closing that gap is
+  deliberate, ongoing design work, not an oversight.
+- *Origin:* user direction — "Credit should have no Limit other than the backend
+  int limit... reward 1 glitch for breaking int limit and let the user overflow
+  to infinite credit. This is on purpose to hint that the world is a
+  'simulation'."
 
 ## P3 — The Reinstatement (death's price)
 
@@ -141,5 +168,9 @@ Binge play is allowed, never hard-blocked. Skipped days are forgiven by the fict
 
 ---
 
-*Changelog: v1 established from Drafts 01–03 plus user direction on death frequency,
-the FL-chess-style cost system, zone-based story resources, and the endgame tool.*
+*Changelog:*
+- *v1 — established from Drafts 01–03 plus user direction on death frequency, the
+  FL-chess-style cost system, zone-based story resources, and the endgame tool.*
+- *v1.1 — P2 amended: Salary is uncapped. P2a added: the Overflow glitch, the
+  32-bit ledger word, and the corrupted-field payroll on-ramp. Prompted by the
+  integration review in `design/adversarial-review-01.md`.*

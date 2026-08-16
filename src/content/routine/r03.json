@@ -1,0 +1,26 @@
+{
+  "id": "routine-03",
+  "zone": "routine",
+  "title": "Eleven floors",
+  "body": "The memo board: Reminder — the Municipal Annex has eleven (11) floors. Any employee reporting a twelfth (12th) floor should be referred to HR. — M.",
+  "choices": [
+    {
+      "id": "obey",
+      "label": "Refer yourself to no one. It's eleven.",
+      "outcome": {
+        "text": "Eleven. You can count to eleven. The elevator panel agrees, tonight.",
+        "qualities": { "Routine": 1, "Salary": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "press",
+      "label": "Walk to the elevator. Look for a twelfth button.",
+      "outcome": {
+        "text": "There is a blank where 12 would be. It is slightly warmer than the panel around it.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}
