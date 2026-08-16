@@ -43,6 +43,7 @@ function contextFixture() {
       importGameSave: vi.fn(),
       keepThisTabSave: vi.fn(),
       useOtherTabSave: vi.fn(),
+      resetGame: vi.fn(),
     },
   };
 }
@@ -97,5 +98,22 @@ describe('operator-file import', () => {
     });
     expect(screen.queryByText('CONFIRM REPLACE')).not.toBeInTheDocument();
     expect(game.current?.actions.importGameSave).not.toHaveBeenCalled();
+  });
+
+  it('requires an explicit second step before erasing the local file', () => {
+    render(<SaveManagement />);
+
+    fireEvent.click(screen.getByText('ERASE LOCAL FILE'));
+    expect(screen.getByText('ERASE AND START OVER')).toBeInTheDocument();
+    expect(game.current?.actions.resetGame).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('CANCEL RESET'));
+    expect(screen.queryByText('ERASE AND START OVER')).not.toBeInTheDocument();
+    expect(game.current?.actions.resetGame).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('ERASE LOCAL FILE'));
+    fireEvent.click(screen.getByText('ERASE AND START OVER'));
+    expect(game.current?.actions.resetGame).toHaveBeenCalledOnce();
+    expect(screen.getByRole('status')).toHaveTextContent('Local operator file erased');
   });
 });

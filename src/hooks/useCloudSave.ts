@@ -116,7 +116,11 @@ export function useCloudSave({
 
         remoteRevision.current = remote.updatedAt;
         const remotePrint = gameStateFingerprint(remote.game);
-        if (!hadLocalSaveAtBoot && !localChangedSinceBoot) {
+        // A genuinely fresh first run may adopt Records automatically. An
+        // explicit whole-file replacement (import/reset/other-tab choice)
+        // must never do that silently, even if the chosen file happens to be
+        // byte-identical to the initial empty state.
+        if (!hadLocalSaveAtBoot && !localChangedSinceBoot && recheckToken === 0) {
           remoteFingerprint.current = remotePrint;
           readyToAutosave.current = true;
           replaceStateRef.current(remote.game);

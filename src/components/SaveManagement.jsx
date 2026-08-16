@@ -19,6 +19,7 @@ export default function SaveManagement() {
   const [email, setEmail] = useState('');
   const [localMessage, setLocalMessage] = useState(null);
   const [pendingImport, setPendingImport] = useState(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const fileInput = useRef(null);
 
   async function requestToken(event) {
@@ -53,6 +54,7 @@ export default function SaveManagement() {
       }
       const text = await file.text();
       const loaded = parseSaveJson(text);
+      setConfirmingReset(false);
       setPendingImport({ text, ...loaded });
       setLocalMessage('Operator file validated. Confirm which terminal file should remain.');
     } catch (error) {
@@ -77,6 +79,13 @@ export default function SaveManagement() {
   function cancelImport() {
     setPendingImport(null);
     setLocalMessage('Import cancelled. This terminal file was not changed.');
+  }
+
+  function resetFile() {
+    actions.resetGame();
+    setPendingImport(null);
+    setConfirmingReset(false);
+    setLocalMessage('Local operator file erased. Records will be checked before cloud saving resumes.');
   }
 
   return (
@@ -261,6 +270,29 @@ export default function SaveManagement() {
         </div>
       )}
 
+      {confirmingReset && (
+        <div className="save-conflict save-reset-confirmation" role="alert">
+          <p>
+            <strong>Erase this terminal&apos;s operator file?</strong> Local progress will be
+            replaced by a new Day 1 file. This cannot be undone without an export or a Records
+            copy. Records is never erased automatically; if signed in, you will choose which copy
+            remains.
+          </p>
+          <div className="save-action-row">
+            <button className="btn btn-primary btn-compact" type="button" onClick={resetFile}>
+              ERASE AND START OVER
+            </button>
+            <button
+              className="btn btn-ghost btn-compact"
+              type="button"
+              onClick={() => setConfirmingReset(false)}
+            >
+              CANCEL RESET
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="save-action-row save-file-actions">
         <button className="btn btn-ghost btn-compact" type="button" onClick={exportFile}>
           EXPORT FILE
@@ -280,6 +312,17 @@ export default function SaveManagement() {
           onChange={importFile}
           aria-label="Import operator save file"
         />
+        <button
+          className="btn btn-ghost btn-compact save-reset-button"
+          type="button"
+          onClick={() => {
+            setPendingImport(null);
+            setConfirmingReset(true);
+          }}
+          disabled={confirmingReset}
+        >
+          ERASE LOCAL FILE
+        </button>
       </div>
       {localMessage && <p className="fine" role="status">{localMessage}</p>}
     </div>

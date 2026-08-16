@@ -144,6 +144,39 @@ describe('useCloudSave', () => {
     expect(client.__upsert).not.toHaveBeenCalled();
   });
 
+  it('does not restore Records silently over an explicit fresh-file replacement', async () => {
+    const remoteState = createInitialGameState();
+    remoteState.day = 4;
+    const client = mockClient(
+      createStoredSaveEnvelope(remoteState, new Date('2026-08-16T12:00:00Z')),
+    );
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const fresh = createInitialGameState();
+    const { result, rerender } = renderHook(
+      ({ recheckToken }) =>
+        useCloudSave({
+          state: fresh,
+          hadLocalSaveAtBoot: false,
+          replaceState,
+          recheckToken,
+        }),
+      { initialProps: { recheckToken: 0 } },
+    );
+
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+    expect(replaceState).toHaveBeenCalledOnce();
+
+    // Reset/import can deliberately choose a byte-for-byte fresh file. The
+    // recheck token makes that choice explicit, so Records must now be shown
+    // as a conflict rather than restored over the user's reset.
+    rerender({ recheckToken: 1 });
+    await waitFor(() => expect(client.__pulls()).toBe(2));
+    await waitFor(() => expect(result.current.status).toBe('conflict'));
+    expect(replaceState).toHaveBeenCalledOnce();
+    expect(result.current.conflict?.game.day).toBe(4);
+  });
+
   it('treats offline regen at cold open as the same file, not a conflict', async () => {
     // Records holds the file as of 23:00 with five actions in the tank...
     const closedAtNight = createInitialGameState();
