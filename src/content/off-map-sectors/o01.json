@@ -1,0 +1,30 @@
+{
+  "id": "off-map-sectors-01",
+  "zone": "off-map-sectors",
+  "title": "Beyond nine",
+  "body": "VANTABLACK does not ask where you are going. Past Sector 9, the road loses its painted edges and the headlights illuminate wireframe.",
+  "choices": [
+    {
+      "id": "continue",
+      "label": "Tell VANTABLACK to continue.",
+      "outcome": {
+        "text": "The cab keeps moving after the road ends. The dispatch clock loses three seconds.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "off-map-sectors-02"
+    },
+    {
+      "id": "stop",
+      "label": "Tell VANTABLACK to stop.",
+      "outcome": {
+        "text": "The cab stops. The map continues without it. VANTABLACK says, “We have done this before.”",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "off-map-sectors-02"
+    }
+  ]
+}

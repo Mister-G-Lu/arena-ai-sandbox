@@ -1,0 +1,30 @@
+{
+  "id": "rooftop-array-04",
+  "zone": "rooftop-array",
+  "title": "The oscillator",
+  "body": "Inside the antenna housing, a crystal vibrates at the frequency of the outside room. It is almost warm.",
+  "choices": [
+    {
+      "id": "take",
+      "label": "Remove the CRYSTAL.",
+      "outcome": {
+        "text": "The smog becomes a flat grey wall. In your thermos, the coffee is briefly cold. You have the signal.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "hold",
+      "label": "Hold the housing open and listen.",
+      "outcome": {
+        "text": "The outside room says: We can hear you. You take the CRYSTAL before the roof can close.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "completeZone": true
+    }
+  ]
+}

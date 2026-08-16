@@ -1,0 +1,30 @@
+{
+  "id": "interim-deep-04",
+  "zone": "interim-deep",
+  "title": "The sixth piece",
+  "body": "The INTERIM component is a piece of the missing second between shifts. It pulses when you remember dying.",
+  "choices": [
+    {
+      "id": "take",
+      "label": "Take the INTERIM component.",
+      "outcome": {
+        "text": "The hall closes. You wake at the next shift with six pieces in your file and one question the system cannot phrase.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "return",
+      "label": "Return it to the gap.",
+      "outcome": {
+        "text": "The Cleaner puts it in your hand again. “You will need the hour.” The hall closes behind you.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "completeZone": true
+    }
+  ]
+}

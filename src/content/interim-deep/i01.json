@@ -1,0 +1,30 @@
+{
+  "id": "interim-deep-01",
+  "zone": "interim-deep",
+  "title": "The open frame",
+  "body": "The next shift has not begun. The gap is a narrow hall lit by the number 06:00:00, repeated until it becomes a wall.",
+  "choices": [
+    {
+      "id": "enter",
+      "label": "Enter the open frame.",
+      "outcome": {
+        "text": "Your footsteps arrive before you do. A file drawer opens somewhere ahead.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "interim-deep-02"
+    },
+    {
+      "id": "call",
+      "label": "Call for the Cleaner.",
+      "outcome": {
+        "text": "A mop appears first. Then a voice says, “You are early.”",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "interim-deep-02"
+    }
+  ]
+}

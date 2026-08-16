@@ -1,0 +1,30 @@
+{
+  "id": "rooftop-array-03",
+  "zone": "rooftop-array",
+  "title": "Carrier",
+  "body": "The carrier is not a broadcast. It is a handshake. The roof asks for an acknowledgement and lights the antenna beneath your feet.",
+  "choices": [
+    {
+      "id": "answer",
+      "label": "Acknowledge the carrier.",
+      "outcome": {
+        "text": "Something outside the weather loop answers. The roof becomes very interested in your exact location.",
+        "qualities": {
+          "Attention": 1
+        }
+      },
+      "next": "rooftop-array-04"
+    },
+    {
+      "id": "decline",
+      "label": "Do not answer.",
+      "outcome": {
+        "text": "The handshake completes anyway. The city has been answering on your behalf for years.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "rooftop-array-04"
+    }
+  ]
+}

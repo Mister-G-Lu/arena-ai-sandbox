@@ -103,6 +103,11 @@ describe('zones', () => {
       'custodial-stores': 'notices',
       'window-ledge': 'notices',
       doorman: 'notices',
+      'records-basement': 'investigations',
+      'vent-network': 'investigations',
+      'rooftop-array': 'investigations',
+      'off-map-sectors': 'investigations',
+      'interim-deep': 'investigations',
     });
   });
 
@@ -207,6 +212,6 @@ describe('zones', () => {
   });
 
   it('awards exactly one component per expedition zone', () => {
-    expect(ZONES.filter((z) => z.component).map((z) => z.component)).toEqual(['key']);
+    expect(ZONES.filter((z) => z.component).map((z) => z.component)).toEqual(['key', 'lens', 'wire', 'crystal', 'chip', 'interim']);
   });
 });

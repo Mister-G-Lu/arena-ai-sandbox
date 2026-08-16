@@ -1,0 +1,30 @@
+{
+  "id": "vent-network-03",
+  "zone": "vent-network",
+  "title": "The junction",
+  "body": "Three cables cross the junction: one for power, one for weather, one that hums when you think about leaving.",
+  "choices": [
+    {
+      "id": "trace",
+      "label": "Trace the humming cable.",
+      "outcome": {
+        "text": "It terminates in a maintenance box containing a coil of impossible copper.",
+        "qualities": {
+          "Attention": 1
+        }
+      },
+      "next": "vent-network-04"
+    },
+    {
+      "id": "sever",
+      "label": "Cut the quietest cable.",
+      "outcome": {
+        "text": "The weather above stops for a second. The city notices, then pretends not to.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "vent-network-04"
+    }
+  ]
+}

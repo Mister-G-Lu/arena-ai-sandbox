@@ -1,0 +1,30 @@
+{
+  "id": "off-map-sectors-02",
+  "zone": "off-map-sectors",
+  "title": "The empty houses",
+  "body": "The sectors contain houses with no interiors. In one window, a desk lamp is on. Its light falls toward you instead of the floor.",
+  "choices": [
+    {
+      "id": "enter",
+      "label": "Open the nearest door.",
+      "outcome": {
+        "text": "There is a copy of the night desk inside, including the cup you left beside the console.",
+        "qualities": {
+          "Attention": 1
+        }
+      },
+      "next": "off-map-sectors-03"
+    },
+    {
+      "id": "pass",
+      "label": "Keep driving.",
+      "outcome": {
+        "text": "The houses turn their blank windows as you pass. VANTABLACK stops using the radio.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "off-map-sectors-03"
+    }
+  ]
+}

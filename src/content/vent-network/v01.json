@@ -1,0 +1,30 @@
+{
+  "id": "vent-network-01",
+  "zone": "vent-network",
+  "title": "The grille",
+  "body": "The maintenance grille is painted the exact colour of the wall. The bolt heads are newer than the building and warmer than the room.",
+  "choices": [
+    {
+      "id": "cut",
+      "label": "Use the bolt cutters.",
+      "outcome": {
+        "text": "The grille opens onto a corridor that was rendered after the wall around it.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "vent-network-02"
+    },
+    {
+      "id": "listen",
+      "label": "Put your ear to the grille.",
+      "outcome": {
+        "text": "A pen scratches on the other side. It stops when you breathe.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "vent-network-02"
+    }
+  ]
+}

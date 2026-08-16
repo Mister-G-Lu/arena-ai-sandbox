@@ -1,0 +1,30 @@
+{
+  "id": "vent-network-04",
+  "zone": "vent-network",
+  "title": "A bridge",
+  "body": "The coil is labelled WIRE. Its insulation is made from narrow strips of old operator logs. The last strip says: DO NOT LET IT COMPLETE THE CIRCUIT.",
+  "choices": [
+    {
+      "id": "take",
+      "label": "Take the WIRE.",
+      "outcome": {
+        "text": "The vent network folds into an ordinary service duct. Your map now has one route the city cannot redraw.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "read",
+      "label": "Read the last strip first.",
+      "outcome": {
+        "text": "The warning is not addressed to you. It is signed by whoever is currently holding the WIRE.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "completeZone": true
+    }
+  ]
+}

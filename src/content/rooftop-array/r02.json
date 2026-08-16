@@ -1,0 +1,30 @@
+{
+  "id": "rooftop-array-02",
+  "zone": "rooftop-array",
+  "title": "The dead channel",
+  "body": "Six antennas point inward. The seventh points past the smog at a black patch where stars should be.",
+  "choices": [
+    {
+      "id": "tune",
+      "label": "Tune the radio permit to the black patch.",
+      "outcome": {
+        "text": "Static resolves into a distant room: a chair, a desk, someone waiting for a reply.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "rooftop-array-03"
+    },
+    {
+      "id": "record",
+      "label": "Record the test tone.",
+      "outcome": {
+        "text": "The recording contains a second operator breathing between every note.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "rooftop-array-03"
+    }
+  ]
+}

@@ -14,7 +14,12 @@ export const ZONE_IDS = [
   'utility-closet',
   'custodial-stores',
   'window-ledge',
-  'doorman'
+  'doorman',
+  'records-basement',
+  'vent-network',
+  'rooftop-array',
+  'off-map-sectors',
+  'interim-deep'
 ] as const;
 export type ZoneId = (typeof ZONE_IDS)[number];
 

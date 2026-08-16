@@ -21,8 +21,10 @@ is the current queue and supersedes their old “still open” lists.
   shift close.
 - Authored beats through the first week, including the Shift 2 Annex lead, the
   Shift 3 handwriting case, and the current early Floor 12 vertical-slice climax.
-- One of six Components (the NULL KEY) and one explicit, opt-in death with an
-  action cost and abbreviated Interim aftermath.
+- The Floor 12 vertical slice plus five Arc II expedition decks (Records
+  Basement, Vent Network, Rooftop Array, Off-Map Sectors, and Interim Deep),
+  awarding all six Components through the existing one-shot zone pipeline.
+  Death still has an action cost and abbreviated Interim aftermath.
 - Versioned local saves, recovery/backup, confirmed import, export, safe reset,
   cross-tab protection, optional Supabase sync, and cross-device conflict
   resolution.
@@ -34,7 +36,7 @@ is the current queue and supersedes their old “still open” lists.
 | Contract from the design bible | Implemented now | Remaining before full release |
 |---|---:|---|
 | 85–110 shifts across 3 arcs | Distinct authored beats through Shift 7; ambient rotation after that | Most of Month 1, all of Arcs II–III |
-| 6 secret zones / Components | 1 vertical-slice expedition / 1 Component | 5 expeditions and Components; rebuild Floor 12 as the true Day-30 climax |
+| 6 secret zones / Components | Floor 12 plus five Arc II expedition decks / all six Components | Arc II integration pacing, full Reinstatements/Patch Scars, and rebuild Floor 12 as the true Day-30 climax |
 | 2–4 rare deaths with Reinstatements | 1 opt-in death; action dock and short aftermath | Full discrepancy sequence, Patch Scars, later escalating Reinstatements |
 | 4 endings + joke resignation | 0 endings | Seam Ripped, Keep Logging, Cleaner, Patched, and finale tooling |
 | ~1,100 unique content pieces / ~128k words | 26 schema-validated story JSON files plus dispatch/orientation copy | The large majority of authored campaign content |
