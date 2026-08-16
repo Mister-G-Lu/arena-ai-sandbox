@@ -1,0 +1,26 @@
+{
+  "id": "floor12-05",
+  "zone": "floor12",
+  "title": "The Auditor",
+  "body": "It is holding a form with your name on it. The form is already signed. Its face is a blur of badges. The chair it sits in is yours. Recommended: do not proceed. — M.",
+  "choices": [
+    {
+      "id": "forward",
+      "label": "Step forward. Ask whose signature that is.",
+      "outcome": {
+        "text": "It turns the form around. The signature is yours. You have not signed it yet. The lights go.",
+        "qualities": { "Attention": 3, "Doubt": 1 }
+      },
+      "next": "floor12-06"
+    },
+    {
+      "id": "back",
+      "label": "Do not proceed. Take the key. Leave.",
+      "outcome": {
+        "text": "The Auditor does not follow. In the envelope: the NULL KEY — a key the map doesn't have. The zone's prize is the discovery, not the dying.",
+        "qualities": { "Perception": 1 }
+      },
+      "completeZone": true
+    }
+  ]
+}

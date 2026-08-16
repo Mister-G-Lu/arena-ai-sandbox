@@ -1,0 +1,26 @@
+{
+  "id": "floor12-01",
+  "zone": "floor12",
+  "title": "The blank button",
+  "body": "The annex at night. The elevator panel has eleven numbers and a warmth where a twelfth would be. A work order in your pocket is the only key the map does not have.",
+  "choices": [
+    {
+      "id": "press",
+      "label": "Press the warmth.",
+      "outcome": {
+        "text": "The car rises past 11 without slowing. The display says 11. The doors are thinking about it.",
+        "qualities": { "Attention": 2, "Doubt": 1 }
+      },
+      "next": "floor12-02"
+    },
+    {
+      "id": "leave",
+      "label": "Take the stairs back to the desk. Not tonight.",
+      "outcome": {
+        "text": "The work order is still in your pocket. The zone will wait. The system prefers that.",
+        "qualities": { "Routine": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}
