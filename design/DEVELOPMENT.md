@@ -13,7 +13,10 @@ npm run check
 ```
 
 `npm run check` runs TypeScript, ESLint, tests with enforced coverage, and the
-production build. The ready-to-install GitHub workflow template lives at `ops/github-workflows/ci.yml`.
+production build. The build route-splits the larger terminal pages and enforces a
+250 KiB maximum for every minified JavaScript chunk with
+`scripts/check-bundle-size.mjs`. The ready-to-install GitHub workflow template
+lives at `ops/github-workflows/ci.yml`.
 
 ## Canonical runtime and save
 
@@ -156,14 +159,15 @@ for scripts, event attributes, `javascript:` URLs, SVG, and malformed markup.
 
 ## Deployment
 
-`npm run build` writes GitHub Pages output to `docs/`. In repository Settings →
-Pages, install the two files from `ops/github-workflows/` under
+`npm run build` writes GitHub Pages output to `docs/`. Pages currently uses the
+legacy branch source and publishes `docs/` from `main`; that makes the live site
+available but does not validate pull requests. A repository owner with workflow
+permission should install the two files from `ops/github-workflows/` under
 `.github/workflows/`, then set **Build and deployment / Source** to **GitHub
-Actions**. They are templates because this coding connection cannot push active
-workflow files without GitHub workflow permission. Until installed, run
-`npm run check` locally and rebuild `docs/` in the final pull-request commit.
+Actions**. Until those templates are active, run `npm run check` locally and
+rebuild `docs/` in the final pull-request commit.
 
 `npm run verify:pages` is the local stand-in for the CI step that checks the
-committed build: it rebuilds and fails loudly if `docs/` has drifted from the
-source. Run it right before the final commit of a PR that touches `src/` or
-`index.html`.
+committed build: it rebuilds (including the JavaScript chunk budget) and fails
+loudly if `docs/` has drifted from the source. Run it right before the final
+commit of a PR that touches `src/` or `index.html`.

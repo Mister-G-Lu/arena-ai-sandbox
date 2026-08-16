@@ -735,10 +735,15 @@ export function GameStateProvider({ children }) {
       ...prev,
       status: 'ready',
       error: null,
-      tabConflict: null
+      tabConflict: null,
+      remoteReset: false
     }));
     clearLocalGameSave();
     setState(hydrateActionTank(createInitialGameState()));
+    // A wipe is a whole-file replacement, just like import. If Records has a
+    // copy, re-read it and ask which file wins instead of either restoring it
+    // silently or letting autosave erase it.
+    setCloudRecheck((value) => value + 1);
   }, []);
 
   /* ---------------- dev capability ---------------- */

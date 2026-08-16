@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { taskPayout } from '../game/payouts';
 import { describeEffects } from '../game/qualities';
-import { TASKS_PER_SHIFT, taskOrderFor } from '../game/dispatch';
+import { ACTION_CAP } from '../game/actions';
+import { taskOrderFor } from '../game/dispatch';
 
-const MAX_TASKS = TASKS_PER_SHIFT;
+const SHIFT_ACTIONS = ACTION_CAP;
 
 /** Consequence table for filing a result: every verb carries its own effects,
  *  payout rule and residue line, so adding a filing verb is one entry here. */
@@ -155,9 +156,11 @@ export default function Console() {
   const startingTask = useRef(false);
 
   const minutes = Math.min(60 + state.actionsSpentThisShift * 6, 360);
-  // The night ends when the shift's actions are gone, not when a quota is met.
-  const shiftComplete = state.actionsSpentThisShift >= MAX_TASKS;
-  // Out of budget: the clock, not the quota, is what stops the operator now.
+  // The night ends when the shift's action budget is spent. A console-only
+  // night can file fifty results; notices and investigations spend from the
+  // same budget instead of creating a second hidden quota.
+  const shiftComplete = state.actionsSpentThisShift >= SHIFT_ACTIONS;
+  // Out of budget: the clock, not a task quota, is what stops the operator.
   const outOfActions = actionTank.empty;
   const annexOrderPending = state.day >= 2 && state.zones['annex-order'] !== 'complete';
   const handwritingOrderPending = state.day >= 3 && state.zones['handwritten-order'] !== 'complete';
@@ -249,14 +252,16 @@ export default function Console() {
       }]);
     }
 
-    if (state.actionsSpentThisShift >= MAX_TASKS) {
+    if (state.actionsSpentThisShift >= SHIFT_ACTIONS) {
       setLogs(prev => [...prev, {
         id: `day-${state.day}-complete`,
         timestamp: '06:00',
         type: 'system',
-        text: 'SHIFT COMPLETE // QUOTA MET // RESULT ACKNOWLEDGED. REPORT TO BREAK ROOM. DO NOT LOOK OUTSIDE.'
+        text: 'SHIFT COMPLETE // ACTION BUDGET SPENT // RESULT ACKNOWLEDGED. REPORT TO BREAK ROOM. DO NOT LOOK OUTSIDE.'
       }]);
-      actions.addLogEntry(`Day ${state.day}: shift quota met. Fifty results acknowledged.`);
+      actions.addLogEntry(
+        `Day ${state.day}: shift budget spent. ${state.tasksThisShift + 1} results acknowledged.`
+      );
     }
 
     setPhase('ready');
@@ -284,7 +289,7 @@ export default function Console() {
     : phase === 'result'
       ? 'REVIEW REQUIRED'
       : shiftComplete
-        ? 'QUOTA MET'
+        ? 'BUDGET SPENT'
         : 'LINKED';
 
   const windowVista = vistaForMoment({ day: state.day, tasksThisShift: state.tasksThisShift, minutes });
@@ -342,7 +347,7 @@ export default function Console() {
           {annexOrderPending && (
             <aside className="secondary-order" aria-labelledby="annex-order-title">
               <div>
-                <div className="secondary-order-kicker">SECONDARY ORDER // DOES NOT COUNT TOWARD QUOTA</div>
+                <div className="secondary-order-kicker">SECONDARY ORDER // OUTSIDE THE LIVE QUEUE</div>
                 <div className="secondary-order-title" id="annex-order-title">
                   ANNEX ELEVATOR // OUT-OF-RANGE STOP: FLOOR 12
                 </div>

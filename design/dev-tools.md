@@ -111,11 +111,12 @@ When you *do* add email auth, three cheap things keep it out of QA's way:
 
 ---
 
-## 5. What the menu manipulates
+## 5. Target: what the full menu manipulates
 
-Anything the design bible treats as state. The panel is generated **from the state
-schema**, so new qualities appear in the menu automatically — a dev tool that needs
-manual updating rots within a month.
+The intended panel covers anything the design bible treats as state and is generated
+**from the state schema**, so new qualities appear automatically — a dev tool that
+needs manual updating rots within a month. The current pre-alpha panel is the smaller
+subset recorded in §9.
 
 | Group | Contents |
 |---|---|
@@ -148,13 +149,13 @@ in a PR.
 
 ## 7. Safety rails (cheap, worth it)
 
-- **`meta.devTouched`** — set to `true` and never cleared once any cheat fires. It
-  rides along in exports and (later) telemetry, so a bug report from a warped save is
-  self-labelling. This one flag prevents most "unreproducible" QA time sinks.
-- **A visible badge.** The panel and a corner ribbon make dev mode unmistakable, so
-  nobody reports "the pacing feels off" from a save with god mode on.
-- **No cheat ever writes to the cloud** as a normal save (when sync exists, mark
-  dev-touched saves as a separate class, or refuse to upload them).
+- **`devTouched`** — set to `true` at the save root and never cleared once any
+  cheat fires. It rides along in exports and (later) telemetry, so a bug report
+  from a warped save is self-labelling. This and the visible badge are implemented.
+- **A visible badge.** The panel and HUD make dev mode unmistakable, so nobody
+  reports “the pacing feels off” from a save with an unbound action tank.
+- **No cheat should write to the cloud as a normal save.** Mark dev-touched
+  saves as a separate class or refuse to upload them; this boundary remains open.
 - **Keep it out of the analytics funnel** — dev sessions must not pollute balance data.
 
 ## 8. Diegetic framing (free, and on-theme)
@@ -168,12 +169,33 @@ than a broken door.
 
 ## 9. Implementation in this repo
 
-- `docs/state.js` — the state store: schema, defaults, load/save, subscribe, patch.
-  Ships in production.
-- `docs/devtools.js` + `docs/devtools.css` — the Maintenance Terminal. **Excluded from
-  production builds.** Auto-generated controls from the schema, warps, save slots,
-  export/import.
-- `docs/app.js` — the console; reads the store, exposes `FR.game` so the terminal can
-  drive it (skip tasks, end shift, force a glitch) instead of duplicating logic.
+### Implemented pre-alpha subset
 
-Open with **`` ` ``** (backtick) or `?dev=1`. See §3 for the gates.
+- `src/lib/devMode.ts` detects obvious development hosts and the persisted
+  `?dev=1` / `?dev=0` opt-in. It is a device capability, never an account role.
+- `src/components/DevPanel.jsx` is the Maintenance Terminal UI. It can refill or
+  detach the action tank and drop the browser's opt-in.
+- `GameStateContext.jsx` owns the cheat actions. Every use latches the canonical
+  save's root `devTouched` flag; detaching the tank also persists
+  `actionsUnbound`. The HUD and panel make an altered file visible.
+- Save validation rejects an unbound tank without that audit flag. Tests cover
+  host/query detection, schema validation, and the action-tank capability.
+
+Development hosts (`localhost`, `127.0.0.1`, `*.local`, and sandbox preview
+hosts) show the panel automatically. A shared build can use `?dev=1`; `?dev=0`
+clears that browser's opt-in.
+
+### Still required before a trust-sensitive release
+
+- Production-build exclusion (or an explicit staging-only build flag). The
+  current public pre-alpha still contains the panel and accepts `?dev=1` because
+  all progression is client-authoritative anyway.
+- Declarative beat warps, schema-generated quality/component/zone controls,
+  named save slots, force-anomaly/death controls, and the backtick shortcut.
+- Refusing cloud upload for `devTouched` files or storing them as a separate QA
+  class. At present the badge is an audit signal, not a transport boundary.
+- Server-side dev claims only if the server begins owning actions, telemetry,
+  purchases, or competitive progression.
+
+The minimal panel is enough to bypass the real-time action wait during opening
+playtests. It is not yet the full Arc-II/III authoring terminal designed above.

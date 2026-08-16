@@ -9,9 +9,10 @@ function TaskIntro({ reviewMode }) {
       <em>{reviewMode ? 'simulated' : 'logged'}</em>
       {'\n  — the clock will '}
       <em>{reviewMode ? 'remain unchanged' : 'advance'}</em>
-      {'\n  — the count will '}
-      <em>{reviewMode ? 'remain unchanged' : 'decrease by one'}</em>
-      {'\n\nThis is the job. This is all the job is.\nFifty small actions. None of them wrong.\n'}
+      {'\n  — your action budget will '}
+      <em>remain unchanged</em>
+      {reviewMode ? '' : ' — orientation is not billed'}
+      {'\n\nThis is the job. This is all the job is.\nFifty small decisions. None of them wrong.\n'}
       <span className="warn">{'There cannot be wrong actions.\nThere is no option for wrong.'}</span>
       {'\n\nYou are ready. Execute '}
       {reviewMode ? 'the training task' : 'your first task'}.
@@ -102,7 +103,7 @@ export default function OrientTerminalTask({
                   <div className="processing-line">→ querying dispatch network...</div>
                   <div className="processing-line">→ verifying operator credentials...</div>
                   <div className="processing-line">→ {reviewMode ? 'isolating training record...' : 'logging task to permanent record...'}</div>
-                  <div className="processing-line">→ {reviewMode ? 'preserving live quota...' : 'confirming quota decrement...'}</div>
+                  <div className="processing-line">→ {reviewMode ? 'preserving live action budget...' : 'filing orientation budget exception...'}</div>
                 </div>
               </div>
             </div>

@@ -526,6 +526,17 @@
 
 .save-file-actions { margin-top: 1.25rem; }
 
+.save-reset-confirmation {
+  border-color: var(--red);
+  background: rgba(255, 111, 111, 0.08);
+}
+
+.save-reset-button {
+  margin-left: auto;
+  color: var(--red);
+  border-color: rgba(255, 111, 111, 0.45);
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px !important;

@@ -36,6 +36,8 @@ async function click(text: string) {
 async function go(hash: string) {
   window.location.hash = hash;
   await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
+  await vi.dynamicImportSettled();
+  await act(async () => undefined);
 }
 
 /** A working operator: orientation done, one promotion, and a full day's pay. */
