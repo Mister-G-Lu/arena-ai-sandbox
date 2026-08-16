@@ -1,0 +1,89 @@
+/* Compact requirement badges: glyph + short label, full detail on hover/focus. */
+
+.req-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.req-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid rgba(143, 163, 204, 0.35);
+  background: rgba(10, 16, 32, 0.5);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: #b8c6e6;
+  cursor: help;
+  outline: none;
+}
+
+.req-badge:hover,
+.req-badge:focus,
+.req-badge:focus-visible {
+  border-color: rgba(87, 214, 195, 0.7);
+}
+
+.req-badge-glyph {
+  color: #57d6c3;
+  font-size: 0.72rem;
+}
+
+.req-badge-label {
+  text-transform: uppercase;
+}
+
+.req-badge-met {
+  color: #7fe0cd;
+  border-color: rgba(87, 214, 195, 0.4);
+}
+
+.req-badge-unmet {
+  color: #8fa3cc;
+}
+
+.req-badge-check {
+  border-color: rgba(255, 198, 107, 0.45);
+  color: #ffc66b;
+}
+
+.req-badge-check .req-badge-glyph {
+  color: #ffc66b;
+}
+
+/* The hover/focus readout. Hidden until the badge is hovered or focused, then
+   floated above the badge. Pointer-events stay off so it never blocks the row
+   beneath it while it is showing. */
+.req-badge-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 5px 9px;
+  border: 1px solid rgba(87, 214, 195, 0.35);
+  background: rgba(6, 10, 22, 0.98);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: #e2e9fb;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 40;
+}
+
+.req-badge:hover .req-badge-tip,
+.req-badge:focus .req-badge-tip,
+.req-badge:focus-visible .req-badge-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}

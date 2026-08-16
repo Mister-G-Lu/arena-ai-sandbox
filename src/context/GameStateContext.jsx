@@ -22,7 +22,8 @@ import {
   unlocksThrough,
   visibleZones,
   zoneState,
-  zoneById
+  zoneById,
+  skillChecksFor
 } from '../game/progression';
 import { SUPPLY_DEFS, supplyById, isPurchaseable } from '../game/shop';
 import {
@@ -503,6 +504,65 @@ export function GameStateProvider({ children }) {
   }, []);
 
   /**
+   * Roll a challengeable zone's skill checks. All checks must pass; success
+   * opens the zone for free (opening is free — the choice inside costs), a
+   * failure spends one action and leaves the zone challengeable for a retry.
+   *
+   * Rolls happen once, outside the reducer, so React StrictMode's
+   * double-invoked updater cannot reroll or double-charge an action. The
+   * result is returned to the caller for a failure readout.
+   */
+  const attemptSkillCheck = useCallback((zoneId, entryOverride) => {
+    const zone = zoneById(zoneId);
+    if (!zone) return { ok: false, reason: 'no-zone' };
+    const checks = skillChecksFor(zone.requires, requirementCtx);
+    if (checks.length === 0) return { ok: false, reason: 'no-skill' };
+
+    const results = checks.map((check) => {
+      const roll = Math.random() * 100;
+      return {
+        name: check.name,
+        glyph: check.glyph,
+        chance: check.chance,
+        roll,
+        pass: roll < (check.chance ?? 0)
+      };
+    });
+    const passed = results.every((result) => result.pass);
+
+    setState(prev => {
+      const z = zoneById(zoneId);
+      if (!z) return prev;
+      const ctx = {
+        qualities: prev.qualities,
+        attention: prev.attention,
+        componentsCount: Object.values(prev.components).filter(Boolean).length,
+        deaths: prev.deaths,
+        day: prev.day,
+        tier: prev.promotion.tier,
+        unlocks: prev.promotion.unlocks,
+        zones: prev.zones,
+        supplies: prev.supplies
+      };
+      // Only a zone that is still challengeable may be rolled.
+      if (zoneState(z, ctx) !== 'challengeable') return prev;
+      if (passed) {
+        return {
+          ...prev,
+          zones: { ...prev.zones, [zoneId]: 'open' },
+          currentStorylet: { zone: zoneId, storyletId: entryOverride || z.entry }
+        };
+      }
+      // A failed check is a spent attempt. withSpentAction refuses a charge the
+      // tank cannot cover, leaving state untouched (the caller gates on the
+      // tank being non-empty first).
+      return withSpentAction(prev, 1, (charged) => charged);
+    });
+
+    return { ok: true, passed, results };
+  }, [requirementCtx]);
+
+  /**
    * Resolve a storylet choice: apply its effects, remember the card, advance
    * or close the zone, and award the zone's Component when it completes.
    * Consequences file once, on first read — a re-read replays the fiction
@@ -815,6 +875,7 @@ export function GameStateProvider({ children }) {
       applyEffects,
       purchaseSupply,
       enterZone,
+      attemptSkillCheck,
       closeStorylet,
       resolveStorylet,
       recordOrientationTask,

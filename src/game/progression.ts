@@ -64,6 +64,49 @@ function labelFor(name: string): string {
   return METRIC_LABELS[key] ?? supplyById(key)?.name ?? name;
 }
 
+/**
+ * Qualities that gate as *skill checks* (a roll) rather than hard thresholds.
+ * Promotions keep these deterministic — the system files your rank, it does not
+ * gamble on it — while zones roll them on entry. See `zoneState`.
+ */
+const SKILL_QUALITIES = new Set(['doubt', 'perception', 'routine']);
+
+/** Compact terminal glyph per requirement key, for the badge display. */
+const REQUIREMENT_GLYPHS: Record<string, string> = {
+  components: '⚙',
+  deaths: '✝',
+  day: '◈',
+  attention: '▣',
+  tier: '⌬',
+  doubt: '◍',
+  perception: '◐',
+  routine: '◯',
+};
+
+/** Every supply shares one inventory glyph; the product name carries the rest. */
+const SUPPLY_GLYPH = '▤';
+const FALLBACK_GLYPH = '◆';
+
+export function isSkillRequirement(name: string): boolean {
+  return SKILL_QUALITIES.has(name.toLowerCase());
+}
+
+export function requirementGlyph(name: string): string {
+  const key = name.toLowerCase();
+  if (REQUIREMENT_GLYPHS[key]) return REQUIREMENT_GLYPHS[key];
+  return supplyById(key) ? SUPPLY_GLYPH : FALLBACK_GLYPH;
+}
+
+/**
+ * Fallen London-style success probability. 60% exactly at the bar, ten points
+ * per point of skill above or below it, clamped so no check is a sure thing
+ * (5% floor) and no amount of skill removes all doubt (95% ceiling).
+ */
+export function skillCheckPercent(skill: number, difficulty: number): number {
+  const pct = 60 + (skill - difficulty) * 10;
+  return Math.min(95, Math.max(5, pct));
+}
+
 export function metricValue(name: string, ctx: RequirementCtx): number {
   const key = name.toLowerCase();
   const fromContext = CONTEXT_METRICS[key];
@@ -99,6 +142,67 @@ export function missingRequirements(
     .map(([name, threshold]) =>
       `${labelFor(name)} ${metricValue(name, ctx)}/${threshold}`,
     );
+}
+
+/** A single requirement, ready to render as a compact glyph badge. */
+export interface RequirementBadge {
+  name: string;
+  glyph: string;
+  threshold: number;
+  current: number;
+  met: boolean;
+  skill: boolean;
+  /** Success chance (5–95) for a skill check; null when read as a hard bar. */
+  chance: number | null;
+}
+
+/**
+ * Flatten a `requires` map into render-ready badges. With `skillChecks`, skill
+ * qualities carry a success chance (a roll); without it they read as plain
+ * thresholds — the promotion path stays a hard bar, the zone path rolls.
+ */
+export function requirementBadges(
+  requires: Record<string, number> | undefined,
+  ctx: RequirementCtx,
+  options: { skillChecks?: boolean } = {},
+): RequirementBadge[] {
+  if (!requires) return [];
+  return Object.entries(requires).map(([name, threshold]) => {
+    const current = metricValue(name, ctx);
+    const skill = isSkillRequirement(name);
+    return {
+      name: labelFor(name),
+      glyph: requirementGlyph(name),
+      threshold,
+      current,
+      met: current >= threshold,
+      skill,
+      chance: skill && options.skillChecks ? skillCheckPercent(current, threshold) : null,
+    };
+  });
+}
+
+/** The skill checks a zone's requirements reduce to, for a roll. */
+export function skillChecksFor(
+  requires: Record<string, number> | undefined,
+  ctx: RequirementCtx,
+): RequirementBadge[] {
+  return requirementBadges(requires, ctx, { skillChecks: true }).filter((b) => b.skill);
+}
+
+/** Whether every non-skill (hard) requirement is already met. */
+export function hardRequirementsMet(
+  requires: Record<string, number> | undefined,
+  ctx: RequirementCtx,
+): boolean {
+  if (!requires) return true;
+  return Object.entries(requires)
+    .filter(([name]) => !isSkillRequirement(name))
+    .every(([name, threshold]) => metricValue(name, ctx) >= threshold);
+}
+
+export function hasSkillRequirements(requires: Record<string, number> | undefined): boolean {
+  return Boolean(requires && Object.keys(requires).some((name) => isSkillRequirement(name)));
 }
 
 /**
@@ -206,7 +310,7 @@ export function unlocksThrough(tier: number): string[] {
 /* Zones                                                               */
 /* ------------------------------------------------------------------ */
 
-export type ZoneState = 'locked' | 'open' | 'complete';
+export type ZoneState = 'locked' | 'challengeable' | 'open' | 'complete';
 
 export interface ZoneDef {
   id: string;
@@ -432,6 +536,13 @@ export function visibleZones(ctx: RequirementCtx): ZoneDef[] {
 
 export function zoneState(zone: ZoneDef, ctx: RequirementCtx): ZoneState {
   if (ctx.zones?.[zone.id] === 'complete') return 'complete';
+  // A zone that has already been opened — its skill check passed, or its card
+  // was entered — stays open. Qualities only ever rise, so a passed gate cannot
+  // fall back below itself later.
+  if (ctx.zones?.[zone.id] === 'open') return 'open';
   if (zone.requiresUnlock && !ctx.unlocks.includes(zone.requiresUnlock)) return 'locked';
-  return meetsRequirements(zone.requires, ctx) ? 'open' : 'locked';
+  // Hard gates (day, components, supplies, clearance) seal outright. Skill
+  // qualities seal *softly*: the zone is challengeable, and entry is a roll.
+  if (!hardRequirementsMet(zone.requires, ctx)) return 'locked';
+  return hasSkillRequirements(zone.requires) ? 'challengeable' : 'open';
 }
