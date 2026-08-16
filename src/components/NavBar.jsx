@@ -1,17 +1,16 @@
 import React from 'react';
-
-const NAV_ITEMS = [
-  { page: 'home', icon: '⌂', label: 'HOME' },
-  { page: 'directive', icon: '▸', label: 'DIRECTIVE' },
-  { page: 'grid', icon: '◫', label: 'GRID' },
-  { page: 'first-shift', icon: '◈', label: 'FIRST SHIFT' },
-  { page: 'console', icon: '▣', label: 'CONSOLE' },
-  { page: 'bulletin', icon: '▤', label: 'BULLETIN' },
-  { page: 'profile', icon: '◉', label: 'PROFILE' },
-];
+import { useGameState } from '../context/GameStateContext';
 
 export default function NavBar({ currentPage, onNavigate }) {
+  const { state } = useGameState();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const navItems = [
+    { page: 'home', icon: '⌂', label: 'HOME' },
+    state.orientation.completed
+      ? { page: 'console', icon: '▣', label: 'CONSOLE' }
+      : { page: 'first-shift', icon: '◈', label: 'FIRST SHIFT' },
+    { page: 'profile', icon: '◉', label: 'PROFILE' },
+  ];
 
   function handleClick(page) {
     onNavigate(page);
@@ -22,18 +21,18 @@ export default function NavBar({ currentPage, onNavigate }) {
     <>
       <aside className={`sidebar${mobileOpen ? ' open' : ''}`}>
         <div className="sidebar-brand">
-          <a className="brand" href="#home" onClick={(e) => { e.preventDefault(); handleClick('home'); }}>
+          <a className="brand" href="#home" onClick={(event) => { event.preventDefault(); handleClick('home'); }}>
             FALSE<span className="brand-reality">//</span>REALITY
           </a>
           <span className="brand-sub">v0.41.312</span>
         </div>
         <nav className="sidebar-nav" aria-label="Main">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <a
               key={item.page}
               href={`#${item.page}`}
               className={`nav-link${currentPage === item.page ? ' active' : ''}`}
-              onClick={(e) => { e.preventDefault(); handleClick(item.page); }}
+              onClick={(event) => { event.preventDefault(); handleClick(item.page); }}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
@@ -43,7 +42,9 @@ export default function NavBar({ currentPage, onNavigate }) {
         <div className="sidebar-footer">
           <div className="sidebar-status">
             <span className="status-dot"></span>
-            <span className="status-text">LINK ACTIVE</span>
+            <span className="status-text">
+              {state.orientation.completed ? 'OPERATOR LINK ACTIVE' : 'ORIENTATION REQUIRED'}
+            </span>
           </div>
         </div>
       </aside>

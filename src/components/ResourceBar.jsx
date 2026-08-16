@@ -3,16 +3,16 @@ import { useGameState } from '../context/GameStateContext';
 import './ResourceBar.css';
 
 export default function ResourceBar() {
-  const { state, actions, PROMOTIONS } = useGameState();
-  const { credits, maxCredits, components, qualities, attention, day, tasksCompleted } = state;
+  const { state, PROMOTIONS } = useGameState();
+  const { credits, maxCredits, components, day, tasksCompleted } = state;
 
   const componentsCount = Object.values(components).filter(Boolean).length;
   const creditPercent = maxCredits === Infinity ? 100 : (credits / maxCredits) * 100;
   const currentPromotion = PROMOTIONS[state.promotion.tier];
 
   return (
-    <div className="resource-bar">
-      <div className="resource-bar-inner">
+    <section className="resource-bar" aria-label="Operator stats">
+      <div className="resource-bar-inner" aria-live="polite">
         {/* Credits */}
         <div className="resource-item credits">
           <span className="resource-icon">¤</span>
@@ -83,6 +83,6 @@ export default function ResourceBar() {
           <span className="resource-label">Profile</span>
         </button>
       </div>
-    </div>
+    </section>
   );
 }

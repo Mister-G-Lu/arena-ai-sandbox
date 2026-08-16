@@ -3,13 +3,14 @@ import { useGameState } from '../context/GameStateContext';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
-  const { state, actions, PROMOTIONS } = useGameState();
+  const { state, PROMOTIONS } = useGameState();
   const {
     credits,
     maxCredits,
     components,
     qualities,
     day,
+    tasksCompleted,
     deaths,
     logbook,
     discoveries,
@@ -42,12 +43,18 @@ export default function ProfilePage() {
                 <span className="info-value">{day}</span>
               </div>
               <div className="info-item">
+                <span className="info-label">Tasks This Shift:</span>
+                <span className="info-value">{tasksCompleted} / 50</span>
+              </div>
+              <div className="info-item">
                 <span className="info-label">Deaths:</span>
                 <span className="info-value">{deaths}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Status:</span>
-                <span className="info-value">ACTIVE</span>
+                <span className="info-value">
+                  {state.orientation.completed ? 'ACTIVE // FILE SYNCED' : 'PENDING // ORIENTATION REQUIRED'}
+                </span>
               </div>
             </div>
           </div>
@@ -268,9 +275,11 @@ export default function ProfilePage() {
         <div className="profile-actions">
           <button
             className="btn btn-ghost"
-            onClick={() => window.location.hash = '#console'}
+            onClick={() => {
+              window.location.hash = state.orientation.completed ? '#console' : '#first-shift';
+            }}
           >
-            ▸ RETURN TO CONSOLE
+            {state.orientation.completed ? '▸ RETURN TO CONSOLE' : '▸ REPORT FOR FIRST SHIFT'}
           </button>
         </div>
       </div>
