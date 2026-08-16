@@ -1,40 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
 
-function taskIntro(reviewMode) {
-  return `${reviewMode ? 'This is a training copy of your first task.' : 'Your first task is waiting in the queue.'}
-
-When you press EXECUTE:
-  — the task will be <em>${reviewMode ? 'simulated' : 'logged'}</em>
-  — the clock will <em>${reviewMode ? 'remain unchanged' : 'advance'}</em>
-  — the count will <em>${reviewMode ? 'remain unchanged' : 'decrease by one'}</em>
-
-This is the job. This is all the job is.
-Fifty small actions. None of them wrong.
-<span class="warn">There cannot be wrong actions.
-There is no option for wrong.</span>
-
-You are ready. Execute ${reviewMode ? 'the training task' : 'your first task'}.`;
+function TaskIntro({ reviewMode }) {
+  return (
+    <div className="orient-content">
+      {reviewMode ? 'This is a training copy of your first task.' : 'Your first task is waiting in the queue.'}
+      {'\n\nWhen you press EXECUTE:\n  — the task will be '}
+      <em>{reviewMode ? 'simulated' : 'logged'}</em>
+      {'\n  — the clock will '}
+      <em>{reviewMode ? 'remain unchanged' : 'advance'}</em>
+      {'\n  — the count will '}
+      <em>{reviewMode ? 'remain unchanged' : 'decrease by one'}</em>
+      {'\n\nThis is the job. This is all the job is.\nFifty small actions. None of them wrong.\n'}
+      <span className="warn">{'There cannot be wrong actions.\nThere is no option for wrong.'}</span>
+      {'\n\nYou are ready. Execute '}
+      {reviewMode ? 'the training task' : 'your first task'}.
+    </div>
+  );
 }
 
-function taskResult(reviewMode, tasksRemaining) {
-  if (reviewMode) {
-    return `<span class="warn">TRAINING COPY</span> — ORIENTATION TASK: Verify terminal link.
-
-> LINK VERIFIED. Signal: isolated.
-> The console knows this is a review.
-> <em>Your live queue has not moved.</em>
-
-Simulation acknowledged. Record unchanged. Quota: ${tasksRemaining} remaining.`;
-  }
-
-  return `<span class="warn">01:06</span> — ORIENTATION TASK: Verify terminal link.
-
-> LINK VERIFIED. Signal: strong.
-> The console knows you are here.
-> <em>The console has always known you are here.</em>
-
-Task logged. Record updated. Quota: ${tasksRemaining} remaining.`;
+function TaskResult({ reviewMode, tasksRemaining }) {
+  return (
+    <div className="orient-content">
+      <span className="warn">{reviewMode ? 'TRAINING COPY' : '01:06'}</span>
+      {' — ORIENTATION TASK: Verify terminal link.\n\n'}
+      {reviewMode
+        ? '> LINK VERIFIED. Signal: isolated.\n> The console knows this is a review.\n> '
+        : '> LINK VERIFIED. Signal: strong.\n> The console knows you are here.\n> '}
+      <em>
+        {reviewMode
+          ? 'Your live queue has not moved.'
+          : 'The console has always known you are here.'}
+      </em>
+      {'\n\n'}
+      {reviewMode ? 'Simulation acknowledged. Record unchanged.' : 'Task logged. Record updated.'}
+      {' Quota: '}{tasksRemaining}{' remaining.'}
+    </div>
+  );
 }
 
 export default function OrientTerminalTask({
@@ -79,7 +81,7 @@ export default function OrientTerminalTask({
           <div className="orient-stage">
             <div className="orient-header">{reviewMode ? 'YOUR FIRST TASK // REVIEW' : 'YOUR FIRST TASK'}</div>
             <div className="orient-divider">────────────────────────────────────────</div>
-            <div className="orient-content" dangerouslySetInnerHTML={{ __html: taskIntro(reviewMode) }} />
+            <TaskIntro reviewMode={reviewMode} />
             <button className="btn btn-primary" onClick={handleExecute}>
               ▸ EXECUTE {reviewMode ? 'TRAINING TASK' : 'FIRST TASK'}
             </button>
@@ -111,10 +113,7 @@ export default function OrientTerminalTask({
           <div className="orient-stage">
             <div className="orient-header">TASK EXECUTED — AWAITING CONFIRMATION</div>
             <div className="orient-divider">────────────────────────────────────────</div>
-            <div
-              className="orient-content"
-              dangerouslySetInnerHTML={{ __html: taskResult(reviewMode, tasksRemaining) }}
-            />
+            <TaskResult reviewMode={reviewMode} tasksRemaining={tasksRemaining} />
             <div className="task-confirm-row">
               <div className="task-confirm-hint">
                 <span className="dim">

@@ -57,6 +57,14 @@ src/
   validated at load. Adding a card or a zone is not a code change.
 - **There are no caps that the fiction doesn't justify.** Credits are limited
   only by a 32-bit word, and reaching it is a reward (see P2a in the design bible).
+- **There is one operator file.** Local persistence, file import/export, and
+  Supabase all use the versioned schema in `src/lib/gameSave.ts`. New persisted
+  fields extend that schema; they do not create a second storage key or partial
+  cloud payload.
+- **Content is text, not HTML.** JSON, saves, Supabase rows, URL data, and future
+  translations render through React interpolation. Rich local copy is JSX or a
+  structured allowlist. Never pass content strings to `dangerouslySetInnerHTML`,
+  `innerHTML`, or `eval`. See [`DEVELOPMENT.md`](DEVELOPMENT.md#content-safety).
 
 ## Local dev
 

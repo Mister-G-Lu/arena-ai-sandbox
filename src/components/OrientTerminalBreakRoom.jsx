@@ -1,18 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { describeEffects } from '../game/qualities';
 
-const BREAK_ROOM = `The break room is through the door behind your station.
-
-The light is on. The coffee is warm. The pot is full.
-There is no one else in the building.
-There is never anyone else in the building.
-
-You did not turn on the coffee maker.
-The coffee maker was already on.
-It was on when you arrived.
-<span class="warn">It was on before you arrived.</span>
-
-How do you feel about the coffee?`;
+function BreakRoomCopy() {
+  return (
+    <div className="orient-content">
+      {'The break room is through the door behind your station.\n\nThe light is on. The coffee is warm. The pot is full.\nThere is no one else in the building.\nThere is never anyone else in the building.\n\nYou did not turn on the coffee maker.\nThe coffee maker was already on.\nIt was on when you arrived.\n'}
+      <span className="warn">It was on before you arrived.</span>
+      {'\n\nHow do you feel about the coffee?'}
+    </div>
+  );
+}
 
 /**
  * The first real choice in the game. Each option is data: label, the lines the
@@ -94,7 +91,7 @@ export default function OrientTerminalBreakRoom({ onComplete, onChoose, reviewMo
         <div className="orient-stage">
           <div className="orient-header">BREAK ROOM STATUS</div>
           <div className="orient-divider">────────────────────────────────────────</div>
-          <div className="orient-content" dangerouslySetInnerHTML={{ __html: BREAK_ROOM }} />
+          <BreakRoomCopy />
 
           {!choice && (
             <div className="orient-choices">

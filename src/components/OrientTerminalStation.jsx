@@ -1,26 +1,35 @@
 import React from 'react';
 
-function stationCheck(day, tasksRemaining) {
-  return `Your console is active. Four readouts. Read them.
-
-<span class="warn">SHIFT DAY: ${day}</span>
-  <span class="dim">The roster calls this your first shift.
-  The calendar shows Tuesday. It always shows Tuesday.</span>
-
-<span class="warn">SHIFT CLOCK: 01:00</span>
-  <span class="dim">Counts forward to 06:00. You have until then.
-  You have never once seen 06:00.
-  No one has. This is not a concern.</span>
-
-<span class="warn">TASKS REMAINING: ${tasksRemaining}</span>
-  <span class="dim">Fifty results must be logged and acknowledged.
-  Dispatch releases them one at a time.</span>
-
-<span class="warn">STATUS: CLEAR</span>
-  <span class="dim">It will stay clear. It always stays clear.</span>
-
-Everything is as it should be.
-Everything is as it has <em>always</em> been.`;
+function StationCheck({ day, tasksRemaining }) {
+  return (
+    <div className="orient-content">
+      {'Your console is active. Four readouts. Read them.\n\n'}
+      <span className="warn">SHIFT DAY: {day}</span>
+      {'\n  '}
+      <span className="dim">
+        {'The roster calls this your first shift.\n  The calendar shows Tuesday. It always shows Tuesday.'}
+      </span>
+      {'\n\n'}
+      <span className="warn">SHIFT CLOCK: 01:00</span>
+      {'\n  '}
+      <span className="dim">
+        {'Counts forward to 06:00. You have until then.\n  You have never once seen 06:00.\n  No one has. This is not a concern.'}
+      </span>
+      {'\n\n'}
+      <span className="warn">TASKS REMAINING: {tasksRemaining}</span>
+      {'\n  '}
+      <span className="dim">
+        {'Fifty results must be logged and acknowledged.\n  Dispatch releases them one at a time.'}
+      </span>
+      {'\n\n'}
+      <span className="warn">STATUS: CLEAR</span>
+      {'\n  '}
+      <span className="dim">It will stay clear. It always stays clear.</span>
+      {'\n\nEverything is as it should be.\nEverything is as it has '}
+      <em>always</em>
+      {' been.'}
+    </div>
+  );
 }
 
 export default function OrientTerminalStation({ day, tasksRemaining, onComplete }) {
@@ -35,7 +44,7 @@ export default function OrientTerminalStation({ day, tasksRemaining, onComplete 
         <div className="orient-stage">
           <div className="orient-header">STATION VERIFICATION</div>
           <div className="orient-divider">────────────────────────────────────────</div>
-          <div className="orient-content" dangerouslySetInnerHTML={{ __html: stationCheck(day, tasksRemaining) }} />
+          <StationCheck day={day} tasksRemaining={tasksRemaining} />
           <button className="btn btn-primary" onClick={onComplete}>
             ▸ CHECK THE BREAK ROOM
           </button>

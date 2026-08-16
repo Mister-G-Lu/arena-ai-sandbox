@@ -37,6 +37,12 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
       'react/prop-types': 'off',
       'react/jsx-no-comment-textnodes': 'off',
+      'react/no-danger': 'error',
+      'no-restricted-properties': [
+        'error',
+        { property: 'innerHTML', message: 'Render untrusted text through React interpolation.' },
+        { property: 'outerHTML', message: 'Render untrusted text through React interpolation.' },
+      ],
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^(React|_)' }],
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
