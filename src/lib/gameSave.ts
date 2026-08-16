@@ -17,6 +17,8 @@ export const GAME_SAVE_KEY = 'fr:game-save:v2';
 export const GAME_SAVE_BACKUP_KEY = 'fr:game-save:backup:v2';
 export const GAME_SAVE_RECOVERY_KEY = 'fr:game-save:recovery';
 export const LEGACY_GAME_SAVE_KEY = 'fr:player-progress:v1';
+/** Matches `saves_payload_max_bytes` in supabase/0003_canonical_saves.sql. */
+export const MAX_SAVE_BYTES = 1024 * 1024;
 
 const shortText = z.string().max(500);
 const storyText = z.string().max(20_000);
@@ -177,6 +179,20 @@ export class SaveValidationError extends Error {
   }
 }
 
+export function saveByteLength(text: string): number {
+  return new TextEncoder().encode(text).byteLength;
+}
+
+function assertSaveSize(text: string): void {
+  const bytes = saveByteLength(text);
+  if (bytes > MAX_SAVE_BYTES) {
+    throw new SaveValidationError(
+      `Save is ${(bytes / 1024 / 1024).toFixed(2)} MB; the operator-file limit is ` +
+      `${MAX_SAVE_BYTES / 1024 / 1024} MB.`,
+    );
+  }
+}
+
 function errorFromZod(error: ZodError): SaveValidationError {
   const issues = error.issues.map((issue) => {
     const path = issue.path.length ? issue.path.join('.') : 'save';
@@ -227,15 +243,19 @@ export function createStoredSaveEnvelope(
   state: GameState | Record<string, unknown>,
   now = new Date(),
 ): StoredSaveEnvelope {
-  return {
+  const envelope: StoredSaveEnvelope = {
     version: GAME_SAVE_VERSION,
     savedAt: now.toISOString(),
     game: encodeGameState(state),
   };
+  assertSaveSize(JSON.stringify(envelope));
+  return envelope;
 }
 
 export function parseStoredSaveEnvelope(raw: unknown): LoadedSaveEnvelope {
   try {
+    const serialized = JSON.stringify(raw);
+    if (typeof serialized === 'string') assertSaveSize(serialized);
     const stored = StoredSaveEnvelopeSchema.parse(raw);
     return { ...stored, game: decodeGameState(stored.game) };
   } catch (error) {
@@ -275,6 +295,7 @@ export function migrateLegacyGameState(raw: unknown, now = new Date()): StoredSa
 }
 
 export function parseSaveJson(text: string): LoadedSaveEnvelope {
+  assertSaveSize(text);
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -285,7 +306,12 @@ export function parseSaveJson(text: string): LoadedSaveEnvelope {
 }
 
 export function serializeSaveEnvelope(envelope: StoredSaveEnvelope): string {
-  return `${JSON.stringify(envelope, null, 2)}\n`;
+  // Compact JSON keeps the exported file and the JSON payload sent to Records
+  // under the same byte contract. Pretty-print whitespace must not be the
+  // difference between a save that works locally and one the database rejects.
+  const serialized = `${JSON.stringify(envelope)}\n`;
+  assertSaveSize(serialized);
+  return serialized;
 }
 
 export function gameStateFingerprint(state: GameState | Record<string, unknown>): string {

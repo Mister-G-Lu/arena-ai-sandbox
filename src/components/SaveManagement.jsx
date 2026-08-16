@@ -1,9 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
-
-/** Hard ceiling for an imported operator file, checked before any parsing. */
-const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+import { MAX_SAVE_BYTES } from '../lib/gameSave';
 
 function FileSummary({ label, game, savedAt }) {
   return (
@@ -47,10 +45,10 @@ export default function SaveManagement() {
       // A real operator file is a few hundred KB; anything near the browser
       // string limit is a hostile payload. Refuse it before JSON.parse freezes
       // the terminal.
-      if (file.size > MAX_IMPORT_BYTES) {
+      if (file.size > MAX_SAVE_BYTES) {
         throw new Error(
           `Import refused: file is ${(file.size / 1024 / 1024).toFixed(1)} MB; ` +
-          `operator files are capped at ${MAX_IMPORT_BYTES / 1024 / 1024} MB.`,
+          `operator files are capped at ${MAX_SAVE_BYTES / 1024 / 1024} MB.`,
         );
       }
       actions.importGameSave(await file.text());

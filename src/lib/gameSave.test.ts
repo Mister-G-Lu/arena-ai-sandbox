@@ -5,6 +5,7 @@ import { SUPPLY_DEFS } from '../game/shop';
 import {
   CREDIT_INFINITY,
   GAME_SAVE_VERSION,
+  MAX_SAVE_BYTES,
   SaveValidationError,
   createInitialGameState,
   createStoredSaveEnvelope,
@@ -142,6 +143,18 @@ describe('canonical game save', () => {
         },
       }),
     ).toThrow(/logbook.*0.*text/);
+  });
+
+  it('enforces the same one-megabyte contract locally and in Records', () => {
+    expect(() => parseSaveJson(' '.repeat(MAX_SAVE_BYTES + 1))).toThrow(/operator-file limit/);
+
+    const state = createInitialGameState();
+    state.logbook = Array.from({ length: 60 }, (_, index) => ({
+      day: 1,
+      text: `${index}:${'x'.repeat(19_990)}`,
+      timestamp: index,
+    }));
+    expect(() => createStoredSaveEnvelope(state)).toThrow(/operator-file limit/);
   });
 
   it('requires a supported version and a valid timestamp', () => {
