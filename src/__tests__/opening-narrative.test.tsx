@@ -466,6 +466,10 @@ describe('opening narrative', () => {
     expect(after.attention).toBe(0);
     expect(after.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-06' });
     expect(after.logbook.some((entry: { text: string }) => entry.text.includes('TERMINATION 1'))).toBe(true);
+    // P3/§6: dying is priced. The opt-in death docks an hour of budget from
+    // the tank — six actions at the ten-minute regen rate (on top of the one
+    // the choice itself charged).
+    expect(after.actions).toBe(43);
   });
 
   it('walks Doubt into Floor 12 and pays out the first Component', async () => {
