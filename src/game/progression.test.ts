@@ -37,8 +37,10 @@ describe('promotions', () => {
     expect(earned?.unlocks).toContain('notice-storylets');
   });
 
-  it('does not gate the second tier behind a death the player cannot reach yet', () => {
-    const earned = nextPromotion(1, ctx({ qualities: { doubt: 2, perception: 1, routine: 0 } }));
+  it('holds Senior clearance until the Shift 2 Floor 12 lead has arrived', () => {
+    const curious = { doubt: 2, perception: 1, routine: 0 };
+    expect(nextPromotion(1, ctx({ qualities: curious }))).toBeNull();
+    const earned = nextPromotion(1, ctx({ day: 2, qualities: curious }));
     expect(earned?.title).toBe('Senior Operator');
   });
 
@@ -60,19 +62,27 @@ describe('promotions', () => {
 });
 
 describe('zones', () => {
-  it('hides zones whose unlock flag is missing', () => {
+  it('keeps routine notices separate from active investigations', () => {
+    expect(Object.fromEntries(ZONES.map((zone) => [zone.id, zone.board]))).toEqual({
+      'annex-order': 'investigations',
+      routine: 'notices',
+      floor12: 'investigations',
+    });
+  });
+
+  it('reveals the universal Annex order on Shift 2 while promotion controls the rest', () => {
     expect(visibleZones(ctx())).toHaveLength(0);
+    expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).toEqual(['annex-order']);
     const withNotices = visibleZones(ctx({ unlocks: ['notice-storylets'] }));
     expect(withNotices.map((z) => z.id)).toEqual(['routine']);
   });
 
-  it('opens Floor 12 only on Doubt 2 / Perception 1 with restricted-area clearance', () => {
+  it('opens Floor 12 only on Shift 2 with curiosity and restricted-area clearance', () => {
     const floor12 = ZONES.find((z) => z.id === 'floor12')!;
     const clearance = ['notice-storylets', 'restricted-areas'];
-    expect(zoneState(floor12, ctx({ unlocks: clearance }))).toBe('locked');
-    expect(
-      zoneState(floor12, ctx({ unlocks: clearance, qualities: { doubt: 2, perception: 1, routine: 0 } })),
-    ).toBe('open');
+    const curious = { doubt: 2, perception: 1, routine: 0 };
+    expect(zoneState(floor12, ctx({ unlocks: clearance, qualities: curious }))).toBe('locked');
+    expect(zoneState(floor12, ctx({ day: 2, unlocks: clearance, qualities: curious }))).toBe('open');
   });
 
   it('reports a finished zone as complete regardless of requirements', () => {

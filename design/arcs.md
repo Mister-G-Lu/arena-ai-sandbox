@@ -40,7 +40,7 @@ calendar.** (Accounting in §7.)
 **Throughline:** unease under routine. The player believes they're in a cozy office
 sim; the wrongness is seeded, never announced.
 
-### 2.1 — The first shifts (Days 1–4)
+### 2.1 — The first shift (Day 1)
 The routine pool teaches the job: **Roll Call** (nightly check-in with your drivers),
 **Routing** (assign trucks — the core grind), **Tickets** (file work orders),
 **Weather** (five lines, always "clear skies until 0600"), **Break Room** (the coffee
@@ -50,20 +50,40 @@ is already warm; there is no one else in the building). Routine produces **Salar
 
 The wrongness is ambient and skimmable: the route sheet lists Sector 9 (no such
 sector); a work order for Building 7, basement light, third report this week; the
-wall chart's population: 41,312, always 41,312. The memo board: *"Reminder: the
-Municipal Annex has eleven (11) floors. Any employee reporting a twelfth (12th) floor
-should be referred to HR."* These are things the player remembers only in hindsight —
-that's the design.
+wall chart's population: 41,312, always 41,312. The first corrupt result is owed by
+task 10, and a second by shift end: one slip can be noise; two are a pattern.
 
-### 2.2 — Coincidences (Days 5–8)
+### 2.2 — The Floor 12 lead (Day 2) — the return hook
+The second shift opens with a secondary service order that does not count toward
+quota: elevator car 2 stopped above the Municipal Annex's listed service range at
+00:59:57. The field says **FLOOR 12**. The requesting terminal ID is the player's,
+even though their shift had not started.
+
+Every operator can touch this order through a new **Investigations** tab, kept
+separate from the optional **Notices** pool. Promotion controls how much the case
+says. An Unknown Operator may clear the sensor fault. An Operator can trace the
+request to their own timestamp format and signature. A Senior Operator's
+restricted-area clearance exposes the field order that will eventually authorize
+the expedition. Thus promotion acts as a **lens on one mystery**, not merely a menu
+lock. M. interrupts on the direct channel to call the elevator a Facilities concern
+and tell the player to do their actual job; tracing the order gets a less rehearsed
+response. The question carried into the shift is concrete: *what is on Floor 12, and
+why did I request it?* The answer is not given yet.
+
+The memo board now reads: *"Reminder: the Municipal Annex has eleven (11) floors.
+Any employee reporting a twelfth (12th) floor should be referred to HR."* A compliant
+player sees a contradiction and moves on. A curious player has a case.
+
+### 2.3 — Coincidences (Days 3–8)
 The day crew's sticky notes change slightly each day: *"The night operator seems...
 familiar."* The player unlocks **Notice** storylets (Perception gates): re-read the
-route sheet, ask about Building 7, linger at the window. Each push ticks hidden
-Attention; the system's replies stay polite and unhelpful: *"There is no Building 7,
-Operator."* A work order arrives *filed from the night desk, in your handwriting,*
-which you did not write. Every gentle prompt points one way: **follow it.**
+route sheet, ask about Building 7, linger at the window, reopen the restricted layers
+of the Annex order. Each push ticks hidden Attention; the system's replies stay polite
+and unhelpful: *"There is no Building 7, Operator."* A work order arrives *filed from
+the night desk, in your handwriting,* which you did not write. Every gentle prompt
+points one way: **follow it.**
 
-### 2.3 — Floor 12 and the first death (Day 9) — the hook
+### 2.4 — Floor 12 and the first death (Day 9) — the Arc I payoff
 **The first zone: Floor 12 of the Municipal Annex** — the floor that doesn't exist.
 The work order is the key. This is the game's first mini-expedition: ~20 actions, the
 annex at night, wrong doors, the fire in the records room, and at the end —
@@ -331,9 +351,11 @@ story progress.**
   to worry about; Attention cools via routine. A binger can finish in **~2–2.5
   weeks of 3-hour days**.
 - **Arc churn risks & mitigations:**
-  - *Arc I ("it's just a boring job sim")*: the wrongness is seeded from action one;
-    the Floor 12 expedition and first death land by Day 9 (~4 hours) — before the
-    novelty runs out.
+  - *Arc I ("it's just a boring job sim")*: the wrongness is seeded from action one,
+    a personal Floor 12 order names the short-term mystery at the start of Day 2,
+    and promotion deepens that same document. The expedition/first death can still
+    pay off on Day 9 because the player is pursuing an active case rather than
+    waiting four hours for the premise.
   - *Arc II (the long middle)*: six zones with distinct textures (a basement of
     ledgers, a vent labyrinth, a roof under stars that don't match, a drive through
     dissolving streets) — variety is the antidote to sag; plus the threads give

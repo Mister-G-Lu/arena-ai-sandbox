@@ -154,6 +154,20 @@
   margin: 0 24px 20px;
 }
 
+.cross-board-order {
+  margin-bottom: 24px;
+  border-color: rgba(255, 198, 107, 0.35);
+}
+
+.cross-board-order .fine {
+  margin: 0;
+  padding: 16px 24px 8px;
+}
+
+.cross-board-order > .btn {
+  margin: 8px 24px 20px;
+}
+
 @media (max-width: 640px) {
   .zone-board { grid-template-columns: 1fr; }
 }

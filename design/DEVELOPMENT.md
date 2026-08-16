@@ -93,7 +93,12 @@ React state directly.
 - Story content: `src/content/**/*.json`
 - Story schema/graph: `src/game/storylets.ts` and `src/content/load.ts`
 - Qualities/effect names: `src/game/qualities.ts`
-- Promotions, zones, and component inventory: `src/game/progression.ts`
+- Promotions, zones, component inventory, and board assignment: `src/game/progression.ts`
+
+Every zone declares `board: 'notices' | 'investigations'`. `Notices.jsx` is the shared
+runner for both routes: Notices holds optional ambient observations; Investigations
+holds active cases and expeditions. Keep that distinction in data rather than making
+a second storylet engine.
 
 Prefer data-table additions over component branches. A new component belongs in
 `COMPONENT_DEFS`; save defaults and counters derive from that table.

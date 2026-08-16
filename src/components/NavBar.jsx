@@ -13,6 +13,15 @@ export default function NavBar({ currentPage, onNavigate }) {
     state.promotion.unlocks.includes('notice-storylets')
       ? { page: 'notices', icon: '✦', label: 'NOTICES' }
       : null,
+    state.day >= 2
+      ? {
+          page: 'investigations',
+          icon: '⌕',
+          label: state.zones['annex-order'] !== 'complete'
+            ? 'INVESTIGATIONS · NEW'
+            : 'INVESTIGATIONS'
+        }
+      : null,
     { page: 'profile', icon: '◉', label: 'PROFILE' },
   ].filter(Boolean);
 

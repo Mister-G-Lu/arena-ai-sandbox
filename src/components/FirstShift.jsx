@@ -5,6 +5,7 @@ import OrientTerminalStation from './OrientTerminalStation';
 import OrientTerminalBreakRoom from './OrientTerminalBreakRoom';
 import OrientTerminalTask from './OrientTerminalTask';
 import OrientTerminalComplete from './OrientTerminalComplete';
+import OrientTerminalWaiver from './OrientTerminalWaiver';
 import { useGameState } from '../context/GameStateContext';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
 
@@ -31,6 +32,10 @@ export default function FirstShift() {
   }
 
   function skipOrientation() {
+    transitionTo('waiver');
+  }
+
+  function acceptWaiver() {
     actions.completeOrientation(true);
     window.location.hash = '#console';
   }
@@ -105,6 +110,13 @@ export default function FirstShift() {
                 )}
               </div>
             </div>
+          )}
+
+          {stage === 'waiver' && (
+            <OrientTerminalWaiver
+              onAccept={acceptWaiver}
+              onReturn={() => transitionTo('boot')}
+            />
           )}
 
           {stage === 'boot' && (

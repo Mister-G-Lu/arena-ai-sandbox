@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const VALID_PAGES = ['home', 'first-shift', 'console', 'notices', 'profile'];
+const VALID_PAGES = ['home', 'first-shift', 'console', 'notices', 'investigations', 'profile'];
 
 function getPageFromHash() {
   const hash = window.location.hash.slice(1);
