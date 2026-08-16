@@ -143,7 +143,7 @@ The Fallen London-chess analog, diegetic to this game's fiction:
   storylets with branching, quality gates, and risk. Each yields one **Component**.
 - Zones are discovered through investigation (following a work order, decoding a
   callsign, trusting a driver), not unlocked by currency.
-- The six: **Floor 12** (the floor that doesn't exist) · **the Records Basement**
+- The six: **Floor 12** (the floor that doesn't exist; Arc I climax) · **the Records Basement**
   (ledgers that *are* the city) · **the Vent Network** (Operator 5's route) ·
   **the Rooftop Array** (the signal) · **the Off-Map Sectors** (ride with
   VANTABLACK) · **the Interim** (death's waiting room).
@@ -198,15 +198,18 @@ host becomes aware), Severance/SOMA (the self as a function), Control/SCP
      rare, always the player's own compounding.
 - Plus the joke ending: **RESIGNATION** (denied — the shift must be covered).
 
-## P9 — Numbers that stay in bounds
+## P9 — Numbers that stay in bounds (Multi-Month Long-Term Scope)
 
-| Budget | Target |
+| Budget / Metric | Canonical Target |
 |---|---|
-| Play length | ~45–55 in-game days, ~1,600–1,800 actions |
-| Active playtime | ~17–22 hours |
-| Calendar time (habit model, ~35–40 min/day) | ~5–8 weeks |
-| Total deaths | 2–4 |
-| Unique content | ~900–1,000 pieces, ~95–120k words |
+| Play length | ~85–110 in-game shifts, ~4,400–5,300 actions |
+| Arc I — Month 1 | **30+ shifts for tryhards** (~35–45 shifts standard, ~1,500–2,100 actions) |
+| Arc II — Month 2 | ~45–50 shifts (~2,250–2,500 actions) |
+| Arc III — Month 3 | ~10–15 shifts (~650–750 actions) |
+| Active playtime | ~29–37 hours |
+| Calendar time (habit model, ~35–40 min/day) | ~12–16 weeks (3–4 months) |
+| Total deaths | 2–4 (rare, opt-in, telegraphed) |
+| Unique content | ~1,100 pieces, ~128k words |
 | Session | one shift ≈ 35–40 minutes ≈ 50 actions |
 | Action tank | cap 50, +1 per 10 minutes (`src/game/actions.ts`) |
 
@@ -228,3 +231,6 @@ Binge play is allowed, never hard-blocked. Skipped days are forgiven by the fict
 - *v1.1 — P2 amended: Salary is uncapped. P2a added: the Overflow glitch, the
   32-bit ledger word, and the corrupted-field payroll on-ramp. Prompted by the
   integration review in `design/adversarial-review-01.md`.*
+- *v1.2 — P9 & Progression overhauled to the multi-month scope: Days 1–2 guided entry,
+  Days 3+ redesigned as a versatile, emergent story arc, Arc I expanded to take
+  at least 30 shifts for tryhards, and total campaign paced across ~3–4 months (~85–110 shifts).*
