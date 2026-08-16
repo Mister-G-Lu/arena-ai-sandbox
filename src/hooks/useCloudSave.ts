@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createStoredSaveEnvelope, gameStateFingerprint, type GameState } from '../lib/gameSave';
 import { getSupabase } from '../lib/supabase';
-import { pullSave, pushSave, type CloudSave } from '../lib/sync';
+import {
+  CloudSaveConflictError,
+  pullSave,
+  pushSave,
+  type CloudSave,
+} from '../lib/sync';
 import { useAuth } from './useAuth';
 
 export type CloudSaveStatus =
@@ -48,6 +53,7 @@ export function useCloudSave({
   const authRef = useRef(auth);
   const initialFingerprint = useRef(gameStateFingerprint(state));
   const remoteFingerprint = useRef<string | null>(null);
+  const remoteRevision = useRef<string | null>(null);
   const readyToAutosave = useRef(false);
   const requestSequence = useRef(0);
   const saveQueue = useRef(Promise.resolve());
@@ -62,6 +68,7 @@ export function useCloudSave({
     const sequence = ++requestSequence.current;
     readyToAutosave.current = false;
     remoteFingerprint.current = null;
+    remoteRevision.current = null;
     setConflict(null);
 
     if (auth.disabled) {
@@ -90,15 +97,19 @@ export function useCloudSave({
 
         if (!remote) {
           const envelope = createStoredSaveEnvelope(stateRef.current);
-          await pushSave(getSupabase(), auth.session, envelope);
+          const pushed = await pushSave(getSupabase(), auth.session, envelope, {
+            expectedUpdatedAt: null,
+          });
           if (requestSequence.current !== sequence) return;
           remoteFingerprint.current = gameStateFingerprint(stateRef.current);
+          remoteRevision.current = pushed.updatedAt;
           readyToAutosave.current = true;
           setStatus('synced');
           setMessage('Operator file established in Records.');
           return;
         }
 
+        remoteRevision.current = remote.updatedAt;
         const remotePrint = gameStateFingerprint(remote.game);
         if (!hadLocalSaveAtBoot && !localChangedSinceBoot) {
           remoteFingerprint.current = remotePrint;
@@ -145,21 +156,42 @@ export function useCloudSave({
           // The promise queue can outlive an auth transition. Never take an
           // envelope captured for operator A and execute it with operator B's
           // newly-current session.
-          if (authRef.current.session?.user.id !== queuedUserId) return false;
-          await pushSave(getSupabase(), queuedSession, envelope);
-          return true;
+          if (authRef.current.session?.user.id !== queuedUserId) return null;
+          // Read the revision only when this queue entry executes. A preceding
+          // save may have advanced it while this change waited its turn.
+          return pushSave(getSupabase(), queuedSession, envelope, {
+            expectedUpdatedAt: remoteRevision.current,
+          });
         })
         .then((pushed) => {
           if (!pushed || authRef.current.session?.user.id !== queuedUserId) return;
+          remoteRevision.current = pushed.updatedAt;
           // Superseded by a newer change; the newer attempt owns the queue.
           if (gameStateFingerprint(stateRef.current) !== fingerprint) return;
           remoteFingerprint.current = fingerprint;
           setStatus('synced');
           setMessage('Operator file synchronized.');
         })
-        .catch((error) => {
+        .catch(async (error) => {
           if (gameStateFingerprint(stateRef.current) !== fingerprint) return;
           if (authRef.current.session?.user.id !== queuedUserId) return;
+          if (error instanceof CloudSaveConflictError) {
+            readyToAutosave.current = false;
+            try {
+              const latest = await pullSave(getSupabase(), queuedSession);
+              if (authRef.current.session?.user.id !== queuedUserId) return;
+              if (latest) {
+                remoteRevision.current = latest.updatedAt;
+                remoteFingerprint.current = gameStateFingerprint(latest.game);
+                setConflict(latest);
+                setStatus('conflict');
+                setMessage('Records changed on another device. Choose which copy to keep.');
+                return;
+              }
+            } catch (pullError) {
+              error = pullError;
+            }
+          }
           setStatus('error');
           setMessage(error instanceof Error ? error.message : 'Records could not save the file.');
           // A dropped record is a lost night. Keep trying until the state
@@ -202,8 +234,9 @@ export function useCloudSave({
       setStatus('saving');
       setMessage('Replacing the Records copy with this terminal…');
       const envelope = createStoredSaveEnvelope(stateRef.current);
-      await pushSave(getSupabase(), auth.session, envelope);
+      const pushed = await pushSave(getSupabase(), auth.session, envelope, { force: true });
       remoteFingerprint.current = gameStateFingerprint(stateRef.current);
+      remoteRevision.current = pushed.updatedAt;
       readyToAutosave.current = true;
       setConflict(null);
       setStatus('synced');
