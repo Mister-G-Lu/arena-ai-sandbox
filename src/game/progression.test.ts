@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   PROMOTIONS,
   ZONES,
+  clearanceLabel,
   meetsRequirements,
   missingRequirements,
   nextPromotion,
   requirementLabel,
+  unlockLabel,
   unlocksThrough,
   visibleZones,
   zoneState,
@@ -19,8 +21,10 @@ function ctx(overrides: Partial<RequirementCtx> = {}): RequirementCtx {
     componentsCount: 0,
     deaths: 0,
     day: 1,
+    tier: 0,
     unlocks: [...PROMOTIONS[0].unlocks],
     zones: {},
+    supplies: {},
     ...overrides,
   };
 }
@@ -58,6 +62,28 @@ describe('promotions', () => {
   it('reads context metrics as well as qualities', () => {
     expect(meetsRequirements({ components: 6 }, ctx({ componentsCount: 6 }))).toBe(true);
     expect(meetsRequirements({ deaths: 1 }, ctx())).toBe(false);
+  });
+
+  it('reads the promotion tier as a clearance metric', () => {
+    expect(meetsRequirements({ tier: 1 }, ctx())).toBe(false);
+    expect(meetsRequirements({ tier: 1 }, ctx({ tier: 1 }))).toBe(true);
+    expect(requirementLabel({ tier: 2 })).toBe('Promotion ≥ 2');
+  });
+
+  it('reads supply ownership as a requirement metric and labels it by product', () => {
+    expect(meetsRequirements({ coffee: 1 }, ctx())).toBe(false);
+    expect(meetsRequirements({ coffee: 1 }, ctx({ supplies: { coffee: true } }))).toBe(true);
+    expect(requirementLabel({ coffee: 1 })).toBe('GROUND COFFEE ≥ 1');
+    expect(missingRequirements({ coffee: 1, day: 2 }, ctx({ supplies: { coffee: true } })))
+      .toEqual(['Day 1/2']);
+  });
+
+  it('labels clearance flags by the promotion that grants them', () => {
+    expect(clearanceLabel('restricted-areas')).toBe('SENIOR OPERATOR CLEARANCE');
+    expect(clearanceLabel('notice-storylets')).toBe('OPERATOR CLEARANCE');
+    expect(clearanceLabel('never-granted')).toBe('NEVER GRANTED');
+    expect(unlockLabel('operator5-log')).toBe('Operator 5\u2019s log');
+    expect(unlockLabel('made-up-flag')).toBe('MADE UP FLAG');
   });
 });
 

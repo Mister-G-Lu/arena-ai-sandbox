@@ -2,8 +2,11 @@
  * Promotions and zones as data. Requirements are declarative maps
  * ({ doubt: 2, components: 3 }) evaluated by one generic checker, so a tier
  * or zone is a data edit. Rank buys clearance, not credit headroom — see
- * src/game/ledger.ts.
+ * src/game/ledger.ts. Supplies (src/game/shop.ts) are requirement metrics
+ * too: a zone can demand `{ coffee: 1 }` and the same checker reads it off
+ * the operator file.
  */
+import { supplyById } from './shop';
 
 export interface ComponentDef {
   id: string;
@@ -27,8 +30,12 @@ export interface RequirementCtx {
   componentsCount: number;
   deaths: number;
   day: number;
+  /** Current promotion tier — clearance is a metric like any other. */
+  tier: number;
   unlocks: string[];
   zones: Record<string, string>;
+  /** Owned supplies, keyed by supply id (see src/game/shop.ts). */
+  supplies: Record<string, boolean>;
 }
 
 /** Anything that is not a quality name is read off the context by these keys. */
@@ -37,6 +44,7 @@ const CONTEXT_METRICS: Record<string, (ctx: RequirementCtx) => number> = {
   deaths: (ctx) => ctx.deaths,
   day: (ctx) => ctx.day,
   attention: (ctx) => ctx.attention,
+  tier: (ctx) => ctx.tier,
 };
 
 const METRIC_LABELS: Record<string, string> = {
@@ -44,15 +52,24 @@ const METRIC_LABELS: Record<string, string> = {
   deaths: 'Deaths',
   day: 'Day',
   attention: 'Attention',
+  tier: 'Promotion',
   doubt: 'Doubt',
   perception: 'Perception',
   routine: 'Routine',
 };
 
+/** Human label for a requirement key — supply ids render as their product name. */
+function labelFor(name: string): string {
+  const key = name.toLowerCase();
+  return METRIC_LABELS[key] ?? supplyById(key)?.name ?? name;
+}
+
 export function metricValue(name: string, ctx: RequirementCtx): number {
   const key = name.toLowerCase();
   const fromContext = CONTEXT_METRICS[key];
   if (fromContext) return fromContext(ctx);
+  const supplies = ctx.supplies ?? {};
+  if (Object.prototype.hasOwnProperty.call(supplies, key)) return supplies[key] ? 1 : 0;
   return ctx.qualities?.[key] ?? 0;
 }
 
@@ -67,7 +84,7 @@ export function meetsRequirements(
 export function requirementLabel(requires: Record<string, number> | undefined): string {
   if (!requires || Object.keys(requires).length === 0) return 'No requirements';
   return Object.entries(requires)
-    .map(([name, threshold]) => `${METRIC_LABELS[name.toLowerCase()] ?? name} ≥ ${threshold}`)
+    .map(([name, threshold]) => `${labelFor(name)} ≥ ${threshold}`)
     .join(' · ');
 }
 
@@ -80,8 +97,39 @@ export function missingRequirements(
   return Object.entries(requires)
     .filter(([name, threshold]) => metricValue(name, ctx) < threshold)
     .map(([name, threshold]) =>
-      `${METRIC_LABELS[name.toLowerCase()] ?? name} ${metricValue(name, ctx)}/${threshold}`,
+      `${labelFor(name)} ${metricValue(name, ctx)}/${threshold}`,
     );
+}
+
+/**
+ * Promotion unlock flags, rendered as human copy (the "what this promotion
+ * adds" list on the clearance forecast).
+ */
+export const UNLOCK_LABELS: Record<string, string> = {
+  'basic-tasks': 'Basic tasks',
+  'break-room': 'Break room',
+  memos: 'Memos',
+  'notice-storylets': 'Notice storylets',
+  'restricted-areas': 'Restricted areas — Floor 12 access',
+  'deeper-investigation': 'Deeper investigation',
+  'self-dispatch': 'Self-dispatch',
+  'operator5-log': 'Operator 5\u2019s log',
+  'classified-memos': 'Classified memos',
+  'all-secret-zones': 'All secret zones',
+  'the-summons': 'The Summons',
+  'final-choice': 'Final choice',
+  endings: 'Endings',
+};
+
+/** Human label for a single unlock flag, with a data-driven fallback. */
+export function unlockLabel(flag: string): string {
+  return UNLOCK_LABELS[flag] ?? flag.replace(/-/g, ' ').toUpperCase();
+}
+
+/** "SENIOR OPERATOR CLEARANCE" for the promotion that grants `flag`. */
+export function clearanceLabel(flag: string): string {
+  const promo = PROMOTIONS.find((p) => p.unlocks.includes(flag));
+  return promo ? `${promo.title.toUpperCase()} CLEARANCE` : unlockLabel(flag);
 }
 
 /* ------------------------------------------------------------------ */
@@ -175,6 +223,14 @@ export interface ZoneDef {
   visibleRequires?: Record<string, number>;
   /** Promotion unlock flag required to even see the zone listed. */
   requiresUnlock?: string;
+  /**
+   * When set, the zone is *listed* before its clearance is held — locked,
+   * with the requirement shown — so the hierarchy itself is a hint of what
+   * is coming. Opening still waits for `requiresUnlock` / `requires`.
+   */
+  hintUnlock?: string;
+  /** Fiction shown on the locked card, under the requirement line. */
+  lockedNote?: string;
   /** Component awarded the first time the zone completes. */
   component?: string;
   componentLabel?: string;
@@ -232,11 +288,13 @@ export function zoneById(id: string): ZoneDef | undefined {
   return ZONES.find((z) => z.id === id);
 }
 
-/** Zones the operator is allowed to know about at all. */
+/** Zones the operator is allowed to know about at all. A zone whose clearance
+ *  is still locked is listed anyway when it declares `hintUnlock` — the lock
+ *  itself is the hint. */
 export function visibleZones(ctx: RequirementCtx): ZoneDef[] {
   return ZONES.filter((z) =>
     meetsRequirements(z.visibleRequires, ctx) &&
-    (!z.requiresUnlock || ctx.unlocks.includes(z.requiresUnlock)),
+    (!z.requiresUnlock || ctx.unlocks.includes(z.requiresUnlock) || z.hintUnlock),
   );
 }
 

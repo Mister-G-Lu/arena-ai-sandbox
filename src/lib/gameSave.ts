@@ -8,6 +8,7 @@ import {
   unlocksThrough,
 } from '../game/progression';
 import { QUALITY_DEFS } from '../game/qualities';
+import { SUPPLY_DEFS } from '../game/shop';
 
 export const GAME_SAVE_VERSION = 2 as const;
 export const CREDIT_INFINITY = '__INFINITY__' as const;
@@ -25,6 +26,9 @@ const timestamp = z.number().finite().min(0);
 const componentShape = Object.fromEntries(
   COMPONENT_DEFS.map(({ id }) => [id, z.boolean().default(false)]),
 );
+const supplyShape = Object.fromEntries(
+  SUPPLY_DEFS.map(({ id }) => [id, z.boolean().default(false)]),
+);
 const qualityShape = Object.fromEntries(
   Object.values(QUALITY_DEFS)
     .filter(({ kind }) => kind === 'quality')
@@ -36,6 +40,9 @@ const zoneShape = Object.fromEntries(
 
 const ComponentsSchema = z.strictObject(componentShape).default(
   Object.fromEntries(COMPONENT_DEFS.map(({ id }) => [id, false])),
+);
+const SuppliesSchema = z.strictObject(supplyShape).default(
+  Object.fromEntries(SUPPLY_DEFS.map(({ id }) => [id, false])),
 );
 const QualitiesSchema = z.strictObject(qualityShape).default(
   Object.fromEntries(
@@ -82,6 +89,7 @@ export const StoredGameStateSchema = z.strictObject({
   credits: z.union([z.number().finite().min(0), z.literal(CREDIT_INFINITY)]).default(0),
   ledgerUnbound: z.boolean().default(false),
   components: ComponentsSchema,
+  supplies: SuppliesSchema,
   qualities: QualitiesSchema,
   attention: z.number().finite().min(0).max(QUALITY_DEFS.attention.max).default(0),
   day: dayNumber.default(1),
