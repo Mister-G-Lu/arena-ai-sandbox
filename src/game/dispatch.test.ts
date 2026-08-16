@@ -195,10 +195,10 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
       completedZones: ['handwritten-order'],
     });
     expect(pending.isPersonal).toBe(true);
-    // Roll 0 used to draw the handwriting line; the closed case shifts it to
-    // the next line in the remaining deck.
-    expect(pending.displayedResult).toBe(personalPoolFor(['handwritten-order'])[0]);
+    // The retired line is gone from the deck the night rotates through.
     expect(pending.displayedResult).not.toContain('a work order in your handwriting');
+    const deck = personalPoolFor(['handwritten-order']);
+    expect(pending.displayedResult).toBe(deck[3 % deck.length]);
   });
 
   it('makes the first anomaly of every shift from Day 2 on personal', () => {
@@ -210,8 +210,8 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
     expect(shouldUsePersonalAnomaly(2, 3)).toBe(false);
   });
 
-  it('draws the personal line from the personal pool, deterministically by roll', () => {
-    const first = createPendingDispatch({
+  it('rotates the personal line by night so two shifts never repeat the reveal', () => {
+    const day2 = createPendingDispatch({
       day: 2,
       tasksCompleted: 10,
       tasksThisShift: 1,
@@ -220,8 +220,8 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
       anomalyRoll: 0,
       corruptionRoll: 0,
     });
-    const last = createPendingDispatch({
-      day: 2,
+    const day3 = createPendingDispatch({
+      day: 3,
       tasksCompleted: 10,
       tasksThisShift: 1,
       actionsSpentThisShift: 1,
@@ -229,11 +229,11 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
       anomalyRoll: 0,
       corruptionRoll: 0.999999,
     });
-    expect(personalPoolFor()).toContain(first.displayedResult);
-    expect(personalPoolFor()).toContain(last.displayedResult);
-    expect(first.displayedResult).not.toBe(last.displayedResult);
-    expect(first.displayedResult).toBe(personalPoolFor()[0]);
-    expect(last.displayedResult).toBe(personalPoolFor()[personalPoolFor().length - 1]);
+    // The night picks the line, not the roll: consecutive shifts advance
+    // through the deck instead of gambling on a repeat.
+    expect(day2.displayedResult).toBe(personalPoolFor()[2 % personalPoolFor().length]);
+    expect(day3.displayedResult).toBe(personalPoolFor()[3 % personalPoolFor().length]);
+    expect(day2.displayedResult).not.toBe(day3.displayedResult);
   });
 
   it('flags clean results as never personal', () => {

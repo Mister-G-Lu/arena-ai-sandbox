@@ -237,7 +237,12 @@ export function createPendingDispatch(input: CreateDispatchInput): PendingDispat
     shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
   const displayedResult = isCorrupt
     ? isPersonal
-      ? personalPool[indexFromRoll(input.corruptionRoll, personalPool.length)]
+      ? // One personal line per shift, rotated by night so the queue never
+        // draws the same wrongness twice in a row. Random pulls did (a run
+        // repeated 'a memo from M.' on consecutive nights, reading as a
+        // stuck record); a stateless rotation guarantees the deck advances
+        // and costs no save surface.
+        personalPool[input.day % personalPool.length]
       : CORRUPT_RESULTS[indexFromRoll(input.corruptionRoll, CORRUPT_RESULTS.length)]
     : order.result;
 
