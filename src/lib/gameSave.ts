@@ -1,4 +1,5 @@
 import { z, ZodError } from 'zod';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
   COMPONENT_DEFS,
@@ -84,7 +85,8 @@ export const StoredGameStateSchema = z.strictObject({
   qualities: QualitiesSchema,
   attention: z.number().finite().min(0).max(QUALITY_DEFS.attention.max).default(0),
   day: dayNumber.default(1),
-  tasksCompleted: z.number().int().min(0).max(50).default(0),
+  tasksCompleted: z.number().int().min(0).max(TASKS_PER_SHIFT).default(0),
+  anomaliesSeenThisShift: safeInt.max(TASKS_PER_SHIFT).default(0),
   discrepanciesLogged: safeInt.default(0),
   deaths: safeInt.default(0),
   orientation: OrientationSchema,

@@ -1,11 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 
 function FileSummary({ label, game, savedAt }) {
   return (
     <div className="save-summary">
       <strong>{label}</strong>
-      <span>Day {game.day} · {game.tasksCompleted}/50 tasks · Tier {game.promotion.tier}</span>
+      <span>
+        Day {game.day} · {game.tasksCompleted}/{TASKS_PER_SHIFT} tasks · Tier {game.promotion.tier}
+      </span>
       {savedAt && <span>Saved {new Date(savedAt).toLocaleString()}</span>}
     </div>
   );

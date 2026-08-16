@@ -93,6 +93,7 @@ describe('opening narrative', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -182,6 +183,32 @@ describe('opening narrative', () => {
 
     random.mockRestore();
   });
+
+  it('guarantees an anomaly by the final task when random rolls never produce one', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    render(<App />);
+    await runOrientation("IT'S FINE");
+
+    // Orientation records task 1. File clean results through task 49.
+    for (let i = 0; i < 48; i++) {
+      await click('EXECUTE TASK');
+      await tick(1200);
+      expect(button('LOG THE DISCREPANCY')).toBeUndefined();
+      await click('ACKNOWLEDGE RESULT');
+      await tick(100);
+    }
+
+    expect(save().tasksCompleted).toBe(49);
+    expect(save().anomaliesSeenThisShift).toBe(0);
+    await click('EXECUTE TASK');
+    await tick(1200);
+    expect(button('LOG THE DISCREPANCY')).toBeDefined();
+    await click('FILE AS CLEAN');
+    await tick(100);
+    expect(save().anomaliesSeenThisShift).toBe(1);
+
+    random.mockRestore();
+  }, 60000);
 
   it('runs a full shift without ever hitting a ceiling', async () => {
     render(<App />);

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 
 function taskIntro(reviewMode) {
   return `${reviewMode ? 'This is a training copy of your first task.' : 'Your first task is waiting in the queue.'}
@@ -38,7 +39,7 @@ Task logged. Record updated. Quota: ${tasksRemaining} remaining.`;
 
 export default function OrientTerminalTask({
   reviewMode = false,
-  tasksRemaining = 50,
+  tasksRemaining = TASKS_PER_SHIFT,
   onTaskLogged,
   onComplete
 }) {

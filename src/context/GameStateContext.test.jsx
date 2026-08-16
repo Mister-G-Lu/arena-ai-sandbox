@@ -143,6 +143,16 @@ describe('effects pipeline', () => {
     expect(api.state.logbook.some((e) => e.text.includes('OPERATOR'))).toBe(true);
   });
 
+  it('tracks anomalies per shift and resets the guarantee counter tomorrow', async () => {
+    mount();
+    await act(async () => {
+      api.actions.fileTaskResult({ anomaly: true, payout: 10 });
+    });
+    expect(api.state.anomaliesSeenThisShift).toBe(1);
+    await act(async () => { api.actions.incrementDay(); });
+    expect(api.state.anomaliesSeenThisShift).toBe(0);
+  });
+
   it('exports and imports the same canonical envelope used by cloud sync', async () => {
     mount();
     await act(async () => { api.actions.addCredits(321); });

@@ -83,6 +83,12 @@ describe('canonical game save', () => {
     expect(() =>
       parseStoredSaveEnvelope({
         ...envelope,
+        game: { ...envelope.game, anomaliesSeenThisShift: 51 },
+      }),
+    ).toThrow(/anomaliesSeenThisShift/);
+    expect(() =>
+      parseStoredSaveEnvelope({
+        ...envelope,
         game: { ...envelope.game, promotion: { tier: 1, title: 'Forged' } },
       }),
     ).toThrow(/promotion.*title/);

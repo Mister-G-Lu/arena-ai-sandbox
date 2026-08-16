@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { deposit, withdraw, formatCredits, wordPressure, CREDIT_LIMIT } from '../game/ledger';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { QUALITY_DEFS, normalizeEffects, clampQuality, qualityDef } from '../game/qualities';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
@@ -337,14 +338,15 @@ export function GameStateProvider({ children }) {
     setState(prev => ({
       ...prev,
       day: prev.day + 1,
-      tasksCompleted: 0
+      tasksCompleted: 0,
+      anomaliesSeenThisShift: 0
     }));
   }, []);
 
   const completeTask = useCallback(() => {
     setState(prev => ({
       ...prev,
-      tasksCompleted: Math.min(prev.tasksCompleted + 1, 50)
+      tasksCompleted: Math.min(prev.tasksCompleted + 1, TASKS_PER_SHIFT)
     }));
   }, []);
 
@@ -352,7 +354,13 @@ export function GameStateProvider({ children }) {
    * File a task result. `effects` and `payout` are computed by the caller from
    * data (see src/game/payouts.ts) so the console holds no balance numbers.
    */
-  const fileTaskResult = useCallback(({ effects, payout = 0, logbookEntry, discrepancy = false }) => {
+  const fileTaskResult = useCallback(({
+    effects,
+    payout = 0,
+    logbookEntry,
+    discrepancy = false,
+    anomaly = false
+  }) => {
     setState(prev => {
       let next = applyEffectsToState(prev, effects);
       if (payout) {
@@ -360,7 +368,8 @@ export function GameStateProvider({ children }) {
       }
       next = {
         ...next,
-        tasksCompleted: Math.min(next.tasksCompleted + 1, 50),
+        tasksCompleted: Math.min(next.tasksCompleted + 1, TASKS_PER_SHIFT),
+        anomaliesSeenThisShift: next.anomaliesSeenThisShift + (anomaly ? 1 : 0),
         discrepanciesLogged: next.discrepanciesLogged + (discrepancy ? 1 : 0)
       };
       return withLog(next, logbookEntry);

@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { taskPayout } from '../game/payouts';
 import { describeEffects } from '../game/qualities';
+import { TASKS_PER_SHIFT, shouldTriggerAnomaly } from '../game/dispatch';
 
-const MAX_TASKS = 50;
+const MAX_TASKS = TASKS_PER_SHIFT;
 
 /**
  * Consequence table for filing a result. Data, not branches: every filing verb
@@ -184,7 +185,11 @@ export default function Console() {
     if (phase !== 'ready' || shiftComplete) return;
 
     const taskNumber = state.tasksCompleted + 1;
-    const isCorrupt = Math.random() < 0.06;
+    const isCorrupt = shouldTriggerAnomaly({
+      taskNumber,
+      anomaliesSeenThisShift: state.anomaliesSeenThisShift,
+      roll: Math.random()
+    });
     const logId = `day-${state.day}-task-${taskNumber}`;
     const task = {
       ...nextAssignment,
@@ -236,6 +241,7 @@ export default function Console() {
       effects: filing.effects,
       payout: payout.amount,
       discrepancy: verb === 'discrepancy',
+      anomaly: pendingTask.isCorrupt,
       logbookEntry: typeof filing.logbook === 'function' ? filing.logbook(pendingTask) : filing.logbook
     });
 
