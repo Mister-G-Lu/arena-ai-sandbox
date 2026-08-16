@@ -47,6 +47,16 @@ async function tick(ms: number) {
   }
 }
 
+/**
+ * Let the clock mint actions. One shift drains one full tank by design, so an
+ * operator who wants to go somewhere after the quota waits for the building to
+ * hand the budget back — ten minutes per action.
+ */
+async function waitForActions(count: number) {
+  await act(async () => { vi.advanceTimersByTime(count * 10 * 60 * 1000); });
+  await act(async () => { vi.advanceTimersByTime(1000); });
+}
+
 async function go(hash: string) {
   window.location.hash = hash;
   await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
@@ -407,7 +417,9 @@ describe('opening narrative', () => {
     await click('BEGIN NEXT SHIFT');
     await tick(200);
     expect(save().day).toBe(2);
-    expect(save().tasksCompleted).toBe(0);
+    // The career total is cumulative now; only the per-shift counter rolls.
+    expect(save().tasksThisShift).toBe(0);
+    expect(save().tasksCompleted).toBe(50);
 
     // Day 2 still pays.
     const beforeDay2 = save().credits;
@@ -469,6 +481,37 @@ describe('opening narrative', () => {
     expect(document.body.textContent).toContain('Floor 12');
     expect(Array.from(document.querySelectorAll('.zone-card h3')).map((h) => h.textContent))
       .not.toContain('The Routine Pool');
+
+    // The quota spends the tank: one shift is one full budget, so an operator
+    // who worked the whole night has nothing left for an expedition. Drain the
+    // remainder so the refusal path is the one under test.
+    while (save().actions > 0) {
+      await go('console');
+      if (!button('EXECUTE TASK')) break;
+      await click('EXECUTE TASK');
+      await tick(1200);
+      if (button('LOG THE DISCREPANCY')) await click('FILE AS CLEAN');
+      else await click('ACKNOWLEDGE RESULT');
+      await tick(150);
+    }
+    await go('investigations');
+    await tick(100);
+    expect(save().actions).toBe(0);
+    const heldLead = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('Annex elevator discrepancy')) as HTMLElement;
+    await act(async () => { (heldLead.querySelector('button') as HTMLButtonElement).click(); });
+    await tick(100);
+    expect(
+      (Array.from(document.querySelectorAll('.storylet-choice')) as HTMLButtonElement[])
+        .every((c) => c.disabled),
+    ).toBe(true);
+    expect(document.body.textContent).toContain('BUDGET EXHAUSTED');
+    await click('STAND DOWN');
+    await tick(100);
+
+    // Ten minutes per action. The expedition is nine actions deep, so the
+    // operator comes back to the building with a fresh budget.
+    await waitForActions(12);
 
     // Resolve the universal lead first. It personalizes the order, while the
     // promotion earned above determines whether the expedition is also shown.

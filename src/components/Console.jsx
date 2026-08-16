@@ -141,41 +141,47 @@ function formatTime(mins) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-function timeForCompletedTasks(completedTasks) {
-  return formatTime(Math.min(60 + completedTasks * 6, 360));
+/**
+ * The in-fiction clock runs on actions spent this shift, not on the career
+ * task total: the night is 01:00–06:00 however the operator chooses to spend
+ * it, and it advances whether an action went to the queue or to a notice.
+ */
+function timeForActionsSpent(actionsSpent) {
+  return formatTime(Math.min(60 + actionsSpent * 6, 360));
 }
 
-function shiftInitializationText({ day, tasksCompleted, annexOrderComplete }) {
-  const remaining = Math.max(0, MAX_TASKS - tasksCompleted);
-  if (day === 1 && tasksCompleted > 0) {
-    return `ORIENTATION RECORD RECEIVED // TASK VERIFIED // QUOTA: ${remaining} // LIVE QUEUE OPEN.`;
+function shiftInitializationText({ day, tasksThisShift, annexOrderComplete }) {
+  if (day === 1 && tasksThisShift > 0) {
+    return 'ORIENTATION RECORD RECEIVED // TASK VERIFIED // LIVE QUEUE OPEN.';
   }
   if (day >= 2 && !annexOrderComplete) {
-    return `SHIFT INITIALIZED // QUOTA: ${remaining} // SECONDARY ORDER POSTED: ANNEX ELEVATOR, OUT-OF-RANGE STOP 12.`;
+    return 'SHIFT INITIALIZED // SECONDARY ORDER POSTED: ANNEX ELEVATOR, OUT-OF-RANGE STOP 12.';
   }
-  return `SHIFT INITIALIZED // COFFEE: WARM // QUOTA: ${remaining} // LIVE QUEUE OPEN.`;
+  return 'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN.';
 }
 
 export default function Console() {
-  const { state, actions } = useGameState();
+  const { state, actions, actionTank } = useGameState();
   const [phase, setPhase] = useState('ready');
   const [pendingTask, setPendingTask] = useState(null);
   const [logs, setLogs] = useState(() => [{
     id: 'shift-initialized',
-    timestamp: timeForCompletedTasks(state.tasksCompleted),
+    timestamp: timeForActionsSpent(state.actionsSpentThisShift),
     type: 'system',
     text: shiftInitializationText({
       day: state.day,
-      tasksCompleted: state.tasksCompleted,
+      tasksThisShift: state.tasksThisShift,
       annexOrderComplete: state.zones['annex-order'] === 'complete'
     })
   }]);
   const logRef = useRef(null);
   const processingTimer = useRef(null);
 
-  const tasksRemaining = Math.max(0, MAX_TASKS - state.tasksCompleted);
-  const minutes = Math.min(60 + state.tasksCompleted * 6, 360);
-  const shiftComplete = tasksRemaining === 0;
+  const minutes = Math.min(60 + state.actionsSpentThisShift * 6, 360);
+  // The night ends when the shift's actions are gone, not when a quota is met.
+  const shiftComplete = state.actionsSpentThisShift >= MAX_TASKS;
+  // Out of budget: the clock, not the quota, is what stops the operator now.
+  const outOfActions = actionTank.empty;
   const annexOrderPending = state.day >= 2 && state.zones['annex-order'] !== 'complete';
   const nextAssignment = TASK_ORDERS[state.tasksCompleted % TASK_ORDERS.length];
 
@@ -188,9 +194,9 @@ export default function Console() {
   useEffect(() => () => window.clearTimeout(processingTimer.current), []);
 
   function executeTask() {
-    if (phase !== 'ready' || shiftComplete) return;
+    if (phase !== 'ready' || shiftComplete || outOfActions) return;
 
-    const taskNumber = state.tasksCompleted + 1;
+    const taskNumber = state.tasksThisShift + 1;
     const isCorrupt = shouldTriggerAnomaly({
       taskNumber,
       anomaliesSeenThisShift: state.anomaliesSeenThisShift,
@@ -206,7 +212,7 @@ export default function Console() {
         ? CORRUPT[Math.floor(Math.random() * CORRUPT.length)]
         : nextAssignment.result,
       isCorrupt,
-      timestamp: timeForCompletedTasks(taskNumber)
+      timestamp: timeForActionsSpent(state.actionsSpentThisShift + 1)
     };
 
     setPendingTask(task);
@@ -265,7 +271,7 @@ export default function Console() {
       }]);
     }
 
-    if (pendingTask.taskNumber === MAX_TASKS) {
+    if (state.actionsSpentThisShift + 1 >= MAX_TASKS) {
       setLogs(prev => [...prev, {
         id: `day-${state.day}-complete`,
         timestamp: '06:00',
@@ -290,7 +296,7 @@ export default function Console() {
       type: 'system',
       text: shiftInitializationText({
         day: state.day + 1,
-        tasksCompleted: 0,
+        tasksThisShift: 0,
         annexOrderComplete: state.zones['annex-order'] === 'complete'
       })
     }]);
@@ -329,12 +335,20 @@ export default function Console() {
               <span>{formatTime(minutes)}</span>
             </div>
             <div className="readout">
-              <label>TASKS REMAINING</label>
-              <span>{tasksRemaining}</span>
+              <label>ACTIONS</label>
+              <span>{actionTank.display}</span>
             </div>
             <div className="readout">
               <label>STATUS</label>
-              <span>{phase === 'result' ? 'ACKNOWLEDGMENT DUE' : shiftComplete ? 'SHIFT COMPLETE' : 'CLEAR UNTIL 06:00'}</span>
+              <span>
+                {phase === 'result'
+                  ? 'ACKNOWLEDGMENT DUE'
+                  : shiftComplete
+                    ? 'SHIFT COMPLETE'
+                    : outOfActions
+                      ? 'BUDGET EXHAUSTED'
+                      : 'CLEAR UNTIL 06:00'}
+              </span>
             </div>
           </div>
 
@@ -370,9 +384,9 @@ export default function Console() {
           </div>
 
           <div className={`task-workflow task-workflow-${phase}`} aria-live="polite">
-            {phase === 'ready' && !shiftComplete && (
+            {phase === 'ready' && !shiftComplete && !outOfActions && (
               <div className="task-card task-card-ready">
-                <div className="task-kicker">NEXT WORK ORDER // {state.tasksCompleted + 1} OF {MAX_TASKS}</div>
+                <div className="task-kicker">NEXT WORK ORDER // ONE ACTION</div>
                 <div className="task-title">{nextAssignment.code} // {nextAssignment.title}</div>
                 <p>{nextAssignment.instruction}</p>
                 <span className="task-rule">Execution locks the queue until its result is acknowledged.</span>
@@ -441,25 +455,45 @@ export default function Console() {
                     <span>
                       +¤{taskPayout({ tier: state.promotion.tier }).amount.toLocaleString()} CREDITS
                     </span>
-                    <span>{MAX_TASKS - pendingTask.taskNumber} REMAINING</span>
+                    <span>{actionTank.display} ACTIONS</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {phase === 'ready' && !shiftComplete && outOfActions && (
+              <div className="task-card task-card-complete">
+                <div className="task-kicker">BUDGET EXHAUSTED // QUEUE HELD</div>
+                <div className="task-title">NO ACTIONS REMAINING</div>
+                <p>
+                  Dispatch has stopped releasing work orders. The queue is not closed — it is
+                  waiting. The next action clears in {actionTank.countdown}.
+                </p>
+                <p className="manager-aside">
+                  M. // “Rest is scheduled, the same as everything else. Come back when the
+                  building says you may.”
+                </p>
               </div>
             )}
 
             {phase === 'ready' && shiftComplete && (
               <div className="task-card task-card-complete">
                 <div className="task-kicker">SHIFT RECORD CLOSED // 06:00</div>
-                <div className="task-title">ALL FIFTY RESULTS ACKNOWLEDGED</div>
+                <div className="task-title">THE NIGHT IS SPENT</div>
                 <p>The city has accepted your work. The coffee in the break room is still warm.</p>
               </div>
             )}
           </div>
 
           <div className="console-actions">
-            {phase === 'ready' && !shiftComplete && (
+            {phase === 'ready' && !shiftComplete && !outOfActions && (
               <button className="btn btn-primary" onClick={executeTask}>
-                ▸ EXECUTE TASK {state.tasksCompleted + 1}
+                ▸ EXECUTE TASK {state.tasksThisShift + 1}
+              </button>
+            )}
+            {phase === 'ready' && !shiftComplete && outOfActions && (
+              <button className="btn btn-primary" type="button" disabled>
+                NO ACTIONS — +1 IN {actionTank.countdown}
               </button>
             )}
             {phase === 'processing' && (
@@ -502,7 +536,7 @@ export default function Console() {
                 ? pendingTask?.isCorrupt
                   ? 'Two ways to close this record. Only one of them is honest. Both are permitted.'
                   : 'The next work order will remain sealed until you confirm this record.'
-                : `${state.tasksCompleted}/${MAX_TASKS} results logged this shift.${
+                : `${state.tasksThisShift} results logged this shift · ${actionTank.display} actions.${
                     state.discrepanciesLogged > 0
                       ? ` ${state.discrepanciesLogged} discrepancies on your record.`
                       : ''

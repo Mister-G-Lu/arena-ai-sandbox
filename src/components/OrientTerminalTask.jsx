@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
+import { ACTION_CAP } from '../game/actions';
 
 function TaskIntro({ reviewMode }) {
   return (
@@ -19,7 +19,7 @@ function TaskIntro({ reviewMode }) {
   );
 }
 
-function TaskResult({ reviewMode, tasksRemaining }) {
+function TaskResult({ reviewMode, actionsRemaining }) {
   return (
     <div className="orient-content">
       <span className="warn">{reviewMode ? 'TRAINING COPY' : '01:06'}</span>
@@ -34,14 +34,14 @@ function TaskResult({ reviewMode, tasksRemaining }) {
       </em>
       {'\n\n'}
       {reviewMode ? 'Simulation acknowledged. Record unchanged.' : 'Task logged. Record updated.'}
-      {' Quota: '}{tasksRemaining}{' remaining.'}
+      {' Actions remaining: '}{actionsRemaining}{'.'}
     </div>
   );
 }
 
 export default function OrientTerminalTask({
   reviewMode = false,
-  tasksRemaining = TASKS_PER_SHIFT,
+  actionsRemaining = ACTION_CAP,
   onTaskLogged,
   onComplete
 }) {
@@ -113,7 +113,7 @@ export default function OrientTerminalTask({
           <div className="orient-stage">
             <div className="orient-header">TASK EXECUTED — AWAITING CONFIRMATION</div>
             <div className="orient-divider">────────────────────────────────────────</div>
-            <TaskResult reviewMode={reviewMode} tasksRemaining={tasksRemaining} />
+            <TaskResult reviewMode={reviewMode} actionsRemaining={actionsRemaining} />
             <div className="task-confirm-row">
               <div className="task-confirm-hint">
                 <span className="dim">

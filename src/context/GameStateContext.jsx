@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { deposit, withdraw, formatCredits, wordPressure, CREDIT_LIMIT } from '../game/ledger';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
+import {
+  ACTION_CAP,
+  REGEN_INTERVAL_MS,
+  accrue,
+  formatActions,
+  formatCountdown,
+  msUntilFull,
+  msUntilNextAction,
+  spend as spendFromTank
+} from '../game/actions';
+import { detectDevMode } from '../lib/devMode';
 import { QUALITY_DEFS, normalizeEffects, clampQuality, qualityDef } from '../game/qualities';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
@@ -25,6 +36,49 @@ import { clearLocalGameSave, loadLocalGameSave, writeLocalGameSave } from '../li
 import { useCloudSave } from '../hooks/useCloudSave';
 
 const GameStateContext = createContext();
+
+/** Read the persisted tank fields as an ActionTank. */
+function tankOf(state) {
+  return {
+    actions: state.actions,
+    lastTick: state.actionsLastTick,
+    unbound: state.actionsUnbound
+  };
+}
+
+/** Fold a tank result back into game state. */
+function commitTank(state, tank) {
+  return {
+    ...state,
+    actions: tank.actions,
+    actionsLastTick: tank.lastTick,
+    actionsUnbound: tank.unbound ?? state.actionsUnbound
+  };
+}
+
+/**
+ * Charge the tank for one action and apply `mutate` only if it paid.
+ *
+ * Every consequential verb in the game funnels through here, so there is
+ * exactly one place where "can the operator afford this?" is answered and
+ * exactly one place where a refusal short-circuits an interaction. A refused
+ * spend returns the previous state untouched — never a partial application.
+ */
+function withSpentAction(prev, cost, mutate, now = Date.now()) {
+  const result = spendFromTank(tankOf(prev), cost, now);
+  if (!result.paid) return prev;
+
+  const charged = commitTank(prev, result);
+  const next = mutate(charged);
+  if (next === charged) return charged;
+
+  // The shift clock counts actions taken, not actions deducted, so a dev with
+  // an unbound tank still watches the night advance normally.
+  return {
+    ...next,
+    actionsSpentThisShift: Math.min((next.actionsSpentThisShift ?? 0) + cost, ACTION_CAP)
+  };
+}
 
 /** Append a logbook entry inside a reducer without duplicating the shape. */
 function withLog(prev, text, extra = {}) {
@@ -94,7 +148,19 @@ function commitLedger(prev, result) {
 
 export function GameStateProvider({ children }) {
   const [boot] = useState(() => loadLocalGameSave());
-  const [state, setState] = useState(boot.state);
+  const [state, setState] = useState(() => {
+    // A save written before the tank existed (or a fresh file) has no anchor.
+    // Anchoring at boot rather than at the epoch stops the first read from
+    // accruing a full tank out of nothing.
+    const loaded = boot.state;
+    const now = Date.now();
+    const anchored = loaded.actionsLastTick > 0 ? loaded : { ...loaded, actionsLastTick: now };
+    return commitTank(anchored, accrue(tankOf(anchored), now));
+  });
+  const [devMode] = useState(() => detectDevMode());
+  // Re-renders the HUD countdown once a second. State itself accrues lazily on
+  // read, so this timer is presentation only — nothing depends on it firing.
+  const [clockTick, setClockTick] = useState(() => Date.now());
   const [persistence, setPersistence] = useState(() => ({
     status: boot.error ? 'recovered' : boot.migrated ? 'migrating' : 'ready',
     error: null,
@@ -130,6 +196,25 @@ export function GameStateProvider({ children }) {
       setPersistence(prev => ({ ...prev, status: 'error', error: result.error }));
     }
   }, [boot.envelope, boot.migrated, state]);
+
+  /**
+   * The wall clock is the source of truth for regeneration, so the tank is
+   * recomputed on an interval rather than counted down. A backgrounded tab, a
+   * sleeping laptop and a closed browser all resolve to the same arithmetic
+   * the moment anything reads the tank again.
+   */
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      setClockTick(now);
+      setState(prev => {
+        const result = accrue(tankOf(prev), now);
+        if (result.gained === 0 && result.lastTick === prev.actionsLastTick) return prev;
+        return commitTank(prev, result);
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const replaceGameState = useCallback((nextState) => {
     const envelope = createStoredSaveEnvelope(nextState);
@@ -259,6 +344,8 @@ export function GameStateProvider({ children }) {
         supplies: prev.supplies
       };
       if (zoneState(zone, ctx) !== 'open') return prev;
+      // Opening a file is free; the choice made inside it is what costs. This
+      // keeps the operator free to look before committing.
       return {
         ...prev,
         zones: { ...prev.zones, [zoneId]: prev.zones[zoneId] ?? 'open' },
@@ -280,41 +367,47 @@ export function GameStateProvider({ children }) {
    */
   const resolveStorylet = useCallback((storylet, choice) => {
     setState(prev => {
+      // A re-read replays the fiction and files nothing, so it is free. Only a
+      // first reading — the one that has consequences — costs an action.
       const alreadySeen = prev.seenStorylets.includes(storylet.id);
-      let next = alreadySeen
-        ? prev
-        : applyEffectsToState(prev, choice.outcome?.qualities);
+      const cost = alreadySeen ? 0 : 1;
 
-      const seenStorylets = prev.seenStorylets.includes(storylet.id)
-        ? prev.seenStorylets
-        : [...prev.seenStorylets, storylet.id];
+      return withSpentAction(prev, cost, (charged) => {
+        let next = alreadySeen
+          ? charged
+          : applyEffectsToState(charged, choice.outcome?.qualities);
 
-      const zones = { ...prev.zones };
-      let currentStorylet = prev.currentStorylet;
+        const seenStorylets = charged.seenStorylets.includes(storylet.id)
+          ? charged.seenStorylets
+          : [...charged.seenStorylets, storylet.id];
 
-      if (choice.completeZone) {
-        zones[storylet.zone] = 'complete';
-        currentStorylet = null;
-      } else if (choice.endZone) {
-        currentStorylet = null;
-      } else if (choice.next) {
-        currentStorylet = { zone: storylet.zone, storyletId: choice.next };
-      }
+        const zones = { ...charged.zones };
+        let currentStorylet = charged.currentStorylet;
 
-      next = { ...next, seenStorylets, zones, currentStorylet };
-
-      if (choice.completeZone) {
-        const zone = zoneById(storylet.zone);
-        if (zone?.component && !next.components[zone.component]) {
-          next = withLog(
-            next,
-            `Recovered: ${zone.componentLabel || zone.component.toUpperCase()}. ${zone.closedNote ?? ''}`.trim(),
-            { components: { ...next.components, [zone.component]: true } }
-          );
+        if (choice.completeZone) {
+          zones[storylet.zone] = 'complete';
+          currentStorylet = null;
+        } else if (choice.endZone) {
+          currentStorylet = null;
+        } else if (choice.next) {
+          currentStorylet = { zone: storylet.zone, storyletId: choice.next };
         }
-      }
 
-      return next;
+        next = { ...next, seenStorylets, zones, currentStorylet };
+
+        if (choice.completeZone) {
+          const zone = zoneById(storylet.zone);
+          if (zone?.component && !next.components[zone.component]) {
+            next = withLog(
+              next,
+              `Recovered: ${zone.componentLabel || zone.component.toUpperCase()}. ${zone.closedNote ?? ''}`.trim(),
+              { components: { ...next.components, [zone.component]: true } }
+            );
+          }
+        }
+
+        return next;
+      });
     });
   }, []);
 
@@ -329,10 +422,16 @@ export function GameStateProvider({ children }) {
         prev.tasksCompleted !== 0
       ) return prev;
 
+      // Orientation is the game teaching its own verb. The tank is not charged
+      // — being taught how to work should not cost a shift's worth of budget —
+      // but the night still moves, because the work still happened. Budget and
+      // clock are separate ledgers, and only the budget is forgiven here.
       const credited = commitLedger(prev, deposit({ credits: prev.credits, unbound: prev.ledgerUnbound }, 10));
 
-      return withLog(credited, 'Orientation link verified. The live queue opened with forty-nine tasks remaining.', {
-        tasksCompleted: 1,
+      return withLog(credited, 'Orientation link verified. The live queue opened and the terminal began counting what it was owed.', {
+        tasksCompleted: prev.tasksCompleted + 1,
+        tasksThisShift: 1,
+        actionsSpentThisShift: 1,
         orientation: { ...prev.orientation, taskRecorded: true }
       });
     });
@@ -349,11 +448,17 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
+  /**
+   * Roll the shift over. The tank is deliberately *not* refilled: the night
+   * ending is a fiction beat, while the budget is real time. Ending a shift
+   * early to get fifty more actions would make the tank meaningless.
+   */
   const incrementDay = useCallback(() => {
     setState(prev => ({
       ...prev,
       day: prev.day + 1,
-      tasksCompleted: 0,
+      tasksThisShift: 0,
+      actionsSpentThisShift: 0,
       anomaliesSeenThisShift: 0
     }));
   }, []);
@@ -369,19 +474,21 @@ export function GameStateProvider({ children }) {
     discrepancy = false,
     anomaly = false
   }) => {
-    setState(prev => {
-      let next = applyEffectsToState(prev, effects);
+    setState(prev => withSpentAction(prev, 1, (charged) => {
+      let next = applyEffectsToState(charged, effects);
       if (payout) {
         next = commitLedger(next, deposit({ credits: next.credits, unbound: next.ledgerUnbound }, payout));
       }
       next = {
         ...next,
-        tasksCompleted: Math.min(next.tasksCompleted + 1, TASKS_PER_SHIFT),
+        // Career total, uncapped — the operator file's lifetime stat.
+        tasksCompleted: next.tasksCompleted + 1,
+        tasksThisShift: Math.min(next.tasksThisShift + 1, TASKS_PER_SHIFT),
         anomaliesSeenThisShift: next.anomaliesSeenThisShift + (anomaly ? 1 : 0),
         discrepanciesLogged: next.discrepanciesLogged + (discrepancy ? 1 : 0)
       };
       return withLog(next, logbookEntry);
-    });
+    }));
   }, []);
 
   /* ---------------- residue ---------------- */
@@ -395,6 +502,45 @@ export function GameStateProvider({ children }) {
     setState(createInitialGameState());
   }, []);
 
+  /* ---------------- dev capability ---------------- */
+
+  /**
+   * God mode for the tank. Unbound actions follow the `ledgerUnbound`
+   * precedent — a flag, not a magic number, so nothing downstream has to
+   * recognise 999999 as meaning "infinite".
+   *
+   * `devTouched` latches on and never clears, and the HUD wears a badge for as
+   * long as it is set: a file that was granted infinite actions can always be
+   * told apart from one that earned its way (design/dev-tools.md §7).
+   */
+  const setActionsUnbound = useCallback((unbound) => {
+    setState(prev => {
+      if (prev.actionsUnbound === unbound) return prev;
+      return withLog(
+        {
+          ...prev,
+          actionsUnbound: unbound,
+          actions: unbound ? ACTION_CAP : prev.actions,
+          actionsLastTick: Date.now(),
+          devTouched: true
+        },
+        unbound
+          ? 'MAINTENANCE OVERRIDE // action budget detached from the clock. The terminal stopped asking what time it was.'
+          : 'MAINTENANCE OVERRIDE WITHDRAWN // action budget reattached to the clock.'
+      );
+    });
+  }, []);
+
+  /** Refill the tank without waiting out the clock. */
+  const grantActions = useCallback((amount = ACTION_CAP) => {
+    setState(prev => ({
+      ...prev,
+      actions: Math.max(0, Math.min(ACTION_CAP, prev.actions + amount)),
+      actionsLastTick: Date.now(),
+      devTouched: true
+    }));
+  }, []);
+
   const ledger = useMemo(() => ({
     credits: state.credits,
     unbound: state.ledgerUnbound,
@@ -403,11 +549,36 @@ export function GameStateProvider({ children }) {
     limit: CREDIT_LIMIT
   }), [state.credits, state.ledgerUnbound]);
 
+  /**
+   * The tank as the UI wants it. Recomputed on `clockTick` so the countdown
+   * ticks every second without persisting a write per second.
+   */
+  const actionTank = useMemo(() => {
+    const tank = tankOf(state);
+    const live = accrue(tank, clockTick);
+    const untilNext = msUntilNextAction(tank, clockTick);
+    return {
+      actions: live.actions,
+      cap: ACTION_CAP,
+      unbound: Boolean(state.actionsUnbound),
+      empty: !state.actionsUnbound && live.actions <= 0,
+      display: formatActions(live),
+      regenIntervalMs: REGEN_INTERVAL_MS,
+      msUntilNext: untilNext,
+      msUntilFull: msUntilFull(tank, clockTick),
+      countdown: formatCountdown(untilNext),
+      spentThisShift: state.actionsSpentThisShift,
+      devTouched: Boolean(state.devTouched)
+    };
+  }, [state, clockTick]);
+
   const value = {
     state,
     persistence,
     cloud,
     ledger,
+    actionTank,
+    devMode,
     requirementCtx,
     availableZones,
     QUALITY_DEFS,
@@ -431,7 +602,9 @@ export function GameStateProvider({ children }) {
       addLogEntry,
       importGameSave,
       exportGameSave,
-      resetGame
+      resetGame,
+      setActionsUnbound,
+      grantActions
     }
   };
 

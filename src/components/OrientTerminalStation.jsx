@@ -1,6 +1,6 @@
 import React from 'react';
 
-function StationCheck({ day, tasksRemaining }) {
+function StationCheck({ day, actionsRemaining }) {
   return (
     <div className="orient-content">
       {'Your console is active. Four readouts. Read them.\n\n'}
@@ -16,7 +16,7 @@ function StationCheck({ day, tasksRemaining }) {
         {'Counts forward to 06:00. You have until then.\n  You have never once seen 06:00.\n  No one has. This is not a concern.'}
       </span>
       {'\n\n'}
-      <span className="warn">TASKS REMAINING: {tasksRemaining}</span>
+      <span className="warn">ACTIONS REMAINING: {actionsRemaining}</span>
       {'\n  '}
       <span className="dim">
         {'Fifty results must be logged and acknowledged.\n  Dispatch releases them one at a time.'}
@@ -32,7 +32,7 @@ function StationCheck({ day, tasksRemaining }) {
   );
 }
 
-export default function OrientTerminalStation({ day, tasksRemaining, onComplete }) {
+export default function OrientTerminalStation({ day, actionsRemaining, onComplete }) {
   return (
     <div className="orient-terminal">
       <div className="orient-head">
@@ -44,7 +44,7 @@ export default function OrientTerminalStation({ day, tasksRemaining, onComplete 
         <div className="orient-stage">
           <div className="orient-header">STATION VERIFICATION</div>
           <div className="orient-divider">────────────────────────────────────────</div>
-          <StationCheck day={day} tasksRemaining={tasksRemaining} />
+          <StationCheck day={day} actionsRemaining={actionsRemaining} />
           <button className="btn btn-primary" onClick={onComplete}>
             ▸ CHECK THE BREAK ROOM
           </button>

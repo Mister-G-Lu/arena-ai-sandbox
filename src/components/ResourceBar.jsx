@@ -1,11 +1,10 @@
 import React from 'react';
 import { useGameState } from '../context/GameStateContext';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
 import './ResourceBar.css';
 
 export default function ResourceBar() {
-  const { state, ledger, PROMOTIONS, COMPONENT_DEFS } = useGameState();
-  const { components, day, tasksCompleted } = state;
+  const { state, ledger, actionTank, PROMOTIONS, COMPONENT_DEFS } = useGameState();
+  const { components, day } = state;
 
   const componentsCount = Object.values(components).filter(Boolean).length;
   // The meter is not a progress bar toward a cap — there is no cap. It shows how
@@ -68,12 +67,39 @@ export default function ResourceBar() {
           </div>
         </div>
 
-        {/* Tasks */}
-        <div className="resource-item tasks">
-          <span className="resource-icon">▸</span>
+        {/* Actions — the budget everything spends from. The countdown is the
+            only clock in the building that tells the truth. */}
+        <div
+          className={`resource-item actions${actionTank.unbound ? ' actions-unbound' : ''}${
+            actionTank.empty ? ' actions-empty' : ''
+          }`}
+        >
+          <span className="resource-icon">◆</span>
           <div className="resource-info">
-            <span className="resource-label">Tasks</span>
-            <span className="resource-value">{tasksCompleted}/{TASKS_PER_SHIFT}</span>
+            <span className="resource-label">Actions</span>
+            <span
+              className="resource-value"
+              title={actionTank.unbound
+                ? 'MAINTENANCE OVERRIDE — the budget is detached from the clock.'
+                : `One action returns every ${Math.round(actionTank.regenIntervalMs / 60000)} minutes.`}
+            >
+              {actionTank.display}
+            </span>
+            {!actionTank.unbound && (
+              <span className="resource-regen">
+                {actionTank.msUntilNext == null ? 'FULL' : `+1 IN ${actionTank.countdown}`}
+              </span>
+            )}
+            <div className="resource-meter">
+              <div
+                className="resource-meter-fill actions-fill"
+                style={{
+                  width: `${actionTank.unbound
+                    ? 100
+                    : (actionTank.actions / actionTank.cap) * 100}%`
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -85,6 +111,18 @@ export default function ResourceBar() {
             <span className="resource-value">{currentPromotion.title}</span>
           </div>
         </div>
+
+        {/* A file a dev tool has touched says so, permanently and visibly, so
+            it can never be mistaken for an honest playthrough. */}
+        {actionTank.devTouched && (
+          <div className="resource-item dev-touched" title="This file has been altered by maintenance tooling.">
+            <span className="resource-icon">⚑</span>
+            <div className="resource-info">
+              <span className="resource-label">File</span>
+              <span className="resource-value">ALTERED</span>
+            </div>
+          </div>
+        )}
 
         {/* Profile Button */}
         <button

@@ -8,6 +8,7 @@ import Notices from './components/Notices';
 import Shop from './components/Shop';
 import ProfilePage from './components/ProfilePage';
 import Footer from './components/Footer';
+import DevPanel from './components/DevPanel';
 import { useRouter } from './hooks/useRouter';
 import { GameStateProvider, useGameState } from './context/GameStateContext';
 
@@ -54,6 +55,7 @@ function GameShell() {
       </main>
 
       <Footer />
+      <DevPanel />
     </>
   );
 }
