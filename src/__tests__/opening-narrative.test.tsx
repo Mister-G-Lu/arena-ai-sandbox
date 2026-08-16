@@ -57,9 +57,15 @@ async function waitForActions(count: number) {
   await act(async () => { vi.advanceTimersByTime(1000); });
 }
 
+async function settleRoute() {
+  await vi.dynamicImportSettled();
+  await act(async () => undefined);
+}
+
 async function go(hash: string) {
   window.location.hash = hash;
   await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
+  await settleRoute();
 }
 
 /** Walk orientation, answering the break-room question with `answer`. */
@@ -257,6 +263,7 @@ describe('opening narrative', () => {
     window.location.hash = '#notices';
 
     render(<App />);
+    await settleRoute();
     await tick(100);
 
     // The forecast is the game's own "what's next": the next rank with the
@@ -283,6 +290,7 @@ describe('opening narrative', () => {
     window.location.hash = '#investigations';
 
     render(<App />);
+    await settleRoute();
     expect(document.body.textContent).toContain('ANOTHER FILE IS OPEN');
     expect(document.body.textContent).toContain('RETURN TO OPEN FILE');
     expect(document.body.textContent).not.toContain('SAVED ORDER COULD NOT BE RESTORED');
@@ -301,6 +309,7 @@ describe('opening narrative', () => {
     window.location.hash = '#notices';
 
     render(<App />);
+    await settleRoute();
     expect(document.body.textContent).toContain('SAVED ORDER COULD NOT BE RESTORED');
     await click('CLEAR INVALID ORDER');
     expect(save().currentStorylet).toBeNull();
@@ -459,6 +468,7 @@ describe('opening narrative', () => {
     window.location.hash = '#investigations';
 
     render(<App />);
+    await settleRoute();
     await tick(100);
     expect(document.body.textContent).toContain('LETHAL // THIS CHOICE KILLS');
     expect(button('Step forward')).toHaveClass('storylet-choice-death');

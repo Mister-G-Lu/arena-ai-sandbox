@@ -44,6 +44,8 @@ async function tick(ms: number) {
 async function go(hash: string) {
   window.location.hash = hash;
   await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
+  await vi.dynamicImportSettled();
+  await act(async () => undefined);
 }
 
 async function waitForActions(count: number) {

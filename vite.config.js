@@ -10,6 +10,32 @@ export default defineConfig({
     outDir: 'docs',
     assetsDir: 'assets',
     emptyOutDir: true,
+    // Stable dependency groups keep the playable shell and route chunks small
+    // as authored story content grows. Rolldown's native groups supersede the
+    // deprecated Rollup manualChunks compatibility option.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'supabase',
+              test: /node_modules[\\/]@supabase[\\/]/,
+              priority: 3,
+            },
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 2,
+            },
+            {
+              name: 'validation',
+              test: /node_modules[\\/]zod[\\/]/,
+              priority: 2,
+            },
+          ],
+        },
+      },
+    },
   },
   server: {
     port: 3000,

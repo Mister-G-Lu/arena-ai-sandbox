@@ -1,16 +1,31 @@
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import NavBar from './components/NavBar';
 import ResourceBar from './components/ResourceBar';
 import Hero from './components/Hero';
 import FirstShift from './components/FirstShift';
 import Console from './components/Console';
-import Notices from './components/Notices';
-import Shop from './components/Shop';
-import ProfilePage from './components/ProfilePage';
 import Footer from './components/Footer';
 import DevPanel from './components/DevPanel';
 import { useRouter } from './hooks/useRouter';
 import { GameStateProvider, useGameState } from './context/GameStateContext';
+
+// Keep the public landing shell immediate, then load each playable terminal
+// only when its route opens. Story JSON and profile/save tooling no longer
+// inflate the first visit to the live site.
+const Notices = lazy(() => import('./components/Notices'));
+const Shop = lazy(() => import('./components/Shop'));
+const ProfilePage = lazy(() => import('./components/ProfilePage'));
+
+function RouteFallback() {
+  return (
+    <section className="section page active" aria-busy="true" aria-live="polite">
+      <div className="wrap">
+        <p className="eyebrow">// TERMINAL LINK //</p>
+        <h2>OPENING FILE…</h2>
+      </div>
+    </section>
+  );
+}
 
 function GameShell() {
   const { page, navigate } = useRouter();
@@ -45,13 +60,15 @@ function GameShell() {
       <NavBar currentPage={visiblePage} onNavigate={navigate} />
 
       <main>
-        {visiblePage === 'home' && <Hero />}
-        {visiblePage === 'first-shift' && <FirstShift />}
-        {visiblePage === 'console' && <Console />}
-        {visiblePage === 'shop' && <Shop />}
-        {visiblePage === 'notices' && <Notices key="notices" board="notices" />}
-        {visiblePage === 'investigations' && <Notices key="investigations" board="investigations" />}
-        {visiblePage === 'profile' && <ProfilePage />}
+        <Suspense fallback={<RouteFallback />}>
+          {visiblePage === 'home' && <Hero />}
+          {visiblePage === 'first-shift' && <FirstShift />}
+          {visiblePage === 'console' && <Console />}
+          {visiblePage === 'shop' && <Shop />}
+          {visiblePage === 'notices' && <Notices key="notices" board="notices" />}
+          {visiblePage === 'investigations' && <Notices key="investigations" board="investigations" />}
+          {visiblePage === 'profile' && <ProfilePage />}
+        </Suspense>
       </main>
 
       <Footer />
