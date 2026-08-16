@@ -68,7 +68,7 @@ Moving the full twist to Shift 2 would overcorrect. It would spend the game's be
 
 1. Finishing Shift 1 and beginning Shift 2 posts `ANNEX ELEVATOR // OUT-OF-RANGE STOP: FLOOR 12` above the live queue.
 2. Shift 2 adds a dedicated **Investigations** destination for active cases. It is separate from **Notices**, which remains the pool of optional routine observations. The new tab carries a `NEW` marker until the Annex order is resolved.
-3. The secondary order does not consume quota and can be handled immediately; the player is not asked to complete another block of routine work before seeing it.
+3. The secondary order sits outside the live queue and can be opened immediately; the player is not asked to complete another block of routine work before seeing it. Reading is free and filing its choice spends one action from the shared shift budget, like every consequential storylet.
 4. M. interrupts over a direct channel to insist that elevators are outside the operator's job description. Clearing the reading rewards Routine and salary. Tracing it files Doubt, Perception, and hidden Attention—and gets a more candid response from M.
 5. Tier 2 now requires Day 2 in addition to Doubt 2 and Perception 1. This prevents orientation/Notice optimization from revealing restricted areas during Shift 1.
 6. Floor 12 still requires the `restricted-areas` promotion unlock. Thus the same Shift 2 lead is a dead end for a compliant low-rank player and a doorway for a promoted curious player.

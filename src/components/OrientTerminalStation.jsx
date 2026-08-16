@@ -25,7 +25,7 @@ function StationCheck({ day, actionsRemaining }) {
       <span className="warn">ACTIONS REMAINING: {actionsRemaining}</span>
       {'\n  '}
       <span className="dim">
-        {'Fifty results must be logged and acknowledged.\n  Dispatch releases them one at a time.\n  That is the whole job. The city is the receipt.'}
+        {'One decision spends one action.\n  Dispatch work, notices, and investigations share this budget.\n  The live queue releases work orders one at a time. The city is the receipt.'}
       </span>
       {'\n\n'}
       <span className="warn">STATUS: CLEAR</span>

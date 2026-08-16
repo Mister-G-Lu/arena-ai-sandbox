@@ -213,12 +213,14 @@ host becomes aware), Severance/SOMA (the self as a function), Control/SCP
 | Session | one shift ≈ 35–40 minutes ≈ 50 actions |
 | Action tank | cap 50, +1 per 10 minutes (`src/game/actions.ts`) |
 
-**The cap equals the quota on purpose.** One shift drains exactly one full tank,
-so a session has a natural shape: arrive full, leave empty. Perfect play does
-not buy a bonus expedition — it buys a ten-minute wait before the investigation,
-and that wait is the anticipation, not a failure state. Filing a task and
-committing to a storylet choice both cost 1. Opening a board, rereading a card
-you have already resolved, and the orientation tutorial are all free.
+**The cap equals the nominal shift length on purpose.** One shift drains exactly
+one full tank, so a session has a natural shape: arrive full, leave empty. A
+console-only shift can file fifty results; every notice or investigation choice
+replaces one of those queue actions inside the same budget. Perfect play does not
+buy a bonus expedition — it buys a ten-minute wait before another decision, and
+that wait is the anticipation, not a failure state. Filing a task and committing
+to a storylet choice both cost 1. Opening a board, rereading a card you have
+already resolved, and the orientation tutorial are all free.
 
 Binge play is allowed, never hard-blocked. Skipped days are forgiven by the fiction
 ("the city didn't notice. the coffee is still warm.").

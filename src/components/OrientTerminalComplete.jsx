@@ -6,7 +6,7 @@ function CompletionCopy({ reviewMode }) {
       <div className="orient-content">
         {'ORIENTATION REVIEW COMPLETE.\n\nThe archived procedure has ended.\n\n  — Your live shift is '}
         <em>unchanged</em>
-        {'.\n  — Your quota is '}
+        {'.\n  — Your action budget is '}
         <em>unchanged</em>
         {'.\n  — Your coffee is probably still '}
         <em>warm</em>
@@ -20,8 +20,8 @@ function CompletionCopy({ reviewMode }) {
     <div className="orient-content">
       {'ORIENTATION COMPLETE.\n\nYou have been oriented, Operator.\n\n  — Your shift is '}
       <em>active</em>
-      {'.\n  — Your quota is '}
-      <em>loaded</em>
+      {'.\n  — Your action budget is '}
+      <em>full</em>
       {'.\n  — Your coffee is '}
       <em>warm</em>
       {'.\n\nThe city is counting on you.\n'}
