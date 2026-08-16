@@ -16,10 +16,11 @@ The game is now a React + Vite application with modular components:
 ```
 src/
 ├── components/
-│   ├── NavBar.jsx              # Left sidebar navigation
+│   ├── NavBar.jsx              # Progress-aware sidebar navigation
 │   ├── ResourceBar.jsx         # Top resource tracking bar
+│   ├── Hero.jsx                # Home + interactive Meridian dispatch feed
 │   ├── Console.jsx             # Main gameplay console
-│   ├── FirstShift.jsx          # Tutorial sequence
+│   ├── FirstShift.jsx          # Skippable/reviewable tutorial sequence
 │   ├── ProfilePage.jsx         # Player profile/stats
 │   ├── OrientTerminal*.jsx     # 6 tutorial terminal stages
 │   └── [other page components]
@@ -57,11 +58,12 @@ npm run build
 - Responsive layout with mobile support
 
 **UI Components:**
-- Left sidebar navigation
+- Progress-aware sidebar navigation (Console stays locked until orientation is complete)
+- Interactive homepage dispatch deck combining Directive, Grid, and Bulletins
 - Top resource bar (Credits, Components, Day, Tasks, Rank, Profile)
 - Profile page with full player stats
-- Console with two-step task execution
-- 6-stage tutorial (FirstShift) with separate terminal instances
+- Console with two-step task execution and First Shift review access
+- 6-stage tutorial (FirstShift) with skip and non-destructive replay modes
 - Promotion ceremony modals
 - Resource change notifications
 

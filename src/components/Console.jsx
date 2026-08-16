@@ -362,10 +362,15 @@ export default function Console() {
           </div>
         </div>
 
-        <p className="fine console-note">
-          // LIVE PROTOTYPE — EACH TASK NOW REQUIRES EXECUTION AND EXPLICIT REVIEW.
-          CREDITS, SHIFT PROGRESS, DAY, AND OPERATOR RECORD ARE SYNCHRONIZED WITH YOUR PROFILE.
-        </p>
+        <div className="console-utility-row">
+          <p className="fine console-note">
+            // LIVE PROTOTYPE — EACH TASK REQUIRES EXECUTION AND EXPLICIT REVIEW.
+            CREDITS, SHIFT PROGRESS, DAY, AND OPERATOR RECORD ARE SYNCHRONIZED WITH YOUR PROFILE.
+          </p>
+          <a className="btn btn-ghost btn-compact" href="#first-shift">
+            ↻ REVIEW FIRST SHIFT
+          </a>
+        </div>
       </div>
     </section>
   );

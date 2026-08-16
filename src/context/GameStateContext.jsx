@@ -32,6 +32,11 @@ const INITIAL_STATE = {
   day: 1,
   tasksCompleted: 0,
   deaths: 0,
+  orientation: {
+    completed: false,
+    skipped: false,
+    taskRecorded: false
+  },
 
   // Promotion
   promotion: {
@@ -54,11 +59,20 @@ function loadSavedState() {
     if (!saved) return INITIAL_STATE;
 
     const parsed = JSON.parse(saved, (_key, value) => value === '__INFINITY__' ? Infinity : value);
+    const hasLegacyConsoleProgress = !parsed.orientation && (
+      Number(parsed.tasksCompleted) > 0 || Number(parsed.day) > 1
+    );
+
     return {
       ...INITIAL_STATE,
       ...parsed,
       components: { ...INITIAL_STATE.components, ...parsed.components },
       qualities: { ...INITIAL_STATE.qualities, ...parsed.qualities },
+      orientation: {
+        ...INITIAL_STATE.orientation,
+        ...parsed.orientation,
+        ...(hasLegacyConsoleProgress ? { completed: true, skipped: true } : {})
+      },
       promotion: { ...INITIAL_STATE.promotion, ...parsed.promotion },
       logbook: Array.isArray(parsed.logbook) ? parsed.logbook : [],
       discoveries: Array.isArray(parsed.discoveries) ? parsed.discoveries : [],
@@ -209,7 +223,52 @@ export function GameStateProvider({ children }) {
     return false;
   }, [state.promotion.tier, state.qualities.doubt, state.deaths, componentsCount]);
 
-  // Progress tracking
+  // Orientation and progress tracking
+  const recordOrientationTask = useCallback(() => {
+    setState(prev => {
+      if (
+        prev.orientation.completed ||
+        prev.orientation.taskRecorded ||
+        prev.day !== 1 ||
+        prev.tasksCompleted !== 0
+      ) return prev;
+
+      return {
+        ...prev,
+        credits: Math.min(prev.credits + 10, prev.maxCredits),
+        tasksCompleted: 1,
+        orientation: { ...prev.orientation, taskRecorded: true },
+        logbook: [...prev.logbook, {
+          day: prev.day,
+          text: 'Orientation link verified. The live queue opened with forty-nine tasks remaining.',
+          timestamp: Date.now()
+        }]
+      };
+    });
+  }, []);
+
+  const completeOrientation = useCallback((skipped = false) => {
+    setState(prev => {
+      if (prev.orientation.completed) return prev;
+
+      return {
+        ...prev,
+        orientation: {
+          ...prev.orientation,
+          completed: true,
+          skipped
+        },
+        logbook: skipped
+          ? [...prev.logbook, {
+              day: prev.day,
+              text: 'Orientation waived. Prior operating knowledge accepted without verification.',
+              timestamp: Date.now()
+            }]
+          : prev.logbook
+      };
+    });
+  }, []);
+
   const incrementDay = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -288,6 +347,8 @@ export function GameStateProvider({ children }) {
       increaseAttention,
       decreaseAttention,
       checkPromotion,
+      recordOrientationTask,
+      completeOrientation,
       incrementDay,
       completeTask,
       recordDeath,

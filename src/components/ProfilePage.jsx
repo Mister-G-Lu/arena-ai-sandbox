@@ -52,7 +52,9 @@ export default function ProfilePage() {
               </div>
               <div className="info-item">
                 <span className="info-label">Status:</span>
-                <span className="info-value">ACTIVE // FILE SYNCED</span>
+                <span className="info-value">
+                  {state.orientation.completed ? 'ACTIVE // FILE SYNCED' : 'PENDING // ORIENTATION REQUIRED'}
+                </span>
               </div>
             </div>
           </div>
@@ -273,9 +275,11 @@ export default function ProfilePage() {
         <div className="profile-actions">
           <button
             className="btn btn-ghost"
-            onClick={() => window.location.hash = '#console'}
+            onClick={() => {
+              window.location.hash = state.orientation.completed ? '#console' : '#first-shift';
+            }}
           >
-            ▸ RETURN TO CONSOLE
+            {state.orientation.completed ? '▸ RETURN TO CONSOLE' : '▸ REPORT FOR FIRST SHIFT'}
           </button>
         </div>
       </div>

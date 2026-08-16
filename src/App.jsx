@@ -1,36 +1,45 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import NavBar from './components/NavBar';
 import ResourceBar from './components/ResourceBar';
 import Hero from './components/Hero';
-import Directive from './components/Directive';
-import Grid from './components/Grid';
 import FirstShift from './components/FirstShift';
 import Console from './components/Console';
-import Bulletin from './components/Bulletin';
 import ProfilePage from './components/ProfilePage';
 import Footer from './components/Footer';
 import { useRouter } from './hooks/useRouter';
-import { GameStateProvider } from './context/GameStateContext';
+import { GameStateProvider, useGameState } from './context/GameStateContext';
 
-function App() {
+function GameShell() {
   const { page, navigate } = useRouter();
+  const { state } = useGameState();
+  const consoleLocked = page === 'console' && !state.orientation.completed;
+  const visiblePage = consoleLocked ? 'first-shift' : page;
+
+  useEffect(() => {
+    if (consoleLocked) navigate('first-shift');
+  }, [consoleLocked]);
 
   return (
-    <GameStateProvider>
+    <>
       <ResourceBar />
-      <NavBar currentPage={page} onNavigate={navigate} />
+      <NavBar currentPage={visiblePage} onNavigate={navigate} />
 
       <main>
-        {page === 'home' && <Hero />}
-        {page === 'directive' && <Directive />}
-        {page === 'grid' && <Grid />}
-        {page === 'first-shift' && <FirstShift />}
-        {page === 'console' && <Console />}
-        {page === 'bulletin' && <Bulletin />}
-        {page === 'profile' && <ProfilePage />}
+        {visiblePage === 'home' && <Hero />}
+        {visiblePage === 'first-shift' && <FirstShift />}
+        {visiblePage === 'console' && <Console />}
+        {visiblePage === 'profile' && <ProfilePage />}
       </main>
 
       <Footer />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <GameStateProvider>
+      <GameShell />
     </GameStateProvider>
   );
 }
