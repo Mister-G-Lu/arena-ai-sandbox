@@ -9,7 +9,13 @@
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import App from '../App';
-import { GAME_SAVE_KEY, parseStoredSaveEnvelope } from '../lib/gameSave';
+import {
+  GAME_SAVE_KEY,
+  createInitialGameState,
+  createStoredSaveEnvelope,
+  parseStoredSaveEnvelope,
+  serializeSaveEnvelope,
+} from '../lib/gameSave';
 
 function save() {
   const raw = JSON.parse(localStorage.getItem(GAME_SAVE_KEY) ?? '{}');
@@ -137,6 +143,24 @@ describe('opening narrative', () => {
     await tick(100);
     // The gate redirects rather than rendering an empty page.
     expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+  });
+
+  it('recovers from a story pointer removed by a content update', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.qualities.doubt = 1;
+    state.promotion = { ...state.promotion, tier: 1 };
+    state.currentStorylet = { zone: 'routine', storyletId: 'routine-removed-in-update' };
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#notices';
+
+    render(<App />);
+    expect(document.body.textContent).toContain('SAVED ORDER COULD NOT BE RESTORED');
+    await click('CLEAR INVALID ORDER');
+    expect(save().currentStorylet).toBeNull();
   });
 
   it('turns a corrupted result into a choice with opposite consequences', async () => {
