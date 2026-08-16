@@ -1,14 +1,8 @@
 /**
- * QUALITIES — the single, dynamic place where an outcome becomes state.
- *
- * Every source of consequence in the game (orientation choices, console
- * discrepancies, storylet cards in `src/content/**`) speaks the same tiny
- * language: an `effects` object of quality-name -> delta. Nothing hardcodes a
- * specific quality anywhere else, so new qualities are a data change, not a
- * code change.
- *
- * Storylet JSON uses capitalised names ("Doubt", "Attention", "Salary"); the
- * live save file uses lowercase keys. Normalisation happens here, once.
+ * The one place an outcome becomes state. Every consequence — orientation
+ * choices, console discrepancies, storylet cards — is an `effects` object of
+ * quality-name -> delta, normalised here (JSON uses capitalised names, the
+ * save file lowercase). New qualities are a data change, not a code change.
  */
 
 export type EffectKind = 'quality' | 'attention' | 'credits';

@@ -1,12 +1,8 @@
 /**
- * PAYOUTS — what a filed result is worth.
- *
- * Nothing here is a magic constant sitting in a component. The base rate scales
- * with rank, and corrupted results pay *whatever number the corruption
- * contained* — because the handler reads the damaged field as currency without
- * checking it first. That is a bug in Meridian, not in this file, and it is the
- * documented on-ramp to the ledger overflow (see src/game/ledger.ts and
- * design/adversarial-review-01.md).
+ * What a filed result is worth. The base rate scales with rank, and a
+ * corrupted result filed as clean pays the number the corruption contained —
+ * the handler reads the damaged field as currency. That is the documented
+ * on-ramp to the ledger overflow (see src/game/ledger.ts).
  */
 
 export const BASE_TASK_REWARD = 10;
@@ -18,7 +14,7 @@ export function rankMultiplier(tier: number): number {
 
 /**
  * Pull the largest number out of a string, ignoring thousands separators and
- * the block characters the corruption uses to eat digits.
+ * the block characters the corruption uses to eat digits:
  * "population: 41,31▓ — unchanged" -> 4131
  */
 export function extractAnomalousAmount(text: string): number | null {
@@ -52,10 +48,9 @@ export interface Payout {
 }
 
 /**
- * Filing a clean result pays the rank rate.
- * Filing a *corrupted* result as clean pays the corrupted number — the system
- * pays what it read.
- * Logging a discrepancy pays nothing: unreconciled work is unbilled work.
+ * A clean filing pays the rank rate. A corrupted result filed as clean pays
+ * the corrupted number — the system pays what it read. Logging a discrepancy
+ * pays nothing: unreconciled work is unbilled work.
  */
 export function taskPayout(input: PayoutInput = {}): Payout {
   const { tier = 0, corrupted = false, filedClean = true, resultText = '' } = input;
@@ -71,8 +66,7 @@ export function taskPayout(input: PayoutInput = {}): Payout {
 
   if (corrupted && filedClean) {
     const anomalous = extractAnomalousAmount(resultText);
-    // Payroll pays the damaged field, but never less than the work was worth:
-    // the standard rate is a floor, so complicity is never a pay cut.
+    // The standard rate is a floor: complicity is never a pay cut.
     if (anomalous !== null && anomalous > base) {
       return {
         amount: anomalous,

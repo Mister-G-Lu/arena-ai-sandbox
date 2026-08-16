@@ -1,13 +1,8 @@
 /**
- * PROGRESSION — promotions and zones, expressed as data.
- *
- * Requirements are declarative maps ({ doubt: 2, components: 3 }) evaluated by
- * one generic checker, so the UI can render an accurate requirement label for
- * any tier or zone without a hand-written string per case. Adding a tier or a
- * zone is a data edit.
- *
- * Promotions no longer touch the credit ledger. Credits have no cap
- * (see src/game/ledger.ts); rank buys *clearance*, not headroom.
+ * Promotions and zones as data. Requirements are declarative maps
+ * ({ doubt: 2, components: 3 }) evaluated by one generic checker, so a tier
+ * or zone is a data edit. Rank buys clearance, not credit headroom — see
+ * src/game/ledger.ts.
  */
 
 export interface ComponentDef {
@@ -15,10 +10,8 @@ export interface ComponentDef {
   label: string;
 }
 
-/**
- * Canonical component inventory. Save validation and every component counter are
- * derived from this table, so adding a component is one data edit.
- */
+/** Canonical component inventory. Save validation and every component counter
+ *  derive from this table, so adding a component is one data edit. */
 export const COMPONENT_DEFS: ComponentDef[] = [
   { id: 'key', label: 'NULL KEY' },
   { id: 'lens', label: 'LENS' },

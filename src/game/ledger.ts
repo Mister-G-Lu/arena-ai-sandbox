@@ -1,19 +1,7 @@
 /**
- * THE MUNICIPAL LEDGER
- *
- * Credits (Salary, in design terms) have **no design cap**. The old
- * `maxCredits: 500` ceiling made the mundane economy die at the end of the
- * first shift — fifty tasks x ten credits landed exactly on the cap.
- *
- * The only ceiling left is the one the *machine* has: a signed 32-bit word.
- * If an operator ever manages to push the balance past that word, the ledger
- * does what real ledgers do — it wraps — and the exception handler that runs
- * this city cannot reconcile a negative balance it did not authorise. It gives
- * up and marks the account UNBOUND.
- *
- * That is the OVERFLOW GLITCH: an intentional, earnable proof that the city is
- * a program with a word size. It is the first hard evidence the player can hold
- * that Meridian is a simulation. (See design/core-design.md, P2 and P6.)
+ * Credits have no design cap — the only ceiling is the machine's signed
+ * 32-bit word. Pushing past it wraps the ledger; the handler marks the
+ * account UNBOUND. That is the OVERFLOW GLITCH (see design/core-design.md).
  */
 
 /** Width of the municipal ledger word. The population chart uses the same one. */
@@ -36,10 +24,8 @@ export interface LedgerState {
 export interface LedgerResult extends LedgerState {
   /** True only on the transaction that broke the word. */
   overflowed: boolean;
-  /**
-   * The wrapped two's-complement value the ledger briefly displayed before the
-   * handler gave up. Negative. Purely diegetic — the UI flashes it.
-   */
+  /** The wrapped two's-complement value briefly displayed before the handler
+   *  gave up. Negative, purely diegetic — the UI flashes it. */
   wrapped: number | null;
 }
 
@@ -57,14 +43,9 @@ export function wrapSigned(value: number, bits: number = LEDGER_WORD_BITS): numb
   return Number(wrapped);
 }
 
-/**
- * Credit an amount to the ledger.
- *
- * - An unbound ledger stays unbound; further deposits are meaningless.
- * - A deposit that would exceed the word overflows: the balance wraps negative,
- *   the handler refuses the reconciliation, and the account becomes unbound
- *   (effectively infinite credit) exactly once.
- */
+/** Credit an amount. An unbound ledger stays unbound; a deposit that would
+ *  exceed the word overflows exactly once (wraps negative, handler refuses,
+ *  account becomes unbound). */
 export function deposit(
   state: LedgerState,
   amount: number,
@@ -75,8 +56,7 @@ export function deposit(
   if (state.unbound || state.credits === Infinity) {
     return { credits: Infinity, unbound: true, overflowed: false, wrapped: null };
   }
-  // Deposits credit. A negative amount is not a debit in disguise — the only
-  // way out of the ledger is withdraw(), with its explicit `paid` contract.
+  // Only withdraw() debits; a negative credit is not a debit in disguise.
   if (!isCountable(amount) || amount <= 0) {
     // A non-finite payout is itself a broken word. Treat +Infinity as a break.
     if (amount === Infinity) {
@@ -118,11 +98,8 @@ export function formatCredits(state: LedgerState): string {
   return state.credits.toLocaleString();
 }
 
-/**
- * How full the ledger word is, 0..1. Used only for the thin meter under the
- * balance: for almost the whole game it is a flat, unmoving sliver — which is
- * the point. The bar is not a progress bar. It is a *word size*.
- */
+/** How full the ledger word is, 0..1. The meter under the balance is a word
+ *  size, not a progress bar — a flat sliver for almost the whole game. */
 export function wordPressure(state: LedgerState, bits: number = LEDGER_WORD_BITS): number {
   if (state.unbound || state.credits === Infinity) return 1;
   const limit = creditLimit(bits);

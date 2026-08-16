@@ -1,10 +1,7 @@
 import { qualityDef } from './qualities';
 
-/**
- * Zones that ship content decks in `src/content/<zone>/`. Kept in sync with
- * `progression.ts` ZONES — the content loader validates the entries of every
- * configured zone against this list.
- */
+/** Zones that ship content decks in `src/content/<zone>/`. The content loader
+ *  validates every configured zone's entries against this list. */
 export const ZONE_IDS = ['routine', 'floor12'] as const;
 export type ZoneId = (typeof ZONE_IDS)[number];
 
@@ -182,9 +179,6 @@ export function validateStoryGraph(
   return cards;
 }
 
-/**
- * This module's job ends at validation and typing. Player progress is owned by
- * the live runtime — `GameStateContext` applies choices, `gameSave.ts` is the
- * persisted schema, and `progression.ts` owns zones. A second progress engine
- * here would only drift from all three, and it did.
- */
+/** Validation and typing only. Player progress is owned by the live runtime —
+ *  GameStateContext applies choices, gameSave.ts persists them. A second
+ *  progress engine here would only drift, and it did. */

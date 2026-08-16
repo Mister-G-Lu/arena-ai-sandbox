@@ -12,9 +12,8 @@ function BreakRoomCopy() {
 }
 
 /**
- * The first real choice in the game. Each option is data: label, the lines the
- * terminal answers with, the effects it files, and the residue it leaves. The
- * system says "the system has noted your observation" — and now it actually does.
+ * The first real choice. Each option is data: label, response lines, effects,
+ * residue. "The system has noted your observation" — and now it actually does.
  */
 const CHOICES = [
   {

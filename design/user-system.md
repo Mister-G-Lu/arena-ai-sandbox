@@ -3,7 +3,7 @@
 **Status:** Historical design draft. **Do not implement the v1 envelope or
 `fr:progress` / `fr:shift` / `fr:actions` keys below.**
 
-**Implemented source of truth:** [`../DEVELOPMENT.md`](../DEVELOPMENT.md) and
+**Implemented source of truth:** [`DEVELOPMENT.md`](DEVELOPMENT.md) and
 `src/lib/gameSave.ts`. The live game uses one v2 operator file for local storage,
 import/export, and Supabase, with explicit conflict choice instead of field-wise
 merge. P10/action-tank notes remain future design only.

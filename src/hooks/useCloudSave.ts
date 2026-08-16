@@ -20,10 +20,10 @@ export interface UseCloudSaveOptions {
   replaceState: (state: GameState) => void;
   debounceMs?: number;
   /**
-   * Bump this whenever a whole new operator file becomes live (file import).
-   * The boot-time Records check runs again — with autosave disarmed first —
-   * so an imported file goes through the two-copies-disagree prompt instead
-   * of silently overwriting Records.
+   * Bump when a whole new operator file becomes live (file import). The
+   * boot-time Records check re-runs with autosave disarmed first, so an
+   * import surfaces as a two-copies-disagree prompt instead of silently
+   * overwriting Records.
    */
   recheckToken?: number;
   /** How long to wait before re-attempting a push that failed (e.g. offline). */

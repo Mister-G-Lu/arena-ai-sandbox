@@ -1,12 +1,7 @@
 /**
- * GLITCHES — anomalies the operator managed to *keep*.
- *
- * Most glitches in Meridian self-correct within a second; the exception handler
- * is good at its job. A kept glitch is evidence that survived the correction,
- * and evidence is the only currency the endgame respects.
- *
- * Each entry is data so that awarding one is a one-line state change and the
- * profile can render any of them without knowing what they are.
+ * Anomalies the operator managed to keep. Most glitches self-correct; a kept
+ * glitch is evidence that survived correction — the currency the endgame
+ * respects. Each entry is data so awarding one is a one-line state change.
  */
 
 export interface GlitchDef {

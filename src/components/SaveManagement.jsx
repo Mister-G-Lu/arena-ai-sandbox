@@ -44,9 +44,9 @@ export default function SaveManagement() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      // A real operator file is a few hundred KB. Anything near a browser
-      // string limit is a hostile payload or a wrong file — refuse it before
-      // JSON.parse can freeze the terminal.
+      // A real operator file is a few hundred KB; anything near the browser
+      // string limit is a hostile payload. Refuse it before JSON.parse freezes
+      // the terminal.
       if (file.size > MAX_IMPORT_BYTES) {
         throw new Error(
           `Import refused: file is ${(file.size / 1024 / 1024).toFixed(1)} MB; ` +

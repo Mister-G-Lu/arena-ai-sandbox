@@ -1,6 +1,4 @@
-/* NOTICES — zone board + storylet runner.
-   Built on the existing console/terminal design language: same panel chrome,
-   same amber-on-navy palette, same monospace kickers. */
+/* NOTICES — zone board + storylet runner, on the console/terminal design language. */
 
 .zone-board {
   display: grid;

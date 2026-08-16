@@ -1,8 +1,8 @@
 # Tutorial Design: FIRST SHIFT
 ## Orientation Sequence — The Player's First Minutes
 
-> **Status:** Implemented (interactive prototype)
-> **Location:** `docs/index.html` → `#first-shift` section
+> **Status:** Implemented
+> **Location:** `src/components/FirstShift.jsx` + `OrientTerminal*.jsx`
 > **Runtime:** ~2-3 minutes to complete
 > **Purpose:** Eases the player into the game's narrative tone and core mechanics while seeding the central mysteries
 

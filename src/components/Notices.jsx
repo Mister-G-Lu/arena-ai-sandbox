@@ -6,20 +6,16 @@ import { requirementLabel, missingRequirements } from '../game/progression';
 import './Notices.css';
 
 /**
- * NOTICES — the storylet runner.
- *
- * This is the story spine of the game and it is deliberately thin: all content
- * lives in `src/content/<zone>/*.json`, is validated by the existing schema in
- * `src/game/storylets.ts` at load time, and every consequence is filed through
- * the one effects pipeline in GameStateContext. Adding a zone or a card is a
- * data change; this component never learns their names.
+ * The storylet runner — deliberately thin. Content lives in
+ * src/content/<zone>/*.json, validated by src/game/storylets.ts; consequences
+ * file through the one effects pipeline. Adding a zone or card is a data change.
  */
 export default function Notices() {
   const { state, actions, availableZones, requirementCtx } = useGameState();
   const [lastOutcome, setLastOutcome] = useState(null);
 
-  // Content is schema-validated at load. A bad card must fail loudly and in
-  // place — never by setting state during render.
+  // Content is schema-validated at load; a bad card fails loudly, never by
+  // setting state during render.
   const { cards, loadError } = useMemo(() => {
     try {
       return { cards: loadAllStorylets(), loadError: null };
