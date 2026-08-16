@@ -68,6 +68,14 @@ describe('ledger', () => {
     expect(deposit(fresh, 0).credits).toBe(0);
   });
 
+  it('refuses a negative deposit instead of debiting through the back door', () => {
+    const started = { credits: 500, unbound: false };
+    const r = deposit(started, -75);
+    expect(r.credits).toBe(500);
+    expect(r.unbound).toBe(false);
+    expect(r.overflowed).toBe(false);
+  });
+
   it('withdraws only what is there, and an unbound ledger always pays', () => {
     expect(withdraw({ credits: 10, unbound: false }, 20).paid).toBe(false);
     expect(withdraw({ credits: 30, unbound: false }, 20)).toMatchObject({ credits: 10, paid: true });
