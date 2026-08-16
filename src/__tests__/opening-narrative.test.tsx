@@ -563,8 +563,38 @@ describe('opening narrative', () => {
     const zoneButtons = Array.from(document.querySelectorAll('.zone-card')) as HTMLElement[];
     const floor12 = zoneButtons.find((z) => z.textContent?.includes('Floor 12'))!;
     const openFloor12 = floor12.querySelector('button') as HTMLButtonElement;
-    expect(openFloor12.disabled).toBe(false);
-    await act(async () => { openFloor12.click(); });
+    // The breach is not an annex-trace afterthought: on Shift 2 the card is
+    // sealed, and the lock itself shows what evidence the file still lacks.
+    expect(openFloor12.disabled).toBe(true);
+    expect(floor12.textContent).toContain('Doubt');
+    expect(floor12.textContent).toContain('Perception');
+    expect(floor12.textContent).toContain('Day');
+
+    // Two more nights of shifts and coincidences before the file is thick
+    // enough for the expedition (arcs §2.5 — Day 4, Doubt ≥ 3, Perception ≥ 2).
+    await go('console');
+    await tick(100);
+    await waitForActions(50);
+    await finishCurrentShift();
+    await click('BEGIN NEXT SHIFT');
+    await tick(200);
+    expect(save().day).toBe(3);
+    // Shift 3 opens with the night desk's own coincidence.
+    expect(document.body.textContent).toContain('NIGHT DESK // FILED 03:12 // IN YOUR HAND');
+    await waitForActions(50);
+    await finishCurrentShift();
+    await click('BEGIN NEXT SHIFT');
+    await tick(200);
+    expect(save().day).toBe(4);
+    await waitForActions(50);
+
+    await go('investigations');
+    await tick(100);
+    const day4Floor12 = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('Floor 12')) as HTMLElement;
+    const day4Open = day4Floor12.querySelector('button') as HTMLButtonElement;
+    expect(day4Open.disabled).toBe(false);
+    await act(async () => { day4Open.click(); });
     await tick(100);
 
     for (let i = 0; i < 8; i++) {

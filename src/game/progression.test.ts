@@ -150,12 +150,19 @@ describe('zones', () => {
     expect(ids).not.toContain('floor12');
   });
 
-  it('opens Floor 12 only on Shift 2 with curiosity and restricted-area clearance', () => {
+  it('opens Floor 12 only once the file holds §2.5 evidence and the shift is right', () => {
     const floor12 = ZONES.find((z) => z.id === 'floor12')!;
     const clearance = ['notice-storylets', 'restricted-areas'];
     const curious = { doubt: 2, perception: 1, routine: 0 };
-    expect(zoneState(floor12, ctx({ unlocks: clearance, qualities: curious }))).toBe('locked');
-    expect(zoneState(floor12, ctx({ day: 2, unlocks: clearance, qualities: curious }))).toBe('open');
+    // Day 2 with the annex lead's curiosity: still sealed — the breach is not
+    // an annex-trace afterthought, it wants a file worth opening.
+    expect(zoneState(floor12, ctx({ day: 2, unlocks: clearance, qualities: curious }))).toBe('locked');
+    // Day 4 with Senior-level evidence (arcs §2.5: Doubt ≥ 3, Perception ≥ 2).
+    const evidenced = { doubt: 3, perception: 2, routine: 0 };
+    expect(zoneState(floor12, ctx({ day: 3, unlocks: clearance, qualities: evidenced }))).toBe('locked');
+    expect(zoneState(floor12, ctx({ day: 4, unlocks: clearance, qualities: evidenced }))).toBe('open');
+    // The clearance alone is not the key; the evidence gap keeps it sealed.
+    expect(zoneState(floor12, ctx({ day: 5, unlocks: clearance, qualities: curious }))).toBe('locked');
   });
 
   it('opens a supply zone when the good is owned', () => {

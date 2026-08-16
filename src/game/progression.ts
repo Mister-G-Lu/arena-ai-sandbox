@@ -310,11 +310,16 @@ export const ZONES: ZoneDef[] = [
     visibleRequires: { day: 2 },
     requiresUnlock: 'restricted-areas',
     hintUnlock: 'restricted-areas',
-    requires: { day: 2, doubt: 2, perception: 1 },
+    // The §2.5 breach gate (Senior Operator, Doubt ≥ 3, Perception ≥ 2), plus
+    // the earliest shift the evidence can cohere: the lead arrives on Shift 2,
+    // the coincidences land on Shift 3, and the expedition is its own evening
+    // rather than an annex-trace afterthought. (The true Day-30 floor waits on
+    // the rest of the Month-1 content; see design/arcs.md §2.5.)
+    requires: { day: 4, doubt: 3, perception: 2 },
     component: 'key',
     componentLabel: 'NULL KEY',
     lockedNote:
-      'The field order is sealed behind SENIOR OPERATOR clearance. The system believes you will stop asking. The elevator panel is still warm.',
+      'The field order is sealed behind SENIOR OPERATOR clearance and a file thicker than yours. The system believes you will stop asking. The elevator panel is still warm.',
     closedNote:
       'Floor 12 has been redesignated. The elevator panel is warm and blank again. The key is still in your pocket.',
   },
