@@ -7,7 +7,13 @@ import { TASKS_PER_SHIFT } from '../game/dispatch';
 import SaveManagement from './SaveManagement';
 import './ProfilePage.css';
 
-/** Quality unlock captions, keyed by quality and threshold. Data, not markup. */
+/**
+ * Quality unlock captions, keyed by quality and threshold. These are
+ * *teasers*, not claims: promotions and zones are gated by declarative
+ * `requires` maps evaluated in data, and a quality level alone never unlocks
+ * anything. The profile renders them dimmed and checkmark-free so it cannot
+ * advertise a ✓ for a door the data did not actually open.
+ */
 const QUALITY_UNLOCKS = {
   doubt: [
     'Notice storylets',
@@ -27,7 +33,7 @@ const QUALITY_UNLOCKS = {
 };
 
 export default function ProfilePage() {
-  const { state, ledger, requirementCtx, PROMOTIONS } = useGameState();
+  const { state, ledger, requirementCtx, PROMOTIONS, COMPONENT_DEFS } = useGameState();
   const {
     components,
     qualities,
@@ -124,7 +130,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="resource-details">
-                <div className="resource-amount">{componentsCount} / 6</div>
+                <div className="resource-amount">{componentsCount} / {COMPONENT_DEFS.length}</div>
                 <div className="component-list">
                   {Object.entries(components).map(([name, acquired]) => (
                     <div key={name} className={`component-item ${acquired ? 'acquired' : ''}`}>
@@ -160,11 +166,14 @@ export default function ProfilePage() {
                       <div key={i} className={`quality-segment ${i < value ? 'filled' : ''}`} />
                     ))}
                   </div>
-                  <div className="quality-unlocks">
-                    {captions.slice(0, value).map((caption, i) => (
-                      <span className="unlock" key={i}>✓ {caption}</span>
-                    ))}
-                  </div>
+                  {captions.length > 0 && (
+                    <div className="quality-unlocks">
+                      <span className="unlock-hint">AT HIGHER LEVELS:</span>
+                      {captions.slice(0, value).map((caption, i) => (
+                        <span className="unlock dim" key={i}>◇ {caption}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

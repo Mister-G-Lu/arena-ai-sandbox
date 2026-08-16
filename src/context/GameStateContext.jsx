@@ -4,6 +4,7 @@ import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { QUALITY_DEFS, normalizeEffects, clampQuality, qualityDef } from '../game/qualities';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
+  COMPONENT_DEFS,
   PROMOTIONS,
   ZONES,
   nextPromotion,
@@ -383,6 +384,7 @@ export function GameStateProvider({ children }) {
     requirementCtx,
     availableZones,
     QUALITY_DEFS,
+    COMPONENT_DEFS,
     PROMOTIONS,
     ZONES,
     actions: {

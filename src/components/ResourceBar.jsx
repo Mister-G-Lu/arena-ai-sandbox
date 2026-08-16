@@ -4,7 +4,7 @@ import { TASKS_PER_SHIFT } from '../game/dispatch';
 import './ResourceBar.css';
 
 export default function ResourceBar() {
-  const { state, ledger, PROMOTIONS } = useGameState();
+  const { state, ledger, PROMOTIONS, COMPONENT_DEFS } = useGameState();
   const { components, day, tasksCompleted } = state;
 
   const componentsCount = Object.values(components).filter(Boolean).length;
@@ -43,7 +43,7 @@ export default function ResourceBar() {
           <span className="resource-icon">⚙</span>
           <div className="resource-info">
             <span className="resource-label">Components</span>
-            <span className="resource-value">{componentsCount}/6</span>
+            <span className="resource-value">{componentsCount}/{COMPONENT_DEFS.length}</span>
             <div className="component-dots">
               {Object.entries(components).map(([name, acquired]) => (
                 <div
