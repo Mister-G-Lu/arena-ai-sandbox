@@ -175,6 +175,32 @@ describe('zones', () => {
     expect(zoneState(zoneById('night-radio')!, operator)).toBe('locked');
   });
 
+  it('schedules the supply zones one per night so the first week keeps paying out', () => {
+    const operator = ctx({
+      tier: 1,
+      unlocks: ['basic-tasks', 'break-room', 'memos', 'notice-storylets'],
+      supplies: {
+        'radio-permit': true,
+        torch: true,
+        'bolt-cutters': true,
+        thermos: true,
+        'doorman-smokes': true,
+      },
+    });
+    // Owned early, noticed later: the zone's night is part of its lock.
+    const schedule: Array<[string, number]> = [
+      ['night-radio', 3],
+      ['utility-closet', 4],
+      ['custodial-stores', 5],
+      ['window-ledge', 6],
+      ['doorman', 7],
+    ];
+    for (const [zoneId, day] of schedule) {
+      expect(zoneState(zoneById(zoneId)!, ctx({ ...operator, day: day - 1 }))).toBe('locked');
+      expect(zoneState(zoneById(zoneId)!, ctx({ ...operator, day }))).toBe('open');
+    }
+  });
+
   it('reports a finished zone as complete regardless of requirements', () => {
     const floor12 = ZONES.find((z) => z.id === 'floor12')!;
     expect(zoneState(floor12, ctx({ zones: { floor12: 'complete' } }))).toBe('complete');

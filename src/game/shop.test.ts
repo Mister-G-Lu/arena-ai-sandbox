@@ -40,9 +40,10 @@ describe('supply table', () => {
     for (const supply of SUPPLY_DEFS.filter((s) => s.unlocksZone)) {
       const zone = zoneById(supply.unlocksZone!);
       expect(zone, `${supply.id} unlocks a configured zone`).toBeDefined();
-      // The zone's requirement is exactly the supply: the engine gates the
-      // storylet on the good, so nothing here can drift apart.
-      expect(zone?.requires).toEqual({ [supply.id]: 1 });
+      // The zone must gate on the good itself. (A zone may *also* carry a day
+      // gate — the supply zones are scheduled one per night so the first week
+      // keeps paying out — but the supply is always in the requirement map.)
+      expect(zone?.requires).toMatchObject({ [supply.id]: 1 });
     }
     // ...and the reverse: every supply-gated zone is gated by a real supply.
     for (const zone of ZONES) {

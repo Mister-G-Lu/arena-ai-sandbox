@@ -334,7 +334,10 @@ export const ZONES: ZoneDef[] = [
     visibleRequires: { tier: 1 },
     requiresUnlock: 'restricted-areas',
     hintUnlock: 'restricted-areas',
-    requires: { doubt: 2, perception: 1 },
+    // The drawer opens the night after promotion: Shift 3, once the
+    // coincidences are on file. Its patch notes read best the evening before
+    // the Floor 12 expedition, not in the same sitting as the annex trace.
+    requires: { day: 3, doubt: 2, perception: 1 },
     onceEach: true,
     lockedNote:
       'The system will open this drawer for SENIOR OPERATORS — operators who have noticed enough to be trusted with what is inside.',
@@ -363,7 +366,10 @@ export const ZONES: ZoneDef[] = [
     board: 'notices',
     entry: 'night-radio-01',
     visibleRequires: { tier: 1 },
-    requires: { 'radio-permit': 1 },
+    // Each supply zone is scheduled for its own night: bought early, noticed
+    // later, so the week after Shift 2 delivers one fresh beat per shift
+    // instead of a single evening dump.
+    requires: { 'radio-permit': 1, day: 3 },
     onceEach: true,
     closedNote: 'The channel stays on after you switch it off. It always has.',
   },
@@ -376,7 +382,7 @@ export const ZONES: ZoneDef[] = [
     board: 'notices',
     entry: 'utility-closet-01',
     visibleRequires: { tier: 1 },
-    requires: { torch: 1 },
+    requires: { torch: 1, day: 4 },
     onceEach: true,
     closedNote: 'The latch clicks behind you. One soft knock, once, from the dark. Just the one.',
   },
@@ -389,7 +395,7 @@ export const ZONES: ZoneDef[] = [
     board: 'notices',
     entry: 'custodial-01',
     visibleRequires: { tier: 1 },
-    requires: { 'bolt-cutters': 1 },
+    requires: { 'bolt-cutters': 1, day: 5 },
     onceEach: true,
     closedNote: 'The shelf where they were not is empty again. The fence remains not there.',
   },
@@ -402,7 +408,7 @@ export const ZONES: ZoneDef[] = [
     board: 'notices',
     entry: 'window-ledge-01',
     visibleRequires: { tier: 1 },
-    requires: { thermos: 1 },
+    requires: { thermos: 1, day: 6 },
     onceEach: true,
     closedNote: 'The thermos stays warm longer than the building\u2019s coffee ever has.',
   },
@@ -415,7 +421,7 @@ export const ZONES: ZoneDef[] = [
     board: 'notices',
     entry: 'doorman-01',
     visibleRequires: { tier: 1 },
-    requires: { 'doorman-smokes': 1 },
+    requires: { 'doorman-smokes': 1, day: 7 },
     onceEach: true,
     closedNote: 'The counter breathes evenly now. It got what it wanted.',
   },
