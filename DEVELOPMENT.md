@@ -97,6 +97,16 @@ React state directly.
 Prefer data-table additions over component branches. A new component belongs in
 `COMPONENT_DEFS`; save defaults and counters derive from that table.
 
+`loadAllStorylets()` validates the whole graph after validating each card. It
+rejects duplicate card/choice IDs, missing or cross-zone `next` targets,
+ambiguous terminal flags, bad zone entries, and unknown effect names. Keep new
+rules in `validateStoryGraph` so every caller gets the same guarantees.
+
+Shift pacing constants and the anomaly guarantee live in `src/game/dispatch.ts`.
+Random anomalies remain possible, but when a shift has seen none, task 50 is
+forced to be anomalous. Persist any future pity/guarantee counters in the
+canonical game schema so reloads cannot reroll progression gates.
+
 ## Content safety
 
 Treat every string from JSON, saves, Supabase, URLs, and future localization as

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const VALID_PAGES = ['home', 'first-shift', 'console', 'notices', 'profile'];
 
@@ -24,9 +24,9 @@ export function useRouter() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  function navigate(target) {
+  const navigate = useCallback((target) => {
     window.location.hash = target;
-  }
+  }, []);
 
   return { page, navigate };
 }

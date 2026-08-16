@@ -48,7 +48,7 @@ export default [
     },
   },
   {
-    files: ['src/**/*.test.{js,jsx}'],
+    files: ['src/**/*.test.{js,jsx}', 'src/context/GameStateContext.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

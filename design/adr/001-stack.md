@@ -71,7 +71,14 @@ content pipeline, and a test runner with teeth.
   statements, enforced in CI-equivalent local `vitest --coverage`.
 - Vitest runs **without globals**; `cleanup()` lives in the test setup file.
 - No Redux, no router-for-its-own-sake, no CSS-in-JS. CSS is still CSS.
-  State that is a save file lives in small hooks (`useActions`, `useProgress`,
-  later `useAuth`).
-- The vanilla site remains the public face until the rewrite PR lands; this
-  ADR does not change what Pages serves today.
+- The playable runtime has one state owner, `GameStateContext`, and one
+  versioned persisted schema, `src/lib/gameSave.ts`. Local storage,
+  import/export, and Supabase transport all consume that complete schema;
+  feature-specific hooks must not invent partial save files.
+- `src/lib/config.ts` is the only runtime configuration reader. Supabase uses
+  `VITE_SUPABASE_URL` plus `VITE_SUPABASE_PUBLISHABLE_KEY`; deployed defaults
+  live in `.env.production` and must never contain a secret/service-role key.
+- JSON narrative is plain text and renders through React interpolation. Rich
+  local terminal copy is JSX/structured data, never executable HTML strings.
+- GitHub Pages is built from source by `.github/workflows/pages.yml`; `docs/`
+  remains the checked build artifact for simple branch-based fallback hosting.
