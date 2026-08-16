@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { describeEffects } from '../game/qualities';
 
 const BREAK_ROOM = `The break room is through the door behind your station.
 
@@ -13,14 +14,73 @@ It was on when you arrived.
 
 How do you feel about the coffee?`;
 
-export default function OrientTerminalBreakRoom({ onComplete }) {
-  const [choice, setChoice] = useState(null);
-  const [showContinue, setShowContinue] = useState(false);
+/**
+ * The first real choice in the game. Each option is data: label, the lines the
+ * terminal answers with, the effects it files, and the residue it leaves. The
+ * system says "the system has noted your observation" — and now it actually does.
+ */
+const CHOICES = [
+  {
+    id: 'fine',
+    label: "IT'S FINE",
+    effects: { Routine: 1 },
+    lines: [
+      { text: 'It is fine. It is always fine.' },
+      { text: 'Comfort is compliance.', em: true }
+    ],
+    logbook: null
+  },
+  {
+    id: 'didnt-make',
+    label: "I DIDN'T MAKE THIS",
+    effects: { Perception: 1, Attention: 1 },
+    lines: [
+      { text: 'Correct. You did not.' },
+      { text: 'No one did. It was warm before the shift.' },
+      { text: 'It was warm before the building.', warn: true },
+      { text: 'The system has noted your observation.' }
+    ],
+    logbook: 'Night one: the coffee was warm before I arrived. Nobody made it. Noted, by me and by something else.'
+  },
+  {
+    id: 'who',
+    label: 'WHO MADE IT?',
+    effects: { Doubt: 1, Attention: 1 },
+    lines: [
+      { text: '[NO DATA]', dim: true },
+      { text: 'The question has been filed. The file is empty.' },
+      { text: 'The file has always been empty.', em: true },
+      { text: 'The system appreciates your curiosity.' },
+      { text: 'The system does not appreciate it enough to answer.' }
+    ],
+    logbook: 'Night one: asked who makes the coffee. The answer field exists. It is empty. An empty field is still a field.'
+  }
+];
 
-  const handleChoice = (c) => {
-    setChoice(c);
-    // Show continue button after a delay so they read the response
-    setTimeout(() => setShowContinue(true), 600);
+function LineText({ line }) {
+  if (line.em) return <em>{line.text}</em>;
+  if (line.warn) return <span className="warn">{line.text}</span>;
+  if (line.dim) return <span className="dim">{line.text}</span>;
+  return line.text;
+}
+
+export default function OrientTerminalBreakRoom({ onComplete, onChoose, reviewMode = false }) {
+  const [choiceId, setChoiceId] = useState(null);
+  const [showContinue, setShowContinue] = useState(false);
+  const continueTimer = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(continueTimer.current), []);
+
+  const choice = CHOICES.find((c) => c.id === choiceId);
+
+  const handleChoice = (selected) => {
+    setChoiceId(selected.id);
+    // A replayed orientation is an archived record: it must not re-file effects.
+    if (!reviewMode && typeof onChoose === 'function') {
+      onChoose({ effects: selected.effects, logbook: selected.logbook });
+    }
+    // Show continue after a delay so the response can be read.
+    continueTimer.current = window.setTimeout(() => setShowContinue(true), 600);
   };
 
   return (
@@ -38,53 +98,31 @@ export default function OrientTerminalBreakRoom({ onComplete }) {
 
           {!choice && (
             <div className="orient-choices">
-              <button className="btn btn-ghost" onClick={() => handleChoice('fine')}>
-                IT'S FINE
-              </button>
-              <button className="btn btn-ghost" onClick={() => handleChoice('didnt-make')}>
-                I DIDN'T MAKE THIS
-              </button>
-              <button className="btn btn-ghost" onClick={() => handleChoice('who')}>
-                WHO MADE IT?
-              </button>
-            </div>
-          )}
-
-          {choice === 'fine' && (
-            <div className="orient-response">
-              <div className="response-text">It is fine. It is always fine.</div>
-              <div className="response-text"><em>Comfort is compliance.</em></div>
-              {showContinue && (
-                <button className="btn btn-primary" onClick={onComplete}>
-                  ▸ RETURN TO STATION
+              {CHOICES.map((option) => (
+                <button
+                  key={option.id}
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => handleChoice(option)}
+                >
+                  {option.label}
                 </button>
-              )}
+              ))}
             </div>
           )}
 
-          {choice === 'didnt-make' && (
+          {choice && (
             <div className="orient-response">
-              <div className="response-text">Correct. You did not.</div>
-              <div className="response-text">No one did. It was warm before the shift.</div>
-              <div className="response-text"><span className="warn">It was warm before the building.</span></div>
-              <div className="response-text">The system has noted your observation.</div>
-              {showContinue && (
-                <button className="btn btn-primary" onClick={onComplete}>
-                  ▸ RETURN TO STATION
-                </button>
+              {choice.lines.map((line, i) => (
+                <div className="response-text" key={i}><LineText line={line} /></div>
+              ))}
+              {!reviewMode && describeEffects(choice.effects) && (
+                <div className="response-text dim">
+                  FILED TO YOUR RECORD: {describeEffects(choice.effects)}
+                </div>
               )}
-            </div>
-          )}
-
-          {choice === 'who' && (
-            <div className="orient-response">
-              <div className="response-text"><span className="dim">[NO DATA]</span></div>
-              <div className="response-text">The question has been filed. The file is empty.</div>
-              <div className="response-text">The file has <em>always</em> been empty.</div>
-              <div className="response-text">The system appreciates your curiosity.</div>
-              <div className="response-text">The system does not appreciate it <em>enough</em> to answer.</div>
               {showContinue && (
-                <button className="btn btn-primary" onClick={onComplete}>
+                <button className="btn btn-primary" type="button" onClick={onComplete}>
                   ▸ RETURN TO STATION
                 </button>
               )}
