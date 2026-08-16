@@ -1,0 +1,30 @@
+{
+  "id": "interim-deep-03",
+  "zone": "interim-deep",
+  "title": "The Cleaner",
+  "body": "The Cleaner has no face in the gap. He offers a small power source and asks whether you intend to repair the city or leave it honest.",
+  "choices": [
+    {
+      "id": "ask",
+      "label": "Ask what honest means.",
+      "outcome": {
+        "text": "“It means it stops agreeing with itself.” He puts the component on the desk.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "interim-deep-04"
+    },
+    {
+      "id": "take",
+      "label": "Take the component without asking.",
+      "outcome": {
+        "text": "The Cleaner nods. “That is also an answer.” The component is cold enough to burn.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "interim-deep-04"
+    }
+  ]
+}

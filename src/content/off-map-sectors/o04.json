@@ -1,0 +1,30 @@
+{
+  "id": "off-map-sectors-04",
+  "zone": "off-map-sectors",
+  "title": "The copy",
+  "body": "The CHIP contains a recording of your first orientation. Under it is a second recording: the moment before it.",
+  "choices": [
+    {
+      "id": "take",
+      "label": "Take the CHIP and return.",
+      "outcome": {
+        "text": "VANTABLACK finds the road at 05:59:58. The city renders around the cab, relieved.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "erase",
+      "label": "Erase the second recording.",
+      "outcome": {
+        "text": "The first recording changes too. You keep the CHIP because the copy is the point.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "completeZone": true
+    }
+  ]
+}

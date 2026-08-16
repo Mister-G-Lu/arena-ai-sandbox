@@ -1,0 +1,30 @@
+{
+  "id": "interim-deep-02",
+  "zone": "interim-deep",
+  "title": "The audit",
+  "body": "The Auditor sits at a desk assembled from terminated forms. Seven discrepancies wait beneath a blank signature.",
+  "choices": [
+    {
+      "id": "read",
+      "label": "Read the discrepancies.",
+      "outcome": {
+        "text": "They are not mistakes. They are seven versions of the same decision, each filed by someone with your hands.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "interim-deep-03"
+    },
+    {
+      "id": "sign",
+      "label": "Sign the blank line.",
+      "outcome": {
+        "text": "The pen refuses ink. The Auditor looks disappointed in a way that feels practiced.",
+        "qualities": {
+          "Attention": 1
+        }
+      },
+      "next": "interim-deep-03"
+    }
+  ]
+}

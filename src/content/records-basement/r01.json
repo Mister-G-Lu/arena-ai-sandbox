@@ -1,0 +1,30 @@
+{
+  "id": "records-basement-01",
+  "zone": "records-basement",
+  "title": "The stairwell",
+  "body": "The lift refuses to acknowledge the basement. The stairs continue below the foundations, past a sign that says MUNICIPAL MEMORY — KEEP DRY.",
+  "choices": [
+    {
+      "id": "descend",
+      "label": "Take the stairs.",
+      "outcome": {
+        "text": "The air below tastes of paper and rain.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "records-basement-02"
+    },
+    {
+      "id": "return",
+      "label": "Leave the sign where it is.",
+      "outcome": {
+        "text": "The sign acquires your name in pencil. You leave anyway.",
+        "qualities": {
+          "Routine": 1
+        }
+      },
+      "endZone": true
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "vent-network-02",
+  "zone": "vent-network",
+  "title": "Between walls",
+  "body": "The crawlspace carries old dispatch audio. Operator 5 is reading tomorrow's queue, then whispering numbers that do not fit any route.",
+  "choices": [
+    {
+      "id": "follow",
+      "label": "Follow the numbers.",
+      "outcome": {
+        "text": "They lead to a junction labelled PATCH SCAR 03. The label has been pried open.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "vent-network-03"
+    },
+    {
+      "id": "mark",
+      "label": "Mark the wall and continue.",
+      "outcome": {
+        "text": "Your chalk mark appears ahead of you first. The corridor has started taking shortcuts.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "vent-network-03"
+    }
+  ]
+}

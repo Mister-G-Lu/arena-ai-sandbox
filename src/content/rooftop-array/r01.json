@@ -1,0 +1,30 @@
+{
+  "id": "rooftop-array-01",
+  "zone": "rooftop-array",
+  "title": "The roof door",
+  "body": "The permit unlocks the roof, but the door opens onto a different hour. Rain falls upward beyond the threshold.",
+  "choices": [
+    {
+      "id": "step",
+      "label": "Step outside with the thermos.",
+      "outcome": {
+        "text": "The rain remembers gravity when you do. The antennas begin their nightly test.",
+        "qualities": {
+          "Attention": 1
+        }
+      },
+      "next": "rooftop-array-02"
+    },
+    {
+      "id": "wait",
+      "label": "Wait for the test to finish.",
+      "outcome": {
+        "text": "The test tone says your name in a voice made of weather. You open the door.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "rooftop-array-02"
+    }
+  ]
+}

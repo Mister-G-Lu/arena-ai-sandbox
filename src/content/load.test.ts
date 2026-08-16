@@ -7,7 +7,7 @@ describe('content pipeline', () => {
   const cards = loadAllStorylets();
 
   it('loads every live deck, including the one-card Shift 2 lead', () => {
-    expect(cards).toHaveLength(26);
+    expect(cards).toHaveLength(46);
     expect(cardsInZone(cards, 'annex-order')).toHaveLength(1);
     expect(cardsInZone(cards, 'routine')).toHaveLength(6);
     expect(cardsInZone(cards, 'floor12')).toHaveLength(6);

@@ -1,0 +1,30 @@
+{
+  "id": "records-basement-03",
+  "zone": "records-basement",
+  "title": "The eraser",
+  "body": "The basement wall is covered in crossed-out districts. Behind the newest mark is a lens-shaped piece of glass, set into the ledger like an eye.",
+  "choices": [
+    {
+      "id": "remove",
+      "label": "Lift the eraser from the page.",
+      "outcome": {
+        "text": "The erased district returns for one breath. You see its streetlights, and the edge of the source beneath them.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "records-basement-04"
+    },
+    {
+      "id": "observe",
+      "label": "Read without touching.",
+      "outcome": {
+        "text": "The mark changes from a line to a warning. You understand why the clerk wore gloves.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "records-basement-04"
+    }
+  ]
+}

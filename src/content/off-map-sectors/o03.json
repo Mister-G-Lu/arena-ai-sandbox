@@ -1,0 +1,30 @@
+{
+  "id": "off-map-sectors-03",
+  "zone": "off-map-sectors",
+  "title": "Operator 5",
+  "body": "A road sign reads OPERATOR 5 — NEXT LEFT. VANTABLACK says the sign is not for you. The voice comes from the back seat.",
+  "choices": [
+    {
+      "id": "turn",
+      "label": "Take the turn.",
+      "outcome": {
+        "text": "The back seat is empty, but a memory card is buckled in. Its label is your employee number.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "off-map-sectors-04"
+    },
+    {
+      "id": "straight",
+      "label": "Stay on the road.",
+      "outcome": {
+        "text": "The sign changes to OPERATOR 5 — TOO LATE. The memory card is waiting in the glove box.",
+        "qualities": {
+          "Doubt": 1
+        }
+      },
+      "next": "off-map-sectors-04"
+    }
+  ]
+}

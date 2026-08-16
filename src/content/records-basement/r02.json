@@ -1,0 +1,30 @@
+{
+  "id": "records-basement-02",
+  "zone": "records-basement",
+  "title": "The address row",
+  "body": "A clerk has left a ledger open. Every address is written twice: once for the building, once for the version of the building Meridian currently permits.",
+  "choices": [
+    {
+      "id": "compare",
+      "label": "Compare the two rows.",
+      "outcome": {
+        "text": "The second address is your desk. The first is somewhere the city has deleted.",
+        "qualities": {
+          "Perception": 1
+        }
+      },
+      "next": "records-basement-03"
+    },
+    {
+      "id": "close",
+      "label": "Close the ledger.",
+      "outcome": {
+        "text": "The pages close around a missing street. Something below you exhales.",
+        "qualities": {
+          "Attention": 1
+        }
+      },
+      "next": "records-basement-03"
+    }
+  ]
+}
