@@ -1,13 +1,25 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { deposit, withdraw, formatCredits, wordPressure, CREDIT_LIMIT } from '../game/ledger';
+import { QUALITY_DEFS, normalizeEffects, clampQuality, qualityDef } from '../game/qualities';
+import { GLITCH_DEFS } from '../game/glitches';
+import {
+  PROMOTIONS,
+  ZONES,
+  nextPromotion,
+  unlocksThrough,
+  visibleZones,
+  zoneState,
+  zoneById
+} from '../game/progression';
 
 const GameStateContext = createContext();
 const STORAGE_KEY = 'fr:player-progress:v1';
 
 // Initial state
 const INITIAL_STATE = {
-  // Resources
+  // Resources — the ledger has no design cap. Only the word has a ceiling.
   credits: 0,
-  maxCredits: 500, // Increases with promotion
+  ledgerUnbound: false,
 
   // Components (story resources)
   components: {
@@ -23,6 +35,7 @@ const INITIAL_STATE = {
   qualities: {
     doubt: 0,        // Understanding meter (0-5)
     perception: 0,   // Observation meter (0-5)
+    routine: 0       // Camouflage; the system likes workers who work
   },
 
   // Hidden
@@ -31,6 +44,7 @@ const INITIAL_STATE = {
   // Progress
   day: 1,
   tasksCompleted: 0,
+  discrepanciesLogged: 0,
   deaths: 0,
   orientation: {
     completed: false,
@@ -41,9 +55,19 @@ const INITIAL_STATE = {
   // Promotion
   promotion: {
     tier: 0,
-    title: 'Unknown Operator',
-    unlocks: []
+    title: PROMOTIONS[0].title,
+    unlocks: [...PROMOTIONS[0].unlocks]
   },
+
+  // Storylet zones: id -> 'open' | 'complete'
+  zones: {},
+  // Cards already resolved, so a notice is never served twice
+  seenStorylets: [],
+  // Where the operator currently stands inside a zone: { zone, storyletId }
+  currentStorylet: null,
+
+  // Glitches the operator has *kept*. Proof the city is a program.
+  glitches: [],
 
   // Logbook (Residue)
   logbook: [],
@@ -63,9 +87,15 @@ function loadSavedState() {
       Number(parsed.tasksCompleted) > 0 || Number(parsed.day) > 1
     );
 
-    return {
+    // Legacy saves carried a `maxCredits` ceiling. The ceiling is gone; a save
+    // that was pinned to it keeps its balance and simply stops being capped.
+    const legacyUnbound = parsed.maxCredits === Infinity || parsed.credits === Infinity;
+
+    const migrated = {
       ...INITIAL_STATE,
       ...parsed,
+      credits: parsed.credits === Infinity ? Infinity : Number(parsed.credits) || 0,
+      ledgerUnbound: Boolean(parsed.ledgerUnbound || legacyUnbound),
       components: { ...INITIAL_STATE.components, ...parsed.components },
       qualities: { ...INITIAL_STATE.qualities, ...parsed.qualities },
       orientation: {
@@ -74,13 +104,87 @@ function loadSavedState() {
         ...(hasLegacyConsoleProgress ? { completed: true, skipped: true } : {})
       },
       promotion: { ...INITIAL_STATE.promotion, ...parsed.promotion },
+      zones: { ...INITIAL_STATE.zones, ...parsed.zones },
+      seenStorylets: Array.isArray(parsed.seenStorylets) ? parsed.seenStorylets : [],
+      currentStorylet: parsed.currentStorylet ?? null,
+      glitches: Array.isArray(parsed.glitches) ? parsed.glitches : [],
       logbook: Array.isArray(parsed.logbook) ? parsed.logbook : [],
       discoveries: Array.isArray(parsed.discoveries) ? parsed.discoveries : [],
       contacts: Array.isArray(parsed.contacts) ? parsed.contacts : []
     };
+
+    // The credit ceiling is retired. Drop it rather than carrying a dead key.
+    delete migrated.maxCredits;
+    return migrated;
   } catch {
     return INITIAL_STATE;
   }
+}
+
+/** Append a logbook entry inside a reducer without duplicating the shape. */
+function withLog(prev, text, extra = {}) {
+  if (!text) return { ...prev, ...extra };
+  return {
+    ...prev,
+    ...extra,
+    logbook: [...prev.logbook, { day: prev.day, text, timestamp: Date.now() }]
+  };
+}
+
+/**
+ * Apply a normalised effects map to a state object. Single code path for
+ * orientation choices, console discrepancies and storylet outcomes.
+ */
+function applyEffectsToState(prev, rawEffects) {
+  const effects = normalizeEffects(rawEffects);
+  if (Object.keys(effects).length === 0) return prev;
+
+  let next = { ...prev, qualities: { ...prev.qualities } };
+
+  for (const [key, delta] of Object.entries(effects)) {
+    const def = qualityDef(key);
+    if (!def) continue;
+
+    if (def.kind === 'quality') {
+      next.qualities[key] = clampQuality(key, (next.qualities[key] ?? 0) + delta);
+    } else if (def.kind === 'attention') {
+      next.attention = clampQuality('attention', (next.attention ?? 0) + delta);
+    } else if (def.kind === 'credits') {
+      const result = deposit(
+        { credits: next.credits, unbound: next.ledgerUnbound },
+        delta * (def.rate ?? 1)
+      );
+      next = commitLedger(next, result);
+    }
+  }
+
+  return next;
+}
+
+/** Fold a ledger result back into game state, honouring the overflow glitch. */
+function commitLedger(prev, result) {
+  const next = { ...prev, credits: result.credits, ledgerUnbound: result.unbound };
+  const glitch = GLITCH_DEFS['ledger-overflow'];
+  if (!result.overflowed || prev.glitches.includes(glitch.id)) return next;
+
+  return withLog(
+    next,
+    `LEDGER OVERFLOW. The balance read ${result.wrapped?.toLocaleString?.() ?? 'a negative number'} for one frame, ` +
+    'then stopped being a number at all. A ledger that wraps is a ledger with a word size. ' +
+    'Meridian has a word size.',
+    {
+      glitches: [...prev.glitches, glitch.id],
+      qualities: {
+        ...prev.qualities,
+        doubt: clampQuality('doubt', (prev.qualities.doubt ?? 0) + 1)
+      },
+      discoveries: [...prev.discoveries, {
+        day: prev.day,
+        text: `THE WORD: the municipal ledger is ${CREDIT_LIMIT.toLocaleString()} wide. Nothing in a city needs to be exactly that wide.`,
+        timestamp: Date.now()
+      }]
+    }
+  );
 }
 
 export function GameStateProvider({ children }) {
@@ -98,132 +202,169 @@ export function GameStateProvider({ children }) {
     }
   }, [state]);
 
-  // Credit management
+  /* ---------------- ledger ---------------- */
+
   const addCredits = useCallback((amount) => {
-    setState(prev => {
-      const newCredits = Math.min(prev.credits + amount, prev.maxCredits);
-      return { ...prev, credits: newCredits };
-    });
+    setState(prev => commitLedger(prev, deposit({ credits: prev.credits, unbound: prev.ledgerUnbound }, amount)));
   }, []);
 
   const spendCredits = useCallback((amount) => {
     setState(prev => {
-      if (prev.credits < amount) return prev;
-      return { ...prev, credits: prev.credits - amount };
+      const result = withdraw({ credits: prev.credits, unbound: prev.ledgerUnbound }, amount);
+      if (!result.paid) return prev;
+      return { ...prev, credits: result.credits, ledgerUnbound: result.unbound };
     });
   }, []);
 
-  // Component management
-  const addComponent = useCallback((componentName) => {
-    setState(prev => ({
-      ...prev,
-      components: {
-        ...prev.components,
-        [componentName]: true
-      }
-    }));
+  /* ---------------- components ---------------- */
+
+  const addComponent = useCallback((componentName, label) => {
+    setState(prev => {
+      if (!(componentName in prev.components) || prev.components[componentName]) return prev;
+      return withLog(
+        prev,
+        `Recovered: ${label || componentName.toUpperCase()}. It is real in the morning. Almost nothing is.`,
+        { components: { ...prev.components, [componentName]: true } }
+      );
+    });
   }, []);
 
-  const hasComponent = useCallback((componentName) => {
-    return state.components[componentName];
-  }, [state.components]);
+  const hasComponent = useCallback((componentName) => Boolean(state.components[componentName]), [state.components]);
 
   const componentsCount = Object.values(state.components).filter(Boolean).length;
 
-  // Quality management
-  const increaseQuality = useCallback((quality, amount = 1) => {
-    setState(prev => ({
-      ...prev,
-      qualities: {
-        ...prev.qualities,
-        [quality]: Math.min(prev.qualities[quality] + amount, 5)
-      }
-    }));
+  /* ---------------- qualities ---------------- */
+
+  /** The one public way consequences enter the game. */
+  const applyEffects = useCallback((effects) => {
+    setState(prev => applyEffectsToState(prev, effects));
   }, []);
 
-  // Attention management
+  const increaseQuality = useCallback((quality, amount = 1) => {
+    setState(prev => applyEffectsToState(prev, { [quality]: amount }));
+  }, []);
+
   const increaseAttention = useCallback((amount = 1) => {
-    setState(prev => ({
-      ...prev,
-      attention: Math.min(prev.attention + amount, 10)
-    }));
+    setState(prev => applyEffectsToState(prev, { attention: amount }));
   }, []);
 
   const decreaseAttention = useCallback((amount = 1) => {
-    setState(prev => ({
-      ...prev,
-      attention: Math.max(prev.attention - amount, 0)
-    }));
+    setState(prev => applyEffectsToState(prev, { attention: -amount }));
   }, []);
 
-  // Promotion system
-  const PROMOTIONS = [
-    {
-      tier: 0,
-      title: 'Unknown Operator',
-      maxCredits: 500,
-      unlocks: ['basic-tasks', 'break-room', 'memos']
-    },
-    {
-      tier: 1,
-      title: 'Operator',
-      maxCredits: 1000,
-      unlocks: ['notice-storylets', 'first-investigation'],
-      requirement: () => state.qualities.doubt >= 1
-    },
-    {
-      tier: 2,
-      title: 'Senior Operator',
-      maxCredits: 2500,
-      unlocks: ['restricted-areas', 'deeper-investigation'],
-      requirement: () => state.qualities.doubt >= 2 && state.deaths >= 1
-    },
-    {
-      tier: 3,
-      title: 'Lead Operator',
-      maxCredits: 5000,
-      unlocks: ['self-dispatch', 'operator5-log'],
-      requirement: () => state.qualities.doubt >= 3 && componentsCount >= 3
-    },
-    {
-      tier: 4,
-      title: 'Acting Manager',
-      maxCredits: 10000,
-      unlocks: ['classified-memos', 'all-secret-zones'],
-      requirement: () => state.qualities.doubt >= 4 && componentsCount >= 4
-    },
-    {
-      tier: 5,
-      title: 'Manager',
-      maxCredits: Infinity,
-      unlocks: ['the-summons', 'final-choice', 'endings'],
-      requirement: () => componentsCount >= 6
-    }
-  ];
+  /* ---------------- promotion (automatic) ---------------- */
 
-  const checkPromotion = useCallback(() => {
-    const currentTier = state.promotion.tier;
-    const nextTier = PROMOTIONS[currentTier + 1];
+  const requirementCtx = useMemo(() => ({
+    qualities: state.qualities,
+    attention: state.attention,
+    componentsCount,
+    deaths: state.deaths,
+    day: state.day,
+    unlocks: state.promotion.unlocks,
+    zones: state.zones
+  }), [state.qualities, state.attention, componentsCount, state.deaths, state.day, state.promotion.unlocks, state.zones]);
 
-    if (!nextTier) return false;
+  // Promotions are evaluated by the system, not requested by the player.
+  useEffect(() => {
+    const earned = nextPromotion(state.promotion.tier, requirementCtx);
+    if (!earned) return;
+    setState(prev => withLog(prev, earned.memo, {
+      promotion: {
+        tier: earned.tier,
+        title: earned.title,
+        unlocks: unlocksThrough(earned.tier)
+      }
+    }));
+  }, [requirementCtx, state.promotion.tier]);
 
-    if (nextTier.requirement && nextTier.requirement()) {
-      setState(prev => ({
+  /* ---------------- zones and storylets ---------------- */
+
+  const availableZones = useMemo(
+    () => visibleZones(requirementCtx).map(zone => ({
+      ...zone,
+      status: zoneState(zone, requirementCtx)
+    })),
+    [requirementCtx]
+  );
+
+  /**
+   * Open a zone. `entryOverride` lets the caller resume a partly-read pool
+   * (the next unread notice) without the zone config knowing about progress.
+   */
+  const enterZone = useCallback((zoneId, entryOverride) => {
+    setState(prev => {
+      const zone = zoneById(zoneId);
+      if (!zone) return prev;
+      const ctx = {
+        qualities: prev.qualities,
+        attention: prev.attention,
+        componentsCount: Object.values(prev.components).filter(Boolean).length,
+        deaths: prev.deaths,
+        day: prev.day,
+        unlocks: prev.promotion.unlocks,
+        zones: prev.zones
+      };
+      if (zoneState(zone, ctx) !== 'open') return prev;
+      return {
         ...prev,
-        promotion: {
-          tier: nextTier.tier,
-          title: nextTier.title,
-          unlocks: [...prev.promotion.unlocks, ...nextTier.unlocks]
-        },
-        maxCredits: nextTier.maxCredits
-      }));
-      return true;
-    }
+        zones: { ...prev.zones, [zoneId]: prev.zones[zoneId] ?? 'open' },
+        currentStorylet: { zone: zoneId, storyletId: entryOverride || zone.entry }
+      };
+    });
+  }, []);
 
-    return false;
-  }, [state.promotion.tier, state.qualities.doubt, state.deaths, componentsCount]);
+  /** Move the pointer to any storylet inside an open zone. */
+  const openStorylet = useCallback((zoneId, storyletId) => {
+    setState(prev => ({ ...prev, currentStorylet: { zone: zoneId, storyletId } }));
+  }, []);
 
-  // Orientation and progress tracking
+  const closeStorylet = useCallback(() => {
+    setState(prev => ({ ...prev, currentStorylet: null }));
+  }, []);
+
+  /**
+   * Resolve a storylet choice: apply its effects, remember the card, advance or
+   * close the zone, and award the zone's Component when it completes.
+   */
+  const resolveStorylet = useCallback((storylet, choice) => {
+    setState(prev => {
+      let next = applyEffectsToState(prev, choice.outcome?.qualities);
+
+      const seenStorylets = prev.seenStorylets.includes(storylet.id)
+        ? prev.seenStorylets
+        : [...prev.seenStorylets, storylet.id];
+
+      const zones = { ...prev.zones };
+      let currentStorylet = prev.currentStorylet;
+
+      if (choice.completeZone) {
+        zones[storylet.zone] = 'complete';
+        currentStorylet = null;
+      } else if (choice.endZone) {
+        currentStorylet = null;
+      } else if (choice.next) {
+        currentStorylet = { zone: storylet.zone, storyletId: choice.next };
+      }
+
+      next = { ...next, seenStorylets, zones, currentStorylet };
+
+      if (choice.completeZone) {
+        const zone = zoneById(storylet.zone);
+        if (zone?.component && !next.components[zone.component]) {
+          next = withLog(
+            next,
+            `Recovered: ${zone.componentLabel || zone.component.toUpperCase()}. ${zone.closedNote ?? ''}`.trim(),
+            { components: { ...next.components, [zone.component]: true } }
+          );
+        }
+      }
+
+      return next;
+    });
+  }, []);
+
+  /* ---------------- shift progress ---------------- */
+
   const recordOrientationTask = useCallback(() => {
     setState(prev => {
       if (
@@ -233,39 +374,23 @@ export function GameStateProvider({ children }) {
         prev.tasksCompleted !== 0
       ) return prev;
 
-      return {
-        ...prev,
-        credits: Math.min(prev.credits + 10, prev.maxCredits),
+      const credited = commitLedger(prev, deposit({ credits: prev.credits, unbound: prev.ledgerUnbound }, 10));
+
+      return withLog(credited, 'Orientation link verified. The live queue opened with forty-nine tasks remaining.', {
         tasksCompleted: 1,
-        orientation: { ...prev.orientation, taskRecorded: true },
-        logbook: [...prev.logbook, {
-          day: prev.day,
-          text: 'Orientation link verified. The live queue opened with forty-nine tasks remaining.',
-          timestamp: Date.now()
-        }]
-      };
+        orientation: { ...prev.orientation, taskRecorded: true }
+      });
     });
   }, []);
 
   const completeOrientation = useCallback((skipped = false) => {
     setState(prev => {
       if (prev.orientation.completed) return prev;
-
-      return {
-        ...prev,
-        orientation: {
-          ...prev.orientation,
-          completed: true,
-          skipped
-        },
-        logbook: skipped
-          ? [...prev.logbook, {
-              day: prev.day,
-              text: 'Orientation waived. Prior operating knowledge accepted without verification.',
-              timestamp: Date.now()
-            }]
-          : prev.logbook
-      };
+      return withLog(
+        prev,
+        skipped ? 'Orientation waived. Prior operating knowledge accepted without verification.' : null,
+        { orientation: { ...prev.orientation, completed: true, skipped } }
+      );
     });
   }, []);
 
@@ -284,80 +409,95 @@ export function GameStateProvider({ children }) {
     }));
   }, []);
 
+  /**
+   * File a task result. `effects` and `payout` are computed by the caller from
+   * data (see src/game/payouts.ts) so the console holds no balance numbers.
+   */
+  const fileTaskResult = useCallback(({ effects, payout = 0, logbookEntry, discrepancy = false }) => {
+    setState(prev => {
+      let next = applyEffectsToState(prev, effects);
+      if (payout) {
+        next = commitLedger(next, deposit({ credits: next.credits, unbound: next.ledgerUnbound }, payout));
+      }
+      next = {
+        ...next,
+        tasksCompleted: Math.min(next.tasksCompleted + 1, 50),
+        discrepanciesLogged: next.discrepanciesLogged + (discrepancy ? 1 : 0)
+      };
+      return withLog(next, logbookEntry);
+    });
+  }, []);
+
   const recordDeath = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      deaths: prev.deaths + 1
-    }));
+    setState(prev => ({ ...prev, deaths: prev.deaths + 1 }));
   }, []);
 
-  // Logbook
+  /* ---------------- residue ---------------- */
+
   const addLogEntry = useCallback((entry) => {
-    setState(prev => ({
-      ...prev,
-      logbook: [...prev.logbook, {
-        day: prev.day,
-        text: entry,
-        timestamp: Date.now()
-      }]
-    }));
+    setState(prev => withLog(prev, entry));
   }, []);
 
-  // Discoveries
   const addDiscovery = useCallback((discovery) => {
     setState(prev => ({
       ...prev,
-      discoveries: [...prev.discoveries, {
-        day: prev.day,
-        text: discovery,
-        timestamp: Date.now()
-      }]
+      discoveries: [...prev.discoveries, { day: prev.day, text: discovery, timestamp: Date.now() }]
     }));
   }, []);
 
-  // Contacts
   const addContact = useCallback((contact) => {
     setState(prev => {
       if (prev.contacts.find(c => c.name === contact.name)) return prev;
       return {
         ...prev,
-        contacts: [...prev.contacts, {
-          ...contact,
-          firstMet: prev.day,
-          interactions: 1
-        }]
+        contacts: [...prev.contacts, { ...contact, firstMet: prev.day, interactions: 1 }]
       };
     });
   }, []);
 
-  // Reset for new game
-  const resetGame = useCallback(() => {
-    setState(INITIAL_STATE);
-  }, []);
+  const resetGame = useCallback(() => setState(INITIAL_STATE), []);
+
+  const ledger = useMemo(() => ({
+    credits: state.credits,
+    unbound: state.ledgerUnbound,
+    display: formatCredits({ credits: state.credits, unbound: state.ledgerUnbound }),
+    pressure: wordPressure({ credits: state.credits, unbound: state.ledgerUnbound }),
+    limit: CREDIT_LIMIT
+  }), [state.credits, state.ledgerUnbound]);
 
   const value = {
     state,
+    ledger,
+    requirementCtx,
+    availableZones,
+    QUALITY_DEFS,
+    PROMOTIONS,
+    ZONES,
     actions: {
       addCredits,
       spendCredits,
       addComponent,
       hasComponent,
       componentsCount,
+      applyEffects,
       increaseQuality,
       increaseAttention,
       decreaseAttention,
-      checkPromotion,
+      enterZone,
+      openStorylet,
+      closeStorylet,
+      resolveStorylet,
       recordOrientationTask,
       completeOrientation,
       incrementDay,
       completeTask,
+      fileTaskResult,
       recordDeath,
       addLogEntry,
       addDiscovery,
       addContact,
       resetGame
-    },
-    PROMOTIONS
+    }
   };
 
   return (

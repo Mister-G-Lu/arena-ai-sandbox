@@ -1,12 +1,32 @@
 import React from 'react';
 import { useGameState } from '../context/GameStateContext';
+import { QUALITY_DEFS, visibleQualityDefs, attentionTone } from '../game/qualities';
+import { requirementLabel, missingRequirements } from '../game/progression';
+import { GLITCH_DEFS } from '../game/glitches';
 import './ProfilePage.css';
 
+/** Quality unlock captions, keyed by quality and threshold. Data, not markup. */
+const QUALITY_UNLOCKS = {
+  doubt: [
+    'Notice storylets',
+    'Investigation actions',
+    "Operator 5's log",
+    'All secret zones',
+    'The Summons'
+  ],
+  perception: [
+    'Basic notices',
+    'Hidden memos',
+    "Operator 5's clues",
+    "VANTABLACK's nature",
+    "The Cleaner's identity"
+  ],
+  routine: []
+};
+
 export default function ProfilePage() {
-  const { state, PROMOTIONS } = useGameState();
+  const { state, ledger, requirementCtx, PROMOTIONS } = useGameState();
   const {
-    credits,
-    maxCredits,
     components,
     qualities,
     day,
@@ -20,6 +40,7 @@ export default function ProfilePage() {
   const componentsCount = Object.values(components).filter(Boolean).length;
   const currentPromotion = PROMOTIONS[state.promotion.tier];
   const nextPromotion = PROMOTIONS[state.promotion.tier + 1];
+  const attentionDef = QUALITY_DEFS.attention;
 
   return (
     <section className="section page active">
@@ -70,16 +91,24 @@ export default function ProfilePage() {
                 <span className="resource-icon-large">¤</span>
                 <div>
                   <div className="resource-title">Credits</div>
-                  <div className="resource-subtitle">Currency from routine work</div>
+                  <div className="resource-subtitle">
+                    {ledger.unbound
+                      ? 'The balance is no longer a number. Nobody has asked about it.'
+                      : 'Currency from routine work. No ceiling is listed.'}
+                  </div>
                 </div>
               </div>
               <div className="resource-details">
-                <div className="resource-amount">{credits.toLocaleString()} / {maxCredits === Infinity ? '∞' : maxCredits.toLocaleString()}</div>
+                <div className="resource-amount">¤ {ledger.display}</div>
                 <div className="resource-bar-container">
                   <div
                     className="resource-bar-fill"
-                    style={{ width: `${maxCredits === Infinity ? 100 : (credits / maxCredits) * 100}%` }}
+                    style={{ width: `${Math.max(0.6, ledger.pressure * 100)}%` }}
                   />
+                </div>
+                <div className="resource-subtitle">
+                  LEDGER WORD: {ledger.limit.toLocaleString()}
+                  {ledger.unbound ? ' — EXCEEDED. FIELD ABANDONED.' : ''}
                 </div>
               </div>
             </div>
@@ -112,75 +141,73 @@ export default function ProfilePage() {
           <h3>QUALITIES</h3>
 
           <div className="qualities-display">
-            <div className="quality-item">
-              <div className="quality-header">
-                <span className="quality-icon">?</span>
-                <span className="quality-name">Doubt</span>
-                <span className="quality-value">{qualities.doubt}/5</span>
-              </div>
-              <div className="quality-description">Understanding of the loop and the system</div>
-              <div className="quality-bar-container">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`quality-segment ${i < qualities.doubt ? 'filled' : ''}`}
-                  />
-                ))}
-              </div>
-              <div className="quality-unlocks">
-                {qualities.doubt >= 1 && <span className="unlock">✓ Notice storylets</span>}
-                {qualities.doubt >= 2 && <span className="unlock">✓ Investigation actions</span>}
-                {qualities.doubt >= 3 && <span className="unlock">✓ Operator 5's log</span>}
-                {qualities.doubt >= 4 && <span className="unlock">✓ All secret zones</span>}
-                {qualities.doubt >= 5 && <span className="unlock">✓ The Summons</span>}
-              </div>
-            </div>
-
-            <div className="quality-item">
-              <div className="quality-header">
-                <span className="quality-icon">👁</span>
-                <span className="quality-name">Perception</span>
-                <span className="quality-value">{qualities.perception}/5</span>
-              </div>
-              <div className="quality-description">Ability to notice details and patterns</div>
-              <div className="quality-bar-container">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`quality-segment ${i < qualities.perception ? 'filled' : ''}`}
-                  />
-                ))}
-              </div>
-              <div className="quality-unlocks">
-                {qualities.perception >= 1 && <span className="unlock">✓ Basic notices</span>}
-                {qualities.perception >= 2 && <span className="unlock">✓ Hidden memos</span>}
-                {qualities.perception >= 3 && <span className="unlock">✓ Operator 5's clues</span>}
-                {qualities.perception >= 4 && <span className="unlock">✓ VANTABLACK's nature</span>}
-                {qualities.perception >= 5 && <span className="unlock">✓ The Cleaner's identity</span>}
-              </div>
-            </div>
+            {visibleQualityDefs().map((def) => {
+              const value = qualities[def.key] ?? 0;
+              const captions = QUALITY_UNLOCKS[def.key] ?? [];
+              const segments = Number.isFinite(def.max) ? def.max : 5;
+              return (
+                <div className="quality-item" key={def.key}>
+                  <div className="quality-header">
+                    <span className="quality-icon">{def.key === 'doubt' ? '?' : def.key === 'perception' ? '👁' : '▤'}</span>
+                    <span className="quality-name">{def.label}</span>
+                    <span className="quality-value">{value}{Number.isFinite(def.max) ? `/${def.max}` : ''}</span>
+                  </div>
+                  <div className="quality-description">{def.description}</div>
+                  <div className="quality-bar-container">
+                    {[...Array(Math.min(segments, 10))].map((_, i) => (
+                      <div key={i} className={`quality-segment ${i < value ? 'filled' : ''}`} />
+                    ))}
+                  </div>
+                  <div className="quality-unlocks">
+                    {captions.slice(0, value).map((caption, i) => (
+                      <span className="unlock" key={i}>✓ {caption}</span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
 
             <div className="quality-item">
               <div className="quality-header">
                 <span className="quality-icon">⚠</span>
-                <span className="quality-name">Attention</span>
+                <span className="quality-name">{attentionDef.label}</span>
                 <span className="quality-value">[HIDDEN]</span>
               </div>
-              <div className="quality-description">How much the system notices you (death at 10)</div>
+              <div className="quality-description">{attentionDef.description}</div>
               <div className="quality-bar-container">
-                {[...Array(10)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="quality-segment hidden"
-                  />
+                {[...Array(attentionDef.max)].map((_, i) => (
+                  <div key={i} className="quality-segment hidden" />
                 ))}
               </div>
               <div className="quality-unlocks">
-                <span className="unlock dim">System tone: Polite</span>
+                <span className="unlock dim">System tone: {attentionTone(state.attention)}</span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Glitches — kept evidence */}
+        {state.glitches.length > 0 && (
+          <div className="profile-section">
+            <h3>ANOMALIES ON FILE</h3>
+            <div className="qualities-display">
+              {state.glitches.map((id) => {
+                const glitch = GLITCH_DEFS[id];
+                if (!glitch) return null;
+                return (
+                  <div className="quality-item" key={id}>
+                    <div className="quality-header">
+                      <span className="quality-icon">✖</span>
+                      <span className="quality-name">{glitch.title}</span>
+                      <span className="quality-value">KEPT</span>
+                    </div>
+                    <div className="quality-description">{glitch.description}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Promotion */}
         <div className="profile-section">
@@ -193,7 +220,7 @@ export default function ProfilePage() {
               <div className="promotion-unlocks">
                 <div className="unlocks-label">Unlocked:</div>
                 <div className="unlocks-list">
-                  {currentPromotion.unlocks.map((unlock, i) => (
+                  {state.promotion.unlocks.map((unlock, i) => (
                     <span key={i} className="unlock-badge">{unlock}</span>
                   ))}
                 </div>
@@ -206,11 +233,12 @@ export default function ProfilePage() {
                 <div className="next-tier">TIER {nextPromotion.tier}</div>
                 <div className="next-title">{nextPromotion.title}</div>
                 <div className="next-requirements">
-                  {state.promotion.tier === 0 && <span>Doubt ≥ 1</span>}
-                  {state.promotion.tier === 1 && <span>Doubt ≥ 2, Deaths ≥ 1</span>}
-                  {state.promotion.tier === 2 && <span>Doubt ≥ 3, Components ≥ 3</span>}
-                  {state.promotion.tier === 3 && <span>Doubt ≥ 4, Components ≥ 4</span>}
-                  {state.promotion.tier === 4 && <span>Components = 6</span>}
+                  <span>{requirementLabel(nextPromotion.requires)}</span>
+                  {missingRequirements(nextPromotion.requires, requirementCtx).length > 0 && (
+                    <span className="dim">
+                      {' '}— currently {missingRequirements(nextPromotion.requires, requirementCtx).join(', ')}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -245,6 +273,21 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Discoveries */}
+        {discoveries.length > 0 && (
+          <div className="profile-section">
+            <h3>DISCOVERIES</h3>
+            <div className="logbook-entries">
+              {discoveries.slice(-5).reverse().map((entry, i) => (
+                <div key={i} className="logbook-entry">
+                  <div className="entry-day">Day {entry.day}</div>
+                  <div className="entry-text">{entry.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Contacts */}
         <div className="profile-section">
