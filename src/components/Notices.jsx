@@ -4,6 +4,7 @@ import { loadAllStorylets, findCard, cardsInZone } from '../content/load';
 import { describeEffects } from '../game/qualities';
 import { clearanceLabel, requirementLabel, missingRequirements } from '../game/progression';
 import { supplyById } from '../game/shop';
+import HorizonPanel from './HorizonPanel';
 import './Notices.css';
 
 const BOARD_COPY = {
@@ -210,6 +211,8 @@ export default function Notices({ board = 'notices' }) {
             <p className="fine">{copy.empty}</p>
           )}
         </div>
+
+        <HorizonPanel />
 
         {card && (
           <div className="console storylet-console">

@@ -223,6 +223,30 @@ describe('opening narrative', () => {
     expect(document.body.textContent).toContain('NOTICES');
   });
 
+  it('forecasts the next promotion and the content waiting on clearance', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.qualities.doubt = 1;
+    state.promotion.tier = 1;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#notices';
+
+    render(<App />);
+    await tick(100);
+
+    // The forecast is the game's own "what's next": the next rank with the
+    // live gap, what it adds, and the sealed content waiting on file.
+    expect(document.body.textContent).toContain('CLEARANCE FORECAST');
+    expect(document.body.textContent).toContain('SENIOR OPERATOR');
+    expect(document.body.textContent).toContain('Doubt 1/2');
+    expect(document.body.textContent).toContain('Restricted areas — Floor 12 access');
+    expect(document.body.textContent).toContain('RESTRICTED FILES');
+    expect(document.body.textContent).toContain('GROUND COFFEE ≥ 1');
+  });
+
   it('holds an open Notice when the player checks Investigations', async () => {
     const state = createInitialGameState();
     state.orientation.completed = true;
@@ -403,8 +427,11 @@ describe('opening narrative', () => {
     await go('notices');
     await tick(100);
     expect(document.body.textContent).toContain('The Routine Pool');
-    // Floor 12 is listed but sealed until the operator has clearance.
-    expect(document.body.textContent).not.toContain('Floor 12');
+    // The expedition itself is not listed during Shift 1 — no zone card for
+    // it yet, even though the clearance forecast may name it in passing.
+    const zoneTitlesDay1 = Array.from(document.querySelectorAll('.zone-card h3'))
+      .map((title) => title.textContent);
+    expect(zoneTitlesDay1).not.toContain('Floor 12');
 
     // Read notices until the operator is a Senior Operator with the eye for it.
     for (let i = 0; i < 6; i++) {
@@ -424,7 +451,8 @@ describe('opening narrative', () => {
     expect(afterNotices.qualities.perception).toBeGreaterThanOrEqual(1);
     // Curiosity alone cannot surface the restricted expedition during Shift 1.
     expect(afterNotices.promotion.title).toBe('Operator');
-    expect(document.body.textContent).not.toContain('Floor 12');
+    expect(Array.from(document.querySelectorAll('.zone-card h3')).map((h) => h.textContent))
+      .not.toContain('Floor 12');
 
     await go('console');
     await finishCurrentShift();
