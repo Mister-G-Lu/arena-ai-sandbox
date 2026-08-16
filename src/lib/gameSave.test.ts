@@ -84,9 +84,9 @@ describe('canonical game save', () => {
     expect(() =>
       parseStoredSaveEnvelope({
         ...envelope,
-        game: { ...envelope.game, tasksCompleted: 51 },
+        game: { ...envelope.game, tasksThisShift: 51 },
       }),
-    ).toThrow(/tasksCompleted/);
+    ).toThrow(/tasksThisShift/);
     expect(() =>
       parseStoredSaveEnvelope({
         ...envelope,

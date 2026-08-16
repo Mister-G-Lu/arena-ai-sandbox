@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
+import { ACTION_CAP } from '../game/actions';
 // City artwork: Pixabay (Gam-Ol, image 7088420, "City View, Night, Digital Art")
 // — Pixabay Content License, free for use, no attribution required.
 import meridianCity from '../assets/meridian-city.jpg';
@@ -36,7 +36,7 @@ const BULLETINS = [
 ];
 
 const DIRECTIVES = [
-  ['QUOTA', `${TASKS_PER_SHIFT}/${TASKS_PER_SHIFT}`, 'Every result must be acknowledged.'],
+  ['BUDGET', `${ACTION_CAP} ACTIONS`, 'One returns every ten minutes. Always.'],
   ['ROSTER', 'CONFIRMED', 'Your entry predates your application.'],
   ['COFFEE', 'WARM', 'Preparation timestamp unavailable.'],
   ['ATTENDANCE', '100.0%', 'The record cannot be broken.']

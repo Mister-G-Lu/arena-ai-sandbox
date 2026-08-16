@@ -208,6 +208,14 @@ host becomes aware), Severance/SOMA (the self as a function), Control/SCP
 | Total deaths | 2–4 |
 | Unique content | ~900–1,000 pieces, ~95–120k words |
 | Session | one shift ≈ 35–40 minutes ≈ 50 actions |
+| Action tank | cap 50, +1 per 10 minutes (`src/game/actions.ts`) |
+
+**The cap equals the quota on purpose.** One shift drains exactly one full tank,
+so a session has a natural shape: arrive full, leave empty. Perfect play does
+not buy a bonus expedition — it buys a ten-minute wait before the investigation,
+and that wait is the anticipation, not a failure state. Filing a task and
+committing to a storylet choice both cost 1. Opening a board, rereading a card
+you have already resolved, and the orientation tutorial are all free.
 
 Binge play is allowed, never hard-blocked. Skipped days are forgiven by the fiction
 ("the city didn't notice. the coffee is still warm.").

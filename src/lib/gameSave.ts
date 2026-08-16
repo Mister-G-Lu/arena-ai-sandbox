@@ -1,4 +1,5 @@
 import { z, ZodError } from 'zod';
+import { ACTION_CAP } from '../game/actions';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
@@ -93,7 +94,27 @@ export const StoredGameStateSchema = z.strictObject({
   qualities: QualitiesSchema,
   attention: z.number().finite().min(0).max(QUALITY_DEFS.attention.max).default(0),
   day: dayNumber.default(1),
-  tasksCompleted: z.number().int().min(0).max(TASKS_PER_SHIFT).default(0),
+  /**
+   * The action tank (src/game/actions.ts) — the pacing currency that replaced
+   * the shift quota. `lastTick` is epoch ms; 0 means "anchor on first read",
+   * so a fresh file does not accrue fifty actions from the epoch.
+   */
+  actions: z.number().int().min(0).max(ACTION_CAP).default(ACTION_CAP),
+  actionsLastTick: timestamp.default(0),
+  /** Dev capability, mirroring `ledgerUnbound`: the tank never depletes. */
+  actionsUnbound: z.boolean().default(false),
+  /** Latches true the moment a dev tool touches the file. Never clears. */
+  devTouched: z.boolean().default(false),
+  /**
+   * Career total of results filed. This used to be the shift quota counter
+   * capped at fifty; it is now an uncapped lifetime stat shown on the operator
+   * file, because the tank is what limits a sitting.
+   */
+  tasksCompleted: safeInt.default(0),
+  /** Results filed since the last shift rollover. Drives the anomaly debt. */
+  tasksThisShift: safeInt.max(TASKS_PER_SHIFT).default(0),
+  /** Actions spent since the last rollover. Drives the 01:00–06:00 clock. */
+  actionsSpentThisShift: safeInt.max(ACTION_CAP).default(0),
   anomaliesSeenThisShift: safeInt.max(TASKS_PER_SHIFT).default(0),
   discrepanciesLogged: safeInt.default(0),
   deaths: safeInt.default(0),

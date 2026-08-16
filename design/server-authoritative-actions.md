@@ -2,11 +2,12 @@
 
 **Status:** Staged. Do not run in production until Phase 1 Personnel has been
 lived-in for a bit. Schema lives in `supabase/0002_actions.sql` (not applied).
-**Depends on:** P10, `design/user-system.md`, `supabase/0001_init.sql`.
+**Depends on:** P10, `DEVELOPMENT.md`, `supabase/0001_init.sql`.
 
 ## Why
 
-Phase 1 trusts the client with the action tank. A clock-rolled laptop can mint
+Phase 1 is **implemented** — see `src/game/actions.ts` and the tank fields on
+the v2 operator file. It trusts the client with the action tank. A clock-rolled laptop can mint
 a full shift. That is fine for a pre-alpha on Pages. It is not fine the moment
 a second operator exists, or the moment Floor 12's first death has a reward.
 

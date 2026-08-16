@@ -179,3 +179,45 @@
     justify-content: center;
   }
 }
+
+/* ---------------- action tank ---------------- */
+
+/* The regeneration countdown. Small, dim, and always running — the only
+   honest clock in the building. */
+.resource-regen {
+  font-size: 0.65rem;
+  color: var(--terminal-text-dim);
+  letter-spacing: 0.08em;
+  font-family: 'Share Tech Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.resource-item.actions .resource-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nothing left to spend. The building does not care that you are still here. */
+.resource-item.actions-empty .resource-value {
+  color: #ffc66b;
+  text-shadow: 0 0 12px rgba(255, 198, 107, 0.5);
+}
+
+.resource-item.actions-empty .resource-regen {
+  color: #ffc66b;
+}
+
+/* Maintenance override: the budget stopped being a number too. */
+.resource-item.actions-unbound .resource-value {
+  color: var(--teal, #57d6c3);
+  text-shadow: 0 0 12px rgba(87, 214, 195, 0.55);
+}
+
+.resource-item.actions-unbound .actions-fill {
+  background: linear-gradient(90deg, #57d6c3, #ffc66b);
+}
+
+/* This file has been altered by tooling, and says so for good. */
+.resource-item.dev-touched .resource-value,
+.resource-item.dev-touched .resource-icon {
+  color: #ffc66b;
+}

@@ -28,8 +28,9 @@ const BOARD_COPY = {
  * one effects pipeline.
  */
 export default function Notices({ board = 'notices' }) {
-  const { state, actions, availableZones, requirementCtx } = useGameState();
+  const { state, actions, availableZones, requirementCtx, actionTank } = useGameState();
   const [lastOutcome, setLastOutcome] = useState(null);
+  const [refusal, setRefusal] = useState(null);
   const copy = BOARD_COPY[board] ?? BOARD_COPY.notices;
   const boardZones = availableZones.filter((zone) => zone.board === board);
 
@@ -52,6 +53,8 @@ export default function Notices({ board = 'notices' }) {
   const otherBoard = current && savedCard && !currentBelongsHere
     ? availableZones.find((zone) => zone.id === current.zone)?.board
     : null;
+  // A first read of a card charges; a reread never does.
+  const cardCosts = Boolean(card) && !state.seenStorylets.includes(card.id);
 
   /** Serve the first card in the zone the operator has not already resolved. */
   function nextCardId(zone) {
@@ -62,13 +65,24 @@ export default function Notices({ board = 'notices' }) {
 
   function openZone(zone) {
     setLastOutcome(null);
+    setRefusal(null);
+    // Opening a board and reading a card are free. Only committing to a choice
+    // spends from the tank, so nobody pays to find out what a notice says.
     actions.enterZone(zone.id, nextCardId(zone));
   }
 
   function choose(choice) {
     if (!card) return;
-    // Consequences file once per card. A re-read replays the text only.
+    // Consequences file once per card. A re-read replays the text only, and a
+    // re-read is free — you are charged for the decision, not the paper.
     const revisit = state.seenStorylets.includes(card.id);
+    if (!revisit && actionTank.empty) {
+      setRefusal(
+        `NO ACTIONS REMAINING. THE DECISION HOLDS. NEXT ACTION IN ${actionTank.countdown}.`
+      );
+      return;
+    }
+    setRefusal(null);
     actions.resolveStorylet(card, choice);
     setLastOutcome({
       title: card.title,
@@ -80,6 +94,7 @@ export default function Notices({ board = 'notices' }) {
 
   function standDown() {
     setLastOutcome(null);
+    setRefusal(null);
     actions.closeStorylet();
   }
 
@@ -234,13 +249,32 @@ export default function Notices({ board = 'notices' }) {
                     className="btn btn-ghost storylet-choice"
                     type="button"
                     onClick={() => choose(choice)}
+                    disabled={cardCosts && actionTank.empty}
                   >
                     <span className="storylet-choice-label">{choice.label}</span>
-                    {effects && <span className="storylet-choice-effects">{effects}</span>}
+                    <span className="storylet-choice-meta">
+                      {effects && <span className="storylet-choice-effects">{effects}</span>}
+                      <span className="storylet-choice-cost">
+                        {cardCosts ? '1 ACTION' : 'REREAD — FREE'}
+                      </span>
+                    </span>
                   </button>
                 );
               })}
             </div>
+            {cardCosts && actionTank.empty && (
+              <div className="storylet-refusal-stack">
+                <p className="fine storylet-refusal">
+                  BUDGET EXHAUSTED // THE ORDER STAYS OPEN. NEXT ACTION IN {actionTank.countdown}.
+                </p>
+                {/* Never strand an operator inside an order they cannot pay
+                    for. Standing down releases the board without charge. */}
+                <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>
+                  ↩ STAND DOWN
+                </button>
+              </div>
+            )}
+            {refusal && <p className="fine storylet-refusal">{refusal}</p>}
           </div>
         )}
 

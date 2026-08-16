@@ -3,7 +3,6 @@ import { useGameState } from '../context/GameStateContext';
 import { QUALITY_DEFS, visibleQualityDefs, attentionTone } from '../game/qualities';
 import { requirementLabel, missingRequirements } from '../game/progression';
 import { GLITCH_DEFS } from '../game/glitches';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
 import SaveManagement from './SaveManagement';
 import './ProfilePage.css';
 
@@ -31,12 +30,13 @@ const QUALITY_UNLOCKS = {
 };
 
 export default function ProfilePage() {
-  const { state, ledger, requirementCtx, PROMOTIONS, COMPONENT_DEFS } = useGameState();
+  const { state, ledger, actionTank, requirementCtx, PROMOTIONS, COMPONENT_DEFS } = useGameState();
   const {
     components,
     qualities,
     day,
     tasksCompleted,
+    tasksThisShift,
     deaths,
     logbook,
     discoveries,
@@ -69,9 +69,30 @@ export default function ProfilePage() {
                 <span className="info-label">Days on Roster:</span>
                 <span className="info-value">{day}</span>
               </div>
+              {/* The career total lives here now. The tank in the header is
+                  what limits a sitting; this is just the record. */}
               <div className="info-item">
-                <span className="info-label">Tasks This Shift:</span>
-                <span className="info-value">{tasksCompleted} / {TASKS_PER_SHIFT}</span>
+                <span className="info-label">Results Filed:</span>
+                <span className="info-value">{tasksCompleted.toLocaleString()}</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">This Shift:</span>
+                <span className="info-value">{tasksThisShift}</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Discrepancies Logged:</span>
+                <span className="info-value">{state.discrepanciesLogged.toLocaleString()}</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Actions:</span>
+                <span className="info-value">
+                  {actionTank.display}
+                  {actionTank.unbound
+                    ? ' // OVERRIDE'
+                    : actionTank.msUntilNext == null
+                      ? ' // FULL'
+                      : ` // +1 IN ${actionTank.countdown}`}
+                </span>
               </div>
               <div className="info-item">
                 <span className="info-label">Deaths:</span>

@@ -296,3 +296,42 @@
   .zone-board { grid-template-columns: 1fr; }
   .horizon-row { flex-direction: column; gap: 12px; }
 }
+
+/* Action cost on a choice. The price sits with the consequences so the
+   operator reads "what it does" and "what it costs" in one glance. */
+.storylet-choice-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.storylet-choice-cost {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: #8a94ad;
+}
+
+.storylet-choice:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.storylet-refusal {
+  padding: 0 24px 18px;
+  color: #ffc66b;
+  font-variant-numeric: tabular-nums;
+}
+
+.storylet-refusal-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0 24px 18px;
+}
+
+.storylet-refusal-stack .storylet-refusal {
+  padding: 0;
+}

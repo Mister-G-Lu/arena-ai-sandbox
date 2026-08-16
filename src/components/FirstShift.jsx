@@ -7,10 +7,10 @@ import OrientTerminalTask from './OrientTerminalTask';
 import OrientTerminalComplete from './OrientTerminalComplete';
 import OrientTerminalWaiver from './OrientTerminalWaiver';
 import { useGameState } from '../context/GameStateContext';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
+import { ACTION_CAP } from '../game/actions';
 
 export default function FirstShift() {
-  const { state, actions } = useGameState();
+  const { state, actions, actionTank } = useGameState();
   // Capture this once: completing orientation should not turn the final screen into review mode.
   const [reviewMode] = useState(state.orientation.completed);
   const [stage, setStage] = useState('idle');
@@ -130,9 +130,7 @@ export default function FirstShift() {
           {stage === 'station' && (
             <OrientTerminalStation
               day={reviewMode ? 1 : state.day}
-              tasksRemaining={reviewMode
-                ? TASKS_PER_SHIFT
-                : Math.max(0, TASKS_PER_SHIFT - state.tasksCompleted)}
+              actionsRemaining={reviewMode ? ACTION_CAP : actionTank.actions}
               onComplete={() => transitionTo('breakroom')}
             />
           )}
@@ -148,7 +146,7 @@ export default function FirstShift() {
           {stage === 'task' && (
             <OrientTerminalTask
               reviewMode={reviewMode}
-              tasksRemaining={Math.max(0, TASKS_PER_SHIFT - state.tasksCompleted)}
+              actionsRemaining={actionTank.actions}
               onTaskLogged={actions.recordOrientationTask}
               onComplete={finishOrientation}
             />

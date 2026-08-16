@@ -1,0 +1,91 @@
+/* The Maintenance Terminal. Deliberately ugly: it should never be mistaken
+   for part of the game the player is meant to be playing. */
+
+.dev-panel {
+  position: fixed;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 900;
+  font-family: 'Share Tech Mono', monospace;
+  max-width: min(22rem, calc(100vw - 1.5rem));
+}
+
+.dev-panel-toggle {
+  display: block;
+  margin-left: auto;
+  padding: 0.35rem 0.7rem;
+  background: #1a1206;
+  color: #ffc66b;
+  border: 1px solid #ffc66b;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.dev-panel-toggle:hover,
+.dev-panel-toggle:focus-visible {
+  background: #2a1d09;
+}
+
+.dev-panel-body {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(10, 8, 4, 0.97);
+  border: 1px solid #ffc66b;
+  border-radius: 2px;
+  color: #e8dcc4;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.dev-panel-note {
+  margin: 0 0 0.6rem;
+  color: #a89878;
+  font-size: 0.68rem;
+}
+
+.dev-panel-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(255, 198, 107, 0.25);
+}
+
+.dev-panel-label {
+  color: #a89878;
+  letter-spacing: 0.1em;
+}
+
+.dev-panel-value {
+  color: #ffc66b;
+  font-variant-numeric: tabular-nums;
+}
+
+.dev-panel-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.dev-panel-controls .btn {
+  width: 100%;
+  text-align: left;
+  font-size: 0.68rem;
+}
+
+.dev-panel-warn {
+  margin: 0.6rem 0 0;
+  color: #ffc66b;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 768px) {
+  .dev-panel {
+    right: 0.5rem;
+    bottom: 0.5rem;
+  }
+}
