@@ -26,8 +26,10 @@ import {
 } from '../game/progression';
 import { SUPPLY_DEFS, supplyById, isPurchaseable } from '../game/shop';
 import {
+  GAME_SAVE_KEY,
   createInitialGameState,
   createStoredSaveEnvelope,
+  gameStateFingerprint,
   parseSaveJson,
   parseStoredSaveEnvelope,
   serializeSaveEnvelope
@@ -166,9 +168,14 @@ export function GameStateProvider({ children }) {
     error: null,
     recoveryError: boot.error,
     lastSavedAt: boot.envelope?.savedAt ?? null,
-    hadLocalSaveAtBoot: boot.hadLocalSave
+    hadLocalSaveAtBoot: boot.hadLocalSave,
+    tabConflict: null
   }));
   const firstPersistence = useRef(true);
+  const stateRef = useRef(state);
+  const localWritesBlocked = useRef(false);
+  const skipNextPersistence = useRef(false);
+  stateRef.current = state;
   /**
    * Bumped whenever a whole new operator file is loaded (file import). Cloud
    * sync re-runs its Records check with autosave disarmed first, so an import
@@ -178,12 +185,52 @@ export function GameStateProvider({ children }) {
   const [cloudRecheck, setCloudRecheck] = useState(0);
 
   useEffect(() => {
+    function onStorage(event) {
+      if (event.key !== GAME_SAVE_KEY || event.newValue == null) return;
+      try {
+        const incoming = parseSaveJson(event.newValue);
+        if (gameStateFingerprint(incoming.game) === gameStateFingerprint(stateRef.current)) {
+          setPersistence(prev => ({ ...prev, lastSavedAt: incoming.savedAt }));
+          return;
+        }
+        localWritesBlocked.current = true;
+        setPersistence(prev => ({
+          ...prev,
+          status: 'conflict',
+          error: 'Another tab changed this operator file. Choose a terminal before local saving continues.',
+          tabConflict: incoming
+        }));
+      } catch (error) {
+        // Invalid replacement bytes are just as dangerous to overwrite: hold
+        // this tab's valid state in memory and surface recovery rather than
+        // turning a malformed cross-tab write into silent data loss.
+        localWritesBlocked.current = true;
+        setPersistence(prev => ({
+          ...prev,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Another tab wrote an invalid operator file.'
+        }));
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  useEffect(() => {
     // A valid canonical file was already read; do not rewrite it just because
     // React mounted. Fresh and migrated files are committed immediately.
     if (firstPersistence.current) {
       firstPersistence.current = false;
       if (boot.envelope && !boot.migrated) return;
     }
+    if (skipNextPersistence.current) {
+      skipNextPersistence.current = false;
+      return;
+    }
+    // Another tab advanced the canonical key. Keep this tab's in-memory work,
+    // but do not silently write it over the newer bytes before the operator
+    // chooses which terminal wins.
+    if (localWritesBlocked.current) return;
     const result = writeLocalGameSave(state);
     if (result.ok) {
       setPersistence(prev => ({
@@ -231,6 +278,44 @@ export function GameStateProvider({ children }) {
 
   const exportGameSave = useCallback(() =>
     serializeSaveEnvelope(createStoredSaveEnvelope(state)), [state]);
+
+  const useOtherTabSave = useCallback(() => {
+    const incoming = persistence.tabConflict;
+    if (!incoming) return false;
+    localWritesBlocked.current = false;
+    skipNextPersistence.current = true;
+    setState(incoming.game);
+    setPersistence(prev => ({
+      ...prev,
+      status: 'ready',
+      error: null,
+      lastSavedAt: incoming.savedAt,
+      tabConflict: null
+    }));
+    // This is a whole-file replacement, like import. Reconcile it with cloud
+    // before autosave is allowed to resume.
+    setCloudRecheck(value => value + 1);
+    return true;
+  }, [persistence.tabConflict]);
+
+  const keepThisTabSave = useCallback(() => {
+    if (!persistence.tabConflict) return false;
+    localWritesBlocked.current = false;
+    const result = writeLocalGameSave(stateRef.current);
+    if (!result.ok) {
+      localWritesBlocked.current = true;
+      setPersistence(prev => ({ ...prev, status: 'error', error: result.error }));
+      return false;
+    }
+    setPersistence(prev => ({
+      ...prev,
+      status: 'saved',
+      error: null,
+      lastSavedAt: result.envelope.savedAt,
+      tabConflict: null
+    }));
+    return true;
+  }, [persistence.tabConflict]);
 
   const cloud = useCloudSave({
     state,
@@ -651,6 +736,8 @@ export function GameStateProvider({ children }) {
       addLogEntry,
       importGameSave,
       exportGameSave,
+      useOtherTabSave,
+      keepThisTabSave,
       resetGame,
       setActionsUnbound,
       grantActions

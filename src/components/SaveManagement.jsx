@@ -69,7 +69,13 @@ export default function SaveManagement() {
       <div className="save-status-grid">
         <div className="save-status-card">
           <span className="info-label">Local terminal</span>
-          <strong>{persistence.status === 'error' ? 'SAVE ERROR' : 'SAVED LOCALLY'}</strong>
+          <strong>
+            {persistence.status === 'error'
+              ? 'SAVE ERROR'
+              : persistence.status === 'conflict'
+                ? 'TAB CONFLICT'
+                : 'SAVED LOCALLY'}
+          </strong>
           <span className="dim">
             {persistence.error ??
               (persistence.lastSavedAt
@@ -89,6 +95,39 @@ export default function SaveManagement() {
           The previous local file failed validation and was preserved under the recovery key.
           A clean file is active. Details: {persistence.recoveryError}
         </p>
+      )}
+
+      {persistence.tabConflict && (
+        <div className="save-conflict" role="alert">
+          <p>
+            <strong>Another browser tab changed this operator file.</strong> Local saving is paused
+            here so neither tab can silently erase the other.
+          </p>
+          <div className="save-summary-grid">
+            <FileSummary label="THIS TAB" game={state} savedAt={persistence.lastSavedAt} />
+            <FileSummary
+              label="OTHER TAB"
+              game={persistence.tabConflict.game}
+              savedAt={persistence.tabConflict.savedAt}
+            />
+          </div>
+          <div className="save-action-row">
+            <button
+              className="btn btn-primary btn-compact"
+              type="button"
+              onClick={actions.keepThisTabSave}
+            >
+              KEEP THIS TAB
+            </button>
+            <button
+              className="btn btn-ghost btn-compact"
+              type="button"
+              onClick={actions.useOtherTabSave}
+            >
+              USE OTHER TAB
+            </button>
+          </div>
+        </div>
       )}
 
       {!cloud.configured && (

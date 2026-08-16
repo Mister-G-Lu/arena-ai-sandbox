@@ -204,6 +204,35 @@ describe('effects pipeline', () => {
     expect(api.state.anomaliesSeenThisShift).toBe(0);
   });
 
+  it('pauses local writes when another tab advances the save', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(10); });
+
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.savedAt = '2026-08-16T13:00:00.000Z';
+    incoming.game.credits = 75;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.tabConflict.game.credits).toBe(75);
+
+    // This tab may keep working in memory, but cannot silently clobber the key.
+    await act(async () => { api.actions.addCredits(1); });
+    expect(api.state.credits).toBe(11);
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(75);
+
+    await act(async () => { expect(api.actions.useOtherTabSave()).toBe(true); });
+    expect(api.state.credits).toBe(75);
+    expect(api.persistence.tabConflict).toBeNull();
+  });
+
   it('exports and imports the same canonical envelope used by cloud sync', async () => {
     mount();
     await act(async () => { api.actions.addCredits(321); });
