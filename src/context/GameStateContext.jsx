@@ -667,7 +667,12 @@ export function GameStateProvider({ children }) {
           actionsSpentThisShift: charged.actionsSpentThisShift,
           anomaliesSeenThisShift: charged.anomaliesSeenThisShift,
           anomalyRoll,
-          corruptionRoll
+          corruptionRoll,
+          // A personal line whose case is already closed is a stale reveal;
+          // the pool retires it for the night.
+          completedZones: Object.entries(charged.zones)
+            .filter(([, status]) => status === 'complete')
+            .map(([id]) => id)
         })
       }));
     });

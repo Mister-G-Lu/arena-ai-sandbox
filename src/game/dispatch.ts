@@ -114,6 +114,10 @@ export const CORRUPT_RESULTS = [
   '██ 06:00 ██ DO NOT BE AWAKE ██ DO NOT ██',
   'ERROR: the coffee was warm before you arrived. it was warm before the building existed.',
   '▓▓ ATTENDANCE ██ 100% ██ it was 100% before you were hired ▓▓',
+  'DELIVERY LOG: driver VANTABLACK reports street names that do not appear on the municipal map. the map agrees. the map is wrong. report filed.',
+  'FLEET TELEMETRY ▓▓ truck 312 ▓▓ truck 312 ▓▓ trucks on site: 0 ▓▓',
+  '▓▓ 05:59 ▓▓ 05:59 ▓▓ 05:59 ▓▓ the clock refused the next minute ▓▓',
+  'MEMO BOARD: the night shift is requested not to look out of the window after 05:00. the window is not there after 05:00.',
 ] as const;
 
 /**
@@ -125,13 +129,43 @@ export const CORRUPT_RESULTS = [
  * the number it contains when filed clean, and a guaranteed personal line
  * must not hand out a guaranteed windfall (src/game/payouts.ts).
  */
-export const PERSONAL_RESULTS = [
-  'OPERATOR: a work order in your handwriting was filed from the night desk. you did not write it. the desk is certain you did not.',
-  'the day crew left a note on the memo board: the night operator seems familiar. they mean you. you have never met the day crew.',
-  'message from your next shift: stop leaving notes where the day crew can find them. — you',
-  'ATTENDANCE: your signature appears on the sheet for a shift you have not worked yet. it is a good signature. it is yours.',
-  'you are on the roster twice tonight. one of you has already clocked in. neither of you has left.',
-] as const;
+export interface PersonalResult {
+  text: string;
+  /**
+   * The zone whose resolution makes this line a stale reveal. A personal
+   * anomaly is written like a first-time discovery; once the operator has
+   * already closed the matching case, replaying it reads as a continuity
+   * error, so it retires from the pool.
+   */
+  excludesZone?: string;
+}
+
+export const PERSONAL_RESULTS: PersonalResult[] = [
+  {
+    text: 'OPERATOR: a work order in your handwriting was filed from the night desk. you did not write it. the desk is certain you did not.',
+    excludesZone: 'handwritten-order',
+  },
+  {
+    text: 'the day crew left a note on the memo board: the night operator seems familiar. they mean you. you have never met the day crew.',
+    excludesZone: 'day-crew-notes',
+  },
+  { text: 'message from your next shift: stop leaving notes where the day crew can find them. — you' },
+  { text: 'ATTENDANCE: your signature appears on the sheet for a shift you have not worked yet. it is a good signature. it is yours.' },
+  { text: 'you are on the roster twice tonight. one of you has already clocked in. neither of you has left.' },
+  { text: 'the coffee maker was warm before you arrived. it was warm because you will have turned it on. this sentence was filed by you.' },
+  { text: 'a memo from M.: you are reading this memo earlier than you filed it. please continue. — M.' },
+  { text: 'the terminal asked if you were still awake. it asked in your voice. you answered. the log shows no question was asked.' },
+];
+
+/**
+ * The personal lines still valid tonight. Lines whose case the operator has
+ * already closed retire so the queue never re-reveals a resolved mystery as
+ * if it were new.
+ */
+export function personalPoolFor(completedZones?: string[]): string[] {
+  const done = new Set(completedZones ?? []);
+  return PERSONAL_RESULTS.filter((r) => !r.excludesZone || !done.has(r.excludesZone)).map((r) => r.text);
+}
 
 export interface PendingDispatch {
   id: string;
@@ -156,6 +190,8 @@ export interface CreateDispatchInput {
   anomaliesSeenThisShift: number;
   anomalyRoll: number;
   corruptionRoll: number;
+  /** Zones the operator has closed; retires stale personal reveals. */
+  completedZones?: string[];
 }
 
 function indexFromRoll(roll: number, length: number): number {
@@ -194,10 +230,14 @@ export function createPendingDispatch(input: CreateDispatchInput): PendingDispat
     // one: the cap minus everything spent before it minus this task itself.
     taskSlotsLeft: Math.max(0, ACTION_CAP - input.actionsSpentThisShift - 1),
   });
-  const isPersonal = isCorrupt && shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
+  const personalPool = personalPoolFor(input.completedZones);
+  const isPersonal =
+    isCorrupt &&
+    personalPool.length > 0 &&
+    shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
   const displayedResult = isCorrupt
     ? isPersonal
-      ? PERSONAL_RESULTS[indexFromRoll(input.corruptionRoll, PERSONAL_RESULTS.length)]
+      ? personalPool[indexFromRoll(input.corruptionRoll, personalPool.length)]
       : CORRUPT_RESULTS[indexFromRoll(input.corruptionRoll, CORRUPT_RESULTS.length)]
     : order.result;
 

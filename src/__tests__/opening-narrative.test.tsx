@@ -653,6 +653,9 @@ describe('opening narrative', () => {
           'message from your next shift',
           'your signature appears on the sheet for a shift you have not worked yet',
           'you are on the roster twice tonight',
+          'it was warm because you will have turned it on',
+          'you are reading this memo earlier than you filed it',
+          'it asked in your voice',
         ];
         expect(personal.some((p) => text.includes(p))).toBe(true);
 
