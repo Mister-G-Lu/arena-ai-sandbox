@@ -272,6 +272,17 @@ export function GameStateProvider({ children }) {
 
   const importGameSave = useCallback((text) => {
     const loaded = parseSaveJson(text);
+    // Importing a file IS the operator choosing which copy wins. If a stale
+    // cross-tab block is still standing, the import would otherwise stay in
+    // memory only — silently dropped on the next reload, and one "USE OTHER
+    // TAB" click away from being clobbered by the file it just replaced.
+    localWritesBlocked.current = false;
+    setPersistence(prev => ({
+      ...prev,
+      status: 'ready',
+      error: null,
+      tabConflict: null
+    }));
     setState(hydrateActionTank(loaded.game));
     // A new operator file is now live; Records must be re-read, not overwritten.
     setCloudRecheck((n) => n + 1);
@@ -654,6 +665,16 @@ export function GameStateProvider({ children }) {
   }, []);
 
   const resetGame = useCallback(() => {
+    // An explicit wipe outranks the cross-tab pause: if this tab was blocked
+    // by a foreign write, the reset is the operator's answer to it. Clearing
+    // the block lets the fresh state persist instead of dying in memory.
+    localWritesBlocked.current = false;
+    setPersistence(prev => ({
+      ...prev,
+      status: 'ready',
+      error: null,
+      tabConflict: null
+    }));
     clearLocalGameSave();
     setState(hydrateActionTank(createInitialGameState()));
   }, []);

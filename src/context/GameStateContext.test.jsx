@@ -260,6 +260,58 @@ describe('effects pipeline', () => {
     expect(api.persistence.tabConflict).toBeNull();
   });
 
+  it('importing under an outstanding tab-conflict block actually persists', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(10); });
+
+    // Another tab advances the canonical key; this tab's writes pause.
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.game.credits = 75;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.tabConflict).not.toBeNull();
+
+    // Importing a file is the operator choosing the winner: it resolves the
+    // block, and the imported bytes — not the foreign ones — reach the key.
+    const imported = JSON.parse(api.actions.exportGameSave());
+    imported.game.credits = 500;
+    await act(async () => { api.actions.importGameSave(JSON.stringify(imported)); });
+
+    expect(api.state.credits).toBe(500);
+    expect(api.persistence.tabConflict).toBeNull();
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(500);
+  });
+
+  it('resetting under an outstanding tab-conflict block persists the fresh file', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(10); });
+
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.game.credits = 75;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+
+    await act(async () => { api.actions.resetGame(); });
+    expect(api.state.credits).toBe(0);
+    expect(api.persistence.tabConflict).toBeNull();
+    // The fresh file is written — a reload must not resurrect the foreign one.
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(0);
+  });
+
   it('exports and imports the same canonical envelope used by cloud sync', async () => {
     mount();
     await act(async () => { api.actions.addCredits(321); });
