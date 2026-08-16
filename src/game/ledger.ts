@@ -75,7 +75,9 @@ export function deposit(
   if (state.unbound || state.credits === Infinity) {
     return { credits: Infinity, unbound: true, overflowed: false, wrapped: null };
   }
-  if (!isCountable(amount) || amount === 0) {
+  // Deposits credit. A negative amount is not a debit in disguise — the only
+  // way out of the ledger is withdraw(), with its explicit `paid` contract.
+  if (!isCountable(amount) || amount <= 0) {
     // A non-finite payout is itself a broken word. Treat +Infinity as a break.
     if (amount === Infinity) {
       return { credits: Infinity, unbound: true, overflowed: true, wrapped: wrapSigned(limit + 1, bits) };

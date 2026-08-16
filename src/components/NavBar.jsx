@@ -23,7 +23,7 @@ export default function NavBar({ currentPage, onNavigate }) {
 
   return (
     <>
-      <aside className={`sidebar${mobileOpen ? ' open' : ''}`}>
+      <aside id="site-nav" className={`sidebar${mobileOpen ? ' open' : ''}`}>
         <div className="sidebar-brand">
           <a className="brand" href="#home" onClick={(event) => { event.preventDefault(); handleClick('home'); }}>
             FALSE<span className="brand-reality">//</span>REALITY
@@ -36,6 +36,7 @@ export default function NavBar({ currentPage, onNavigate }) {
               key={item.page}
               href={`#${item.page}`}
               className={`nav-link${currentPage === item.page ? ' active' : ''}`}
+              aria-current={currentPage === item.page ? 'page' : undefined}
               onClick={(event) => { event.preventDefault(); handleClick(item.page); }}
             >
               <span className="nav-icon">{item.icon}</span>
@@ -57,6 +58,8 @@ export default function NavBar({ currentPage, onNavigate }) {
         className={`mobile-menu-toggle${mobileOpen ? ' open' : ''}`}
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="Toggle menu"
+        aria-expanded={mobileOpen}
+        aria-controls="site-nav"
       >
         <span></span><span></span><span></span>
       </button>

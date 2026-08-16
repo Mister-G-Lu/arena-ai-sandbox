@@ -45,11 +45,14 @@ export default function Notices() {
 
   function choose(choice) {
     if (!card) return;
+    // Consequences file once per card. A re-read replays the text only.
+    const revisit = state.seenStorylets.includes(card.id);
     actions.resolveStorylet(card, choice);
     setLastOutcome({
       title: card.title,
       text: choice.outcome?.text ?? '',
-      effects: describeEffects(choice.outcome?.qualities)
+      effects: revisit ? null : describeEffects(choice.outcome?.qualities),
+      revisit
     });
   }
 
@@ -199,6 +202,9 @@ export default function Notices() {
             <p className="storylet-outcome-text">{lastOutcome.text}</p>
             {lastOutcome.effects && (
               <p className="fine">FILED TO YOUR RECORD: {lastOutcome.effects}</p>
+            )}
+            {lastOutcome.revisit && (
+              <p className="fine">REREAD // RECORD UNCHANGED — CONSEQUENCES FILE ONCE PER CARD.</p>
             )}
             {!card && (
               <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>

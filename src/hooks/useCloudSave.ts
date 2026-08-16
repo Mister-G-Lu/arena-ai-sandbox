@@ -19,6 +19,15 @@ export interface UseCloudSaveOptions {
   hadLocalSaveAtBoot: boolean;
   replaceState: (state: GameState) => void;
   debounceMs?: number;
+  /**
+   * Bump this whenever a whole new operator file becomes live (file import).
+   * The boot-time Records check runs again — with autosave disarmed first —
+   * so an imported file goes through the two-copies-disagree prompt instead
+   * of silently overwriting Records.
+   */
+  recheckToken?: number;
+  /** How long to wait before re-attempting a push that failed (e.g. offline). */
+  retryMs?: number;
 }
 
 export function useCloudSave({
@@ -26,6 +35,8 @@ export function useCloudSave({
   hadLocalSaveAtBoot,
   replaceState,
   debounceMs = 800,
+  recheckToken = 0,
+  retryMs = 30_000,
 }: UseCloudSaveOptions) {
   const auth = useAuth();
   const [status, setStatus] = useState<CloudSaveStatus>(auth.disabled ? 'disabled' : 'loading');
@@ -34,13 +45,16 @@ export function useCloudSave({
   const [retryToken, setRetryToken] = useState(0);
   const stateRef = useRef(state);
   const replaceStateRef = useRef(replaceState);
+  const authRef = useRef(auth);
   const initialFingerprint = useRef(gameStateFingerprint(state));
   const remoteFingerprint = useRef<string | null>(null);
   const readyToAutosave = useRef(false);
   const requestSequence = useRef(0);
   const saveQueue = useRef(Promise.resolve());
+  const retryTimer = useRef<number | null>(null);
   stateRef.current = state;
   replaceStateRef.current = replaceState;
+  authRef.current = auth;
 
   const userId = auth.session?.user.id ?? null;
 
@@ -112,34 +126,48 @@ export function useCloudSave({
         setMessage(error instanceof Error ? error.message : 'Records could not be reached.');
       }
     })();
-  }, [auth.disabled, auth.loading, auth.session, hadLocalSaveAtBoot, retryToken, userId]);
+  }, [auth.disabled, auth.loading, auth.session, hadLocalSaveAtBoot, recheckToken, retryToken, userId]);
 
   useEffect(() => {
     if (!readyToAutosave.current || !auth.session || !userId || conflict) return;
     const fingerprint = gameStateFingerprint(state);
     if (fingerprint === remoteFingerprint.current) return;
 
-    const timer = window.setTimeout(() => {
+    const attempt = () => {
+      if (!authRef.current.session) return; // signed out while queued
       const envelope = createStoredSaveEnvelope(state);
       setStatus('saving');
       setMessage('Filing operator record…');
       saveQueue.current = saveQueue.current
-        .then(() => pushSave(getSupabase(), auth.session, envelope))
+        .then(() => pushSave(getSupabase(), authRef.current.session!, envelope))
         .then(() => {
+          // Superseded by a newer change; the newer attempt owns the queue.
+          if (gameStateFingerprint(stateRef.current) !== fingerprint) return;
           remoteFingerprint.current = fingerprint;
-          if (gameStateFingerprint(stateRef.current) === fingerprint) {
-            setStatus('synced');
-            setMessage('Operator file synchronized.');
-          }
+          setStatus('synced');
+          setMessage('Operator file synchronized.');
         })
         .catch((error) => {
+          if (gameStateFingerprint(stateRef.current) !== fingerprint) return;
+          if (!authRef.current.session) return; // signed out while in flight
           setStatus('error');
           setMessage(error instanceof Error ? error.message : 'Records could not save the file.');
+          // A dropped record is a lost night. Keep trying until the state
+          // moves on or the operator signs out — either clears this timer.
+          retryTimer.current = window.setTimeout(attempt, retryMs);
         });
-    }, debounceMs);
+    };
 
-    return () => window.clearTimeout(timer);
-  }, [auth.session, conflict, debounceMs, state, userId]);
+    const timer = window.setTimeout(attempt, debounceMs);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (retryTimer.current !== null) {
+        window.clearTimeout(retryTimer.current);
+        retryTimer.current = null;
+      }
+    };
+  }, [auth.session, conflict, debounceMs, retryMs, state, userId]);
 
   const requestToken = useCallback(async (email: string) => {
     const ok = await auth.requestToken(email);

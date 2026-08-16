@@ -1,10 +1,12 @@
 import { qualityDef } from './qualities';
 
-export const ZONE_IDS = ['tutorial', 'routine', 'floor12'] as const;
+/**
+ * Zones that ship content decks in `src/content/<zone>/`. Kept in sync with
+ * `progression.ts` ZONES — the content loader validates the entries of every
+ * configured zone against this list.
+ */
+export const ZONE_IDS = ['routine', 'floor12'] as const;
 export type ZoneId = (typeof ZONE_IDS)[number];
-export type ZoneStatus = 'locked' | 'open' | 'complete';
-
-export const HIDDEN_QUALITIES = new Set(['Attention']);
 
 export const STORYLET_KEYS = new Set(['id', 'zone', 'title', 'body', 'choices']);
 export const CHOICE_KEYS = new Set(['id', 'label', 'outcome', 'next', 'endZone', 'completeZone']);
@@ -30,13 +32,6 @@ export interface Storylet {
   title: string;
   body: string;
   choices: Choice[];
-}
-
-export interface Progress {
-  qualities: Record<string, number>;
-  zones: Record<ZoneId, ZoneStatus>;
-  seen: string[];
-  current: { zone: ZoneId; storyletId: string } | null;
 }
 
 export class SchemaError extends Error {
@@ -187,95 +182,9 @@ export function validateStoryGraph(
   return cards;
 }
 
-export function createProgress(): Progress {
-  return {
-    qualities: { Attention: 0, Perception: 0, Doubt: 0, Salary: 0, Routine: 0 },
-    zones: { tutorial: 'open', routine: 'open', floor12: 'locked' },
-    seen: [],
-    current: { zone: 'tutorial', storyletId: 'tutorial-01' },
-  };
-}
-
-function isZoneId(v: string): v is ZoneId {
-  return (ZONE_IDS as readonly string[]).includes(v);
-}
-
-function isZoneStatus(v: unknown): v is ZoneStatus {
-  return v === 'locked' || v === 'open' || v === 'complete';
-}
-
-export function parseProgress(raw: unknown): Progress {
-  const fresh = createProgress();
-  if (!raw || typeof raw !== 'object') return fresh;
-  const r = raw as Partial<Progress>;
-  const qualities =
-    r.qualities && typeof r.qualities === 'object' && !Array.isArray(r.qualities)
-      ? { ...fresh.qualities, ...pickFinite(r.qualities) }
-      : fresh.qualities;
-  const zones = { ...fresh.zones };
-  if (r.zones && typeof r.zones === 'object') {
-    for (const [k, v] of Object.entries(r.zones)) {
-      if (isZoneId(k) && isZoneStatus(v)) zones[k] = v;
-    }
-  }
-  const seen = Array.isArray(r.seen) ? r.seen.filter((s): s is string => typeof s === 'string') : [];
-  let current = fresh.current;
-  if (r.current === null) current = null;
-  else if (r.current && typeof r.current === 'object') {
-    const z = r.current.zone;
-    const sid = r.current.storyletId;
-    if (typeof z === 'string' && isZoneId(z) && typeof sid === 'string') {
-      current = { zone: z, storyletId: sid };
-    }
-  }
-  return { qualities, zones, seen, current };
-}
-
-function pickFinite(obj: Record<string, unknown>): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
-  }
-  return out;
-}
-
-export function visibleQualities(qualities: Record<string, number>): [string, number][] {
-  return Object.entries(qualities).filter(([k]) => !HIDDEN_QUALITIES.has(k));
-}
-
-export function applyChoice(
-  progress: Progress,
-  storylet: Storylet,
-  choiceId: string,
-): { progress: Progress; choice: Choice } {
-  const choice = storylet.choices.find((c) => c.id === choiceId);
-  if (!choice) throw new SchemaError(`unknown choice: ${choiceId}`);
-  const qualities = { ...progress.qualities };
-  for (const [k, delta] of Object.entries(choice.outcome.qualities ?? {})) {
-    qualities[k] = (qualities[k] ?? 0) + delta;
-  }
-  const seen = progress.seen.includes(storylet.id) ? progress.seen : [...progress.seen, storylet.id];
-  const zones = { ...progress.zones };
-  let current = progress.current;
-  if (choice.completeZone) {
-    zones[storylet.zone] = 'complete';
-    if (storylet.zone === 'tutorial' && zones.floor12 === 'locked') {
-      zones.floor12 = 'open';
-    }
-    current = null;
-  } else if (choice.endZone) {
-    current = null;
-  } else if (choice.next) {
-    current = { zone: storylet.zone, storyletId: choice.next };
-  }
-  return { progress: { qualities, zones, seen, current }, choice };
-}
-
-export function enterZone(progress: Progress, zone: ZoneId, firstId: string): Progress {
-  if (progress.zones[zone] === 'locked') return progress;
-  return { ...progress, current: { zone, storyletId: firstId } };
-}
-
-export function firstIdInZone(cards: Storylet[], zone: ZoneId): string | undefined {
-  return cards.find((c) => c.zone === zone)?.id;
-}
+/**
+ * This module's job ends at validation and typing. Player progress is owned by
+ * the live runtime — `GameStateContext` applies choices, `gameSave.ts` is the
+ * persisted schema, and `progression.ts` owns zones. A second progress engine
+ * here would only drift from all three, and it did.
+ */

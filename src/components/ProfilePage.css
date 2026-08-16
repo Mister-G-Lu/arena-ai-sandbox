@@ -261,6 +261,14 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.unlock-hint {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--terminal-text-dim);
+  align-self: center;
+}
+
 /* Promotion Display */
 .promotion-display {
   display: flex;

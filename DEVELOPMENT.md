@@ -130,3 +130,8 @@ Pages, install the two files from `ops/github-workflows/` under
 Actions**. They are templates because this coding connection cannot push active
 workflow files without GitHub workflow permission. Until installed, run
 `npm run check` locally and rebuild `docs/` in the final pull-request commit.
+
+`npm run verify:pages` is the local stand-in for the CI step that checks the
+committed build: it rebuilds and fails loudly if `docs/` has drifted from the
+source. Run it right before the final commit of a PR that touches `src/` or
+`index.html`.

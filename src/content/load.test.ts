@@ -1,21 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { ZONE_IDS } from '../game/storylets';
+import { ZONES } from '../game/progression';
 import { cardsInZone, findCard, loadAllStorylets } from './load';
 
 describe('content pipeline', () => {
   const cards = loadAllStorylets();
 
-  it('loads 18 validated cards — 6 per zone', () => {
-    expect(cards).toHaveLength(18);
+  it('loads 12 validated cards — 6 per live zone', () => {
+    expect(cards).toHaveLength(12);
     for (const zone of ZONE_IDS) {
       expect(cardsInZone(cards, zone)).toHaveLength(6);
     }
   });
 
+  it('keeps the content zone list pinned to the configured zones', () => {
+    expect(ZONE_IDS).toEqual(ZONES.map((zone) => zone.id));
+  });
+
   it('every card id is unique and findable', () => {
     const ids = cards.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(findCard(cards, 'tutorial-01')?.title).toBe('Clock in');
+    expect(findCard(cards, 'routine-01')?.title).toBe('Building 7, basement light');
     expect(findCard(cards, 'missing')).toBeUndefined();
   });
 
@@ -29,10 +34,14 @@ describe('content pipeline', () => {
     }
   });
 
-  it('tutorial-06 completes the zone; floor12 has an opt-out', () => {
-    const t6 = findCard(cards, 'tutorial-06');
-    expect(t6?.choices.some((c) => c.completeZone)).toBe(true);
-    const f1 = findCard(cards, 'floor12-01');
-    expect(f1?.choices.some((c) => c.endZone)).toBe(true);
+  it('gives every expedition an opt-out and the pool one-shot notices', () => {
+    const door = findCard(cards, 'floor12-01');
+    expect(door?.choices.some((c) => c.endZone)).toBe(true);
+    const stairs = findCard(cards, 'floor12-04');
+    expect(stairs?.choices.some((c) => c.completeZone)).toBe(true);
+    const end = findCard(cards, 'floor12-06');
+    expect(end?.choices.some((c) => c.completeZone)).toBe(true);
+    const notice = findCard(cards, 'routine-01');
+    expect(notice?.choices.every((c) => c.endZone)).toBe(true);
   });
 });

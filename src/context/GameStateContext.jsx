@@ -4,6 +4,7 @@ import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { QUALITY_DEFS, normalizeEffects, clampQuality, qualityDef } from '../game/qualities';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
+  COMPONENT_DEFS,
   PROMOTIONS,
   ZONES,
   nextPromotion,
@@ -101,6 +102,13 @@ export function GameStateProvider({ children }) {
     hadLocalSaveAtBoot: boot.hadLocalSave
   }));
   const firstPersistence = useRef(true);
+  /**
+   * Bumped whenever a whole new operator file is loaded (file import). Cloud
+   * sync re-runs its Records check with autosave disarmed first, so an import
+   * can surface as a two-copies-disagree prompt instead of silently
+   * overwriting the remote file 800ms later.
+   */
+  const [cloudRecheck, setCloudRecheck] = useState(0);
 
   useEffect(() => {
     // A valid canonical file was already read; do not rewrite it just because
@@ -130,6 +138,8 @@ export function GameStateProvider({ children }) {
   const importGameSave = useCallback((text) => {
     const loaded = parseSaveJson(text);
     setState(loaded.game);
+    // A new operator file is now live; Records must be re-read, not overwritten.
+    setCloudRecheck((n) => n + 1);
     return loaded.game;
   }, []);
 
@@ -139,7 +149,8 @@ export function GameStateProvider({ children }) {
   const cloud = useCloudSave({
     state,
     hadLocalSaveAtBoot: persistence.hadLocalSaveAtBoot,
-    replaceState: replaceGameState
+    replaceState: replaceGameState,
+    recheckToken: cloudRecheck
   });
 
   /* ---------------- ledger ---------------- */
@@ -156,21 +167,6 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
-  /* ---------------- components ---------------- */
-
-  const addComponent = useCallback((componentName, label) => {
-    setState(prev => {
-      if (!(componentName in prev.components) || prev.components[componentName]) return prev;
-      return withLog(
-        prev,
-        `Recovered: ${label || componentName.toUpperCase()}. It is real in the morning. Almost nothing is.`,
-        { components: { ...prev.components, [componentName]: true } }
-      );
-    });
-  }, []);
-
-  const hasComponent = useCallback((componentName) => Boolean(state.components[componentName]), [state.components]);
-
   const componentsCount = Object.values(state.components).filter(Boolean).length;
 
   /* ---------------- qualities ---------------- */
@@ -178,18 +174,6 @@ export function GameStateProvider({ children }) {
   /** The one public way consequences enter the game. */
   const applyEffects = useCallback((effects) => {
     setState(prev => applyEffectsToState(prev, effects));
-  }, []);
-
-  const increaseQuality = useCallback((quality, amount = 1) => {
-    setState(prev => applyEffectsToState(prev, { [quality]: amount }));
-  }, []);
-
-  const increaseAttention = useCallback((amount = 1) => {
-    setState(prev => applyEffectsToState(prev, { attention: amount }));
-  }, []);
-
-  const decreaseAttention = useCallback((amount = 1) => {
-    setState(prev => applyEffectsToState(prev, { attention: -amount }));
   }, []);
 
   /* ---------------- promotion (automatic) ---------------- */
@@ -254,10 +238,6 @@ export function GameStateProvider({ children }) {
   }, []);
 
   /** Move the pointer to any storylet inside an open zone. */
-  const openStorylet = useCallback((zoneId, storyletId) => {
-    setState(prev => ({ ...prev, currentStorylet: { zone: zoneId, storyletId } }));
-  }, []);
-
   const closeStorylet = useCallback(() => {
     setState(prev => ({ ...prev, currentStorylet: null }));
   }, []);
@@ -265,10 +245,18 @@ export function GameStateProvider({ children }) {
   /**
    * Resolve a storylet choice: apply its effects, remember the card, advance or
    * close the zone, and award the zone's Component when it completes.
+   *
+   * A card's consequences file once, on first read. Re-reading a card (Floor
+   * 12 stays open until you either take the stairs or reach the end) replays
+   * the fiction but not the payoff — otherwise an expedition is a quality farm
+   * and Attention, the hidden death meter, is maxable in two loops.
    */
   const resolveStorylet = useCallback((storylet, choice) => {
     setState(prev => {
-      let next = applyEffectsToState(prev, choice.outcome?.qualities);
+      const alreadySeen = prev.seenStorylets.includes(storylet.id);
+      let next = alreadySeen
+        ? prev
+        : applyEffectsToState(prev, choice.outcome?.qualities);
 
       const seenStorylets = prev.seenStorylets.includes(storylet.id)
         ? prev.seenStorylets
@@ -343,13 +331,6 @@ export function GameStateProvider({ children }) {
     }));
   }, []);
 
-  const completeTask = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      tasksCompleted: Math.min(prev.tasksCompleted + 1, TASKS_PER_SHIFT)
-    }));
-  }, []);
-
   /**
    * File a task result. `effects` and `payout` are computed by the caller from
    * data (see src/game/payouts.ts) so the console holds no balance numbers.
@@ -376,31 +357,10 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
-  const recordDeath = useCallback(() => {
-    setState(prev => ({ ...prev, deaths: prev.deaths + 1 }));
-  }, []);
-
   /* ---------------- residue ---------------- */
 
   const addLogEntry = useCallback((entry) => {
     setState(prev => withLog(prev, entry));
-  }, []);
-
-  const addDiscovery = useCallback((discovery) => {
-    setState(prev => ({
-      ...prev,
-      discoveries: [...prev.discoveries, { day: prev.day, text: discovery, timestamp: Date.now() }]
-    }));
-  }, []);
-
-  const addContact = useCallback((contact) => {
-    setState(prev => {
-      if (prev.contacts.find(c => c.name === contact.name)) return prev;
-      return {
-        ...prev,
-        contacts: [...prev.contacts, { ...contact, firstMet: prev.day, interactions: 1 }]
-      };
-    });
   }, []);
 
   const resetGame = useCallback(() => {
@@ -424,31 +384,22 @@ export function GameStateProvider({ children }) {
     requirementCtx,
     availableZones,
     QUALITY_DEFS,
+    COMPONENT_DEFS,
     PROMOTIONS,
     ZONES,
     actions: {
       addCredits,
       spendCredits,
-      addComponent,
-      hasComponent,
       componentsCount,
       applyEffects,
-      increaseQuality,
-      increaseAttention,
-      decreaseAttention,
       enterZone,
-      openStorylet,
       closeStorylet,
       resolveStorylet,
       recordOrientationTask,
       completeOrientation,
       incrementDay,
-      completeTask,
       fileTaskResult,
-      recordDeath,
       addLogEntry,
-      addDiscovery,
-      addContact,
       importGameSave,
       exportGameSave,
       resetGame
