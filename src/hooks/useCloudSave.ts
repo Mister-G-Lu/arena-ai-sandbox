@@ -19,6 +19,13 @@ export interface UseCloudSaveOptions {
   hadLocalSaveAtBoot: boolean;
   replaceState: (state: GameState) => void;
   debounceMs?: number;
+  /**
+   * Bump this whenever a whole new operator file becomes live (file import).
+   * The boot-time Records check runs again — with autosave disarmed first —
+   * so an imported file goes through the two-copies-disagree prompt instead
+   * of silently overwriting Records.
+   */
+  recheckToken?: number;
 }
 
 export function useCloudSave({
@@ -26,6 +33,7 @@ export function useCloudSave({
   hadLocalSaveAtBoot,
   replaceState,
   debounceMs = 800,
+  recheckToken = 0,
 }: UseCloudSaveOptions) {
   const auth = useAuth();
   const [status, setStatus] = useState<CloudSaveStatus>(auth.disabled ? 'disabled' : 'loading');
@@ -112,7 +120,7 @@ export function useCloudSave({
         setMessage(error instanceof Error ? error.message : 'Records could not be reached.');
       }
     })();
-  }, [auth.disabled, auth.loading, auth.session, hadLocalSaveAtBoot, retryToken, userId]);
+  }, [auth.disabled, auth.loading, auth.session, hadLocalSaveAtBoot, recheckToken, retryToken, userId]);
 
   useEffect(() => {
     if (!readyToAutosave.current || !auth.session || !userId || conflict) return;

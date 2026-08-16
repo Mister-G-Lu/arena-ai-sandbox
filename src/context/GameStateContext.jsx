@@ -101,6 +101,13 @@ export function GameStateProvider({ children }) {
     hadLocalSaveAtBoot: boot.hadLocalSave
   }));
   const firstPersistence = useRef(true);
+  /**
+   * Bumped whenever a whole new operator file is loaded (file import). Cloud
+   * sync re-runs its Records check with autosave disarmed first, so an import
+   * can surface as a two-copies-disagree prompt instead of silently
+   * overwriting the remote file 800ms later.
+   */
+  const [cloudRecheck, setCloudRecheck] = useState(0);
 
   useEffect(() => {
     // A valid canonical file was already read; do not rewrite it just because
@@ -130,6 +137,8 @@ export function GameStateProvider({ children }) {
   const importGameSave = useCallback((text) => {
     const loaded = parseSaveJson(text);
     setState(loaded.game);
+    // A new operator file is now live; Records must be re-read, not overwritten.
+    setCloudRecheck((n) => n + 1);
     return loaded.game;
   }, []);
 
@@ -139,7 +148,8 @@ export function GameStateProvider({ children }) {
   const cloud = useCloudSave({
     state,
     hadLocalSaveAtBoot: persistence.hadLocalSaveAtBoot,
-    replaceState: replaceGameState
+    replaceState: replaceGameState,
+    recheckToken: cloudRecheck
   });
 
   /* ---------------- ledger ---------------- */

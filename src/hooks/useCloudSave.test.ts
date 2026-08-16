@@ -12,6 +12,7 @@ const session = {
 function mockClient(remote: ReturnType<typeof createStoredSaveEnvelope> | null = null) {
   const upsert = vi.fn().mockResolvedValue({ error: null });
   const listeners: Array<(event: string, next: unknown) => void> = [];
+  let pulls = 0;
   const client = {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
@@ -25,15 +26,19 @@ function mockClient(remote: ReturnType<typeof createStoredSaveEnvelope> | null =
     from: vi.fn().mockImplementation(() => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: async () => ({
-            data: remote ? { payload: remote, updated_at: remote.savedAt } : null,
-            error: null,
-          }),
+          maybeSingle: async () => {
+            pulls += 1;
+            return {
+              data: remote ? { payload: remote, updated_at: remote.savedAt } : null,
+              error: null,
+            };
+          },
         }),
       }),
       upsert,
     })),
     __upsert: upsert,
+    __pulls: () => pulls,
     __listeners: listeners,
   };
   return client;
@@ -143,5 +148,42 @@ describe('useCloudSave', () => {
     rerender({ state: changed });
     await waitFor(() => expect(client.__upsert).toHaveBeenCalledTimes(1));
     expect(client.__upsert.mock.calls[0]?.[0].payload.game.credits).toBe(99);
+  });
+
+  it('re-checks Records after an import instead of silently overwriting them', async () => {
+    const local = createInitialGameState();
+    local.day = 2;
+    const remote = createInitialGameState();
+    remote.day = 5;
+    const client = mockClient(
+      createStoredSaveEnvelope(remote, new Date('2026-08-16T12:00:00Z')),
+    );
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ state, recheckToken }) =>
+        useCloudSave({ state, hadLocalSaveAtBoot: true, replaceState, recheckToken }),
+      { initialProps: { state: local, recheckToken: 0 } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('conflict'));
+    expect(client.__upsert).not.toHaveBeenCalled();
+    expect(client.__pulls()).toBe(1);
+
+    // Import a file that still differs from Records: the conflict must
+    // persist, and nothing may be pushed automatically.
+    const imported = { ...local, credits: 500 };
+    rerender({ state: imported, recheckToken: 1 });
+    await waitFor(() => expect(client.__pulls()).toBe(2));
+    await act(async () => { await Promise.resolve(); });
+    expect(result.current.status).toBe('conflict');
+    expect(client.__upsert).not.toHaveBeenCalled();
+
+    // Import the Records copy itself: the files now agree, so the terminal
+    // syncs without replacing the remote file.
+    rerender({ state: remote, recheckToken: 2 });
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+    expect(client.__pulls()).toBe(3);
+    expect(result.current.conflict).toBeNull();
+    expect(client.__upsert).not.toHaveBeenCalled();
   });
 });
