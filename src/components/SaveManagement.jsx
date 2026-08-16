@@ -1,14 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
-import { MAX_SAVE_BYTES } from '../lib/gameSave';
+import { MAX_SAVE_BYTES, parseSaveJson } from '../lib/gameSave';
 
 function FileSummary({ label, game, savedAt }) {
   return (
     <div className="save-summary">
       <strong>{label}</strong>
       <span>
-        Day {game.day} · {game.tasksCompleted}/{TASKS_PER_SHIFT} tasks · Tier {game.promotion.tier}
+        Day {game.day} · {game.tasksCompleted.toLocaleString()} results filed · Tier {game.promotion.tier}
       </span>
       {savedAt && <span>Saved {new Date(savedAt).toLocaleString()}</span>}
     </div>
@@ -19,6 +18,7 @@ export default function SaveManagement() {
   const { state, persistence, cloud, actions } = useGameState();
   const [email, setEmail] = useState('');
   const [localMessage, setLocalMessage] = useState(null);
+  const [pendingImport, setPendingImport] = useState(null);
   const fileInput = useRef(null);
 
   async function requestToken(event) {
@@ -51,13 +51,32 @@ export default function SaveManagement() {
           `operator files are capped at ${MAX_SAVE_BYTES / 1024 / 1024} MB.`,
         );
       }
-      actions.importGameSave(await file.text());
-      setLocalMessage('Operator file validated and imported.');
+      const text = await file.text();
+      const loaded = parseSaveJson(text);
+      setPendingImport({ text, ...loaded });
+      setLocalMessage('Operator file validated. Confirm which terminal file should remain.');
     } catch (error) {
+      setPendingImport(null);
       setLocalMessage(error instanceof Error ? error.message : 'Import refused.');
     } finally {
       event.target.value = '';
     }
+  }
+
+  function confirmImport() {
+    if (!pendingImport) return;
+    try {
+      actions.importGameSave(pendingImport.text);
+      setPendingImport(null);
+      setLocalMessage('Operator file imported. Records will be checked before cloud saving resumes.');
+    } catch (error) {
+      setLocalMessage(error instanceof Error ? error.message : 'Import refused.');
+    }
+  }
+
+  function cancelImport() {
+    setPendingImport(null);
+    setLocalMessage('Import cancelled. This terminal file was not changed.');
   }
 
   return (
@@ -213,6 +232,32 @@ export default function SaveManagement() {
           <button className="btn btn-primary btn-compact" type="button" onClick={cloud.keepLocal}>
             OVERWRITE RECORDS WITH LOCAL
           </button>
+        </div>
+      )}
+
+      {pendingImport && (
+        <div className="save-conflict" role="alert">
+          <p>
+            <strong>Replace this terminal&apos;s operator file?</strong> Importing changes the
+            whole local file. If signed in, Records will be checked again before either copy
+            can overwrite the other.
+          </p>
+          <div className="save-summary-grid">
+            <FileSummary label="THIS TERMINAL" game={state} savedAt={persistence.lastSavedAt} />
+            <FileSummary
+              label="IMPORT FILE"
+              game={pendingImport.game}
+              savedAt={pendingImport.savedAt}
+            />
+          </div>
+          <div className="save-action-row">
+            <button className="btn btn-primary btn-compact" type="button" onClick={confirmImport}>
+              CONFIRM REPLACE
+            </button>
+            <button className="btn btn-ghost btn-compact" type="button" onClick={cancelImport}>
+              CANCEL IMPORT
+            </button>
+          </div>
         </div>
       )}
 
