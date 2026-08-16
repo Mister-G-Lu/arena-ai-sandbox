@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { deposit, withdraw, formatCredits, wordPressure, CREDIT_LIMIT } from '../game/ledger';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
+import { TASKS_PER_SHIFT, createPendingDispatch } from '../game/dispatch';
 import {
   ACTION_CAP,
   REGEN_INTERVAL_MS,
@@ -454,18 +454,51 @@ export function GameStateProvider({ children }) {
    * early to get fifty more actions would make the tank meaningless.
    */
   const incrementDay = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      day: prev.day + 1,
-      tasksThisShift: 0,
-      actionsSpentThisShift: 0,
-      anomaliesSeenThisShift: 0
-    }));
+    setState(prev => {
+      // An acknowledged result is the boundary of a work order. Never let a
+      // caller roll the date while a reserved result still needs a signature.
+      if (prev.pendingDispatch) return prev;
+      return {
+        ...prev,
+        day: prev.day + 1,
+        tasksThisShift: 0,
+        actionsSpentThisShift: 0,
+        anomaliesSeenThisShift: 0
+      };
+    });
   }, []);
 
   /**
-   * File a task result. `effects` and `payout` are computed by the caller
-   * (see src/game/payouts.ts) so the console holds no balance numbers.
+   * Reserve a console task and its action in one state transition. The pending
+   * result is canonical state, not component state, so route changes and
+   * reloads cannot reroll an anomaly or abandon an unpaid work order.
+   */
+  const startDispatchTask = useCallback(({ anomalyRoll, corruptionRoll }) => {
+    setState(prev => {
+      if (
+        prev.pendingDispatch ||
+        prev.tasksThisShift >= TASKS_PER_SHIFT ||
+        prev.actionsSpentThisShift >= ACTION_CAP
+      ) return prev;
+
+      return withSpentAction(prev, 1, (charged) => ({
+        ...charged,
+        pendingDispatch: createPendingDispatch({
+          day: charged.day,
+          tasksCompleted: charged.tasksCompleted,
+          tasksThisShift: charged.tasksThisShift,
+          actionsSpentThisShift: charged.actionsSpentThisShift,
+          anomaliesSeenThisShift: charged.anomaliesSeenThisShift,
+          anomalyRoll,
+          corruptionRoll
+        })
+      }));
+    });
+  }, []);
+
+  /**
+   * File the reserved task result. The action was charged when Dispatch
+   * released the work order, so acknowledgement only commits its consequences.
    */
   const fileTaskResult = useCallback(({
     effects,
@@ -474,13 +507,15 @@ export function GameStateProvider({ children }) {
     discrepancy = false,
     anomaly = false
   }) => {
-    setState(prev => withSpentAction(prev, 1, (charged) => {
-      let next = applyEffectsToState(charged, effects);
+    setState(prev => {
+      if (!prev.pendingDispatch) return prev;
+      let next = applyEffectsToState(prev, effects);
       if (payout) {
         next = commitLedger(next, deposit({ credits: next.credits, unbound: next.ledgerUnbound }, payout));
       }
       next = {
         ...next,
+        pendingDispatch: null,
         // Career total, uncapped — the operator file's lifetime stat.
         tasksCompleted: next.tasksCompleted + 1,
         tasksThisShift: Math.min(next.tasksThisShift + 1, TASKS_PER_SHIFT),
@@ -488,7 +523,7 @@ export function GameStateProvider({ children }) {
         discrepanciesLogged: next.discrepanciesLogged + (discrepancy ? 1 : 0)
       };
       return withLog(next, logbookEntry);
-    }));
+    });
   }, []);
 
   /* ---------------- residue ---------------- */
@@ -598,6 +633,7 @@ export function GameStateProvider({ children }) {
       recordOrientationTask,
       completeOrientation,
       incrementDay,
+      startDispatchTask,
       fileTaskResult,
       addLogEntry,
       importGameSave,

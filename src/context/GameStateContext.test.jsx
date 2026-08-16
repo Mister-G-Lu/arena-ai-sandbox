@@ -157,9 +157,33 @@ describe('effects pipeline', () => {
     expect(api.state.logbook.some((e) => e.text.includes('OPERATOR'))).toBe(true);
   });
 
+  it('reserves a pending task and its action before the result is filed', async () => {
+    mount();
+    await act(async () => {
+      api.actions.startDispatchTask({ anomalyRoll: 0.999, corruptionRoll: 0 });
+    });
+
+    expect(api.state.pendingDispatch).toMatchObject({
+      id: 'dispatch-1-1',
+      taskNumber: 1,
+      shiftAction: 1,
+      isCorrupt: false,
+    });
+    expect(api.state.actions).toBe(49);
+    expect(api.state.actionsSpentThisShift).toBe(1);
+    expect(JSON.parse(api.actions.exportGameSave()).game.pendingDispatch.id).toBe('dispatch-1-1');
+
+    await act(async () => { api.actions.fileTaskResult({ payout: 10 }); });
+    expect(api.state.pendingDispatch).toBeNull();
+    expect(api.state.tasksCompleted).toBe(1);
+    // Acknowledgement commits the result; it does not charge the reserved action twice.
+    expect(api.state.actions).toBe(49);
+  });
+
   it('tracks anomalies per shift and resets the guarantee counter tomorrow', async () => {
     mount();
     await act(async () => {
+      api.actions.startDispatchTask({ anomalyRoll: 0, corruptionRoll: 0 });
       api.actions.fileTaskResult({ anomaly: true, payout: 10 });
     });
     expect(api.state.anomaliesSeenThisShift).toBe(1);

@@ -78,6 +78,19 @@ const ContactSchema = z.strictObject({
   interactions: safeInt.min(1),
 });
 
+const PendingDispatchSchema = z.strictObject({
+  id: shortText.min(1),
+  day: dayNumber,
+  taskNumber: safeInt.min(1).max(TASKS_PER_SHIFT),
+  shiftAction: safeInt.min(1).max(ACTION_CAP),
+  code: shortText.min(1),
+  title: shortText.min(1),
+  instruction: storyText.min(1),
+  cleanResult: storyText.min(1),
+  displayedResult: storyText.min(1),
+  isCorrupt: z.boolean(),
+});
+
 const glitchIds = Object.keys(GLITCH_DEFS) as [string, ...string[]];
 const GlitchIdSchema = z.enum(glitchIds);
 
@@ -116,6 +129,8 @@ export const StoredGameStateSchema = z.strictObject({
   /** Actions spent since the last rollover. Drives the 01:00–06:00 clock. */
   actionsSpentThisShift: safeInt.max(ACTION_CAP).default(0),
   anomaliesSeenThisShift: safeInt.max(TASKS_PER_SHIFT).default(0),
+  /** A reserved console result survives navigation, reloads, and deploys. */
+  pendingDispatch: PendingDispatchSchema.nullable().default(null),
   discrepanciesLogged: safeInt.default(0),
   deaths: safeInt.default(0),
   orientation: OrientationSchema,
