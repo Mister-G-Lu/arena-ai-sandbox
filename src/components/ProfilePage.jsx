@@ -121,26 +121,29 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="resource-row">
-              <div className="resource-name">
-                <span className="resource-icon-large">⚙</span>
-                <div>
-                  <div className="resource-title">Components</div>
-                  <div className="resource-subtitle">Story resources (one-time discovery)</div>
+            {/* Components stay off the books until the first one is found. */}
+            {componentsCount > 0 && (
+              <div className="resource-row">
+                <div className="resource-name">
+                  <span className="resource-icon-large">⚙</span>
+                  <div>
+                    <div className="resource-title">Components</div>
+                    <div className="resource-subtitle">Story resources (one-time discovery)</div>
+                  </div>
+                </div>
+                <div className="resource-details">
+                  <div className="resource-amount">{componentsCount} / {COMPONENT_DEFS.length}</div>
+                  <div className="component-list">
+                    {Object.entries(components).map(([name, acquired]) => (
+                      <div key={name} className={`component-item ${acquired ? 'acquired' : ''}`}>
+                        <span className="component-check">{acquired ? '✓' : '□'}</span>
+                        <span className="component-name">{name.toUpperCase()}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="resource-details">
-                <div className="resource-amount">{componentsCount} / {COMPONENT_DEFS.length}</div>
-                <div className="component-list">
-                  {Object.entries(components).map(([name, acquired]) => (
-                    <div key={name} className={`component-item ${acquired ? 'acquired' : ''}`}>
-                      <span className="component-check">{acquired ? '✓' : '□'}</span>
-                      <span className="component-name">{name.toUpperCase()}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
