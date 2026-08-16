@@ -142,4 +142,23 @@ describe('effects pipeline', () => {
     expect(api.state.promotion.unlocks).toContain('notice-storylets');
     expect(api.state.logbook.some((e) => e.text.includes('OPERATOR'))).toBe(true);
   });
+
+  it('exports and imports the same canonical envelope used by cloud sync', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(321); });
+    const exported = api.actions.exportGameSave();
+    expect(JSON.parse(exported).version).toBe(2);
+
+    await act(async () => { api.actions.resetGame(); });
+    expect(api.state.credits).toBe(0);
+    await act(async () => { api.actions.importGameSave(exported); });
+    expect(api.state.credits).toBe(321);
+  });
+
+  it('refuses an invalid imported save without replacing live state', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(12); });
+    expect(() => api.actions.importGameSave('{"version":2}')).toThrow(/validation/i);
+    expect(api.state.credits).toBe(12);
+  });
 });

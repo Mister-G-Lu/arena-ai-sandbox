@@ -450,6 +450,86 @@
   font-style: italic;
 }
 
+/* Save management */
+.save-status-grid,
+.save-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.save-status-card,
+.save-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--terminal-border);
+  background: rgba(0, 0, 0, 0.2);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.save-status-card strong,
+.save-summary strong { color: var(--terminal-accent); }
+
+.save-auth-form,
+.save-conflict,
+.save-signed-in {
+  margin-top: 1rem;
+}
+
+.save-auth-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--terminal-text);
+}
+
+.save-auth-form input[type='email'] {
+  min-width: min(100%, 300px);
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--terminal-border);
+  border-radius: 4px;
+  color: var(--terminal-text);
+  background: rgba(0, 0, 0, 0.35);
+  font: inherit;
+}
+
+.save-action-row,
+.save-signed-in {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.save-conflict {
+  padding: 1rem;
+  border: 1px solid var(--terminal-accent);
+  background: rgba(87, 214, 195, 0.04);
+}
+
+.save-warning {
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--red);
+  color: var(--terminal-text);
+  background: rgba(255, 111, 111, 0.08);
+}
+
+.save-file-actions { margin-top: 1.25rem; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 /* Profile Actions */
 .profile-actions {
   display: flex;

@@ -9,6 +9,7 @@ You are the night operator at Meridian Central Dispatch. Fifty tasks a shift. At
 - **Design docs:** [`design/`](design/) — core design bible and drafts (⚠ full spoilers)
 - **Narration system:** [`NARRATION_SETS.md`](NARRATION_SETS.md) — all story text with critical lines marked for polish
 - **Latest review:** [`design/adversarial-review-01.md`](design/adversarial-review-01.md) — integration pass on the opening narrative, and what the current PR fixes
+- **Developer handoff:** [`DEVELOPMENT.md`](DEVELOPMENT.md) — canonical save, Supabase config, content safety, tests, and deployment
 
 ## Architecture
 

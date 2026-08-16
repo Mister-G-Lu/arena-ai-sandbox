@@ -11,8 +11,15 @@ import {
   zoneState,
   zoneById
 } from '../game/progression';
-import { createInitialGameState } from '../lib/gameSave';
+import {
+  createInitialGameState,
+  createStoredSaveEnvelope,
+  parseSaveJson,
+  parseStoredSaveEnvelope,
+  serializeSaveEnvelope
+} from '../lib/gameSave';
 import { clearLocalGameSave, loadLocalGameSave, writeLocalGameSave } from '../lib/localGameSave';
+import { useCloudSave } from '../hooks/useCloudSave';
 
 const GameStateContext = createContext();
 
@@ -113,6 +120,26 @@ export function GameStateProvider({ children }) {
       setPersistence(prev => ({ ...prev, status: 'error', error: result.error }));
     }
   }, [boot.envelope, boot.migrated, state]);
+
+  const replaceGameState = useCallback((nextState) => {
+    const envelope = createStoredSaveEnvelope(nextState);
+    setState(parseStoredSaveEnvelope(envelope).game);
+  }, []);
+
+  const importGameSave = useCallback((text) => {
+    const loaded = parseSaveJson(text);
+    setState(loaded.game);
+    return loaded.game;
+  }, []);
+
+  const exportGameSave = useCallback(() =>
+    serializeSaveEnvelope(createStoredSaveEnvelope(state)), [state]);
+
+  const cloud = useCloudSave({
+    state,
+    hadLocalSaveAtBoot: persistence.hadLocalSaveAtBoot,
+    replaceState: replaceGameState
+  });
 
   /* ---------------- ledger ---------------- */
 
@@ -383,6 +410,7 @@ export function GameStateProvider({ children }) {
   const value = {
     state,
     persistence,
+    cloud,
     ledger,
     requirementCtx,
     availableZones,
@@ -412,6 +440,8 @@ export function GameStateProvider({ children }) {
       addLogEntry,
       addDiscovery,
       addContact,
+      importGameSave,
+      exportGameSave,
       resetGame
     }
   };
