@@ -92,13 +92,31 @@ function withSpentAction(prev, cost, mutate, now = Date.now()) {
   };
 }
 
+/**
+ * Residue is forever — but the file that holds it is not infinite. The save
+ * schema caps logbook, discoveries and seen-storylets (see gameSave.ts), and
+ * before this cap the reducers appended without limit: a file that played its
+ * way across the ceiling became a file the schema rejected, and from that
+ * append onward every local write, cloud sync and export failed validation.
+ * These live caps sit safely below the schema ceilings, so an in-game-grown
+ * file can never reach the wall — the app prunes its oldest residue instead.
+ */
+export const LOGBOOK_CAP = 1000;
+export const DISCOVERIES_CAP = 500;
+export const SEEN_STORYLETS_CAP = 9500;
+
+function appendResidue(list, entry, cap) {
+  const next = [...list, entry];
+  return next.length > cap ? next.slice(next.length - cap) : next;
+}
+
 /** Append a logbook entry inside a reducer without duplicating the shape. */
 function withLog(prev, text, extra = {}) {
   if (!text) return { ...prev, ...extra };
   return {
     ...prev,
     ...extra,
-    logbook: [...prev.logbook, { day: prev.day, text, timestamp: Date.now() }]
+    logbook: appendResidue(prev.logbook, { day: prev.day, text, timestamp: Date.now() }, LOGBOOK_CAP)
   };
 }
 
@@ -149,11 +167,11 @@ function commitLedger(prev, result) {
         ...prev.qualities,
         doubt: clampQuality('doubt', (prev.qualities.doubt ?? 0) + 1)
       },
-      discoveries: [...prev.discoveries, {
+      discoveries: appendResidue(prev.discoveries, {
         day: prev.day,
         text: `THE WORD: the municipal ledger is ${CREDIT_LIMIT.toLocaleString()} wide. Nothing in a city needs to be exactly that wide.`,
         timestamp: Date.now()
-      }]
+      }, DISCOVERIES_CAP)
     }
   );
 }
@@ -171,7 +189,13 @@ export function GameStateProvider({ children }) {
     recoveryError: boot.error,
     lastSavedAt: boot.envelope?.savedAt ?? null,
     hadLocalSaveAtBoot: boot.hadLocalSave,
-    tabConflict: null
+    tabConflict: null,
+    /**
+     * True when another tab erased the canonical operator file (a reset).
+     * There is no foreign copy to offer adoption of — only this tab's
+     * in-memory work and a paused writer.
+     */
+    remoteReset: false
   }));
   const firstPersistence = useRef(true);
   const stateRef = useRef(state);
@@ -188,7 +212,23 @@ export function GameStateProvider({ children }) {
 
   useEffect(() => {
     function onStorage(event) {
-      if (event.key !== GAME_SAVE_KEY || event.newValue == null) return;
+      if (event.key !== GAME_SAVE_KEY) return;
+      if (event.newValue == null) {
+        // The key disappeared: another tab reset the game. Without this branch
+        // the removal is invisible here, and this tab's next ordinary write
+        // would silently resurrect the file the operator just erased — the
+        // resetting tab would then read that resurrection as a foreign edit.
+        // Pause writes and surface the wipe instead.
+        localWritesBlocked.current = true;
+        setPersistence(prev => ({
+          ...prev,
+          status: 'conflict',
+          error: 'Another tab erased this operator file. Local saving is paused — keep this tab\'s copy to continue it here.',
+          tabConflict: null,
+          remoteReset: true
+        }));
+        return;
+      }
       try {
         const incoming = parseSaveJson(event.newValue);
         if (gameStateFingerprint(incoming.game) === gameStateFingerprint(stateRef.current)) {
@@ -200,7 +240,8 @@ export function GameStateProvider({ children }) {
           ...prev,
           status: 'conflict',
           error: 'Another tab changed this operator file. Choose a terminal before local saving continues.',
-          tabConflict: incoming
+          tabConflict: incoming,
+          remoteReset: false
         }));
       } catch (error) {
         // Invalid replacement bytes are just as dangerous to overwrite: hold
@@ -272,6 +313,17 @@ export function GameStateProvider({ children }) {
 
   const importGameSave = useCallback((text) => {
     const loaded = parseSaveJson(text);
+    // Importing a file IS the operator choosing which copy wins. If a stale
+    // cross-tab block is still standing, the import would otherwise stay in
+    // memory only — silently dropped on the next reload, and one "USE OTHER
+    // TAB" click away from being clobbered by the file it just replaced.
+    localWritesBlocked.current = false;
+    setPersistence(prev => ({
+      ...prev,
+      status: 'ready',
+      error: null,
+      tabConflict: null
+    }));
     setState(hydrateActionTank(loaded.game));
     // A new operator file is now live; Records must be re-read, not overwritten.
     setCloudRecheck((n) => n + 1);
@@ -292,7 +344,8 @@ export function GameStateProvider({ children }) {
       status: 'ready',
       error: null,
       lastSavedAt: incoming.savedAt,
-      tabConflict: null
+      tabConflict: null,
+      remoteReset: false
     }));
     // This is a whole-file replacement, like import. Reconcile it with cloud
     // before autosave is allowed to resume.
@@ -301,7 +354,9 @@ export function GameStateProvider({ children }) {
   }, [persistence.tabConflict]);
 
   const keepThisTabSave = useCallback(() => {
-    if (!persistence.tabConflict) return false;
+    // Valid whenever local writes were paused by a foreign event — a rival
+    // tab's save, or a rival tab's reset, which has no save to adopt.
+    if (!persistence.tabConflict && !persistence.remoteReset) return false;
     localWritesBlocked.current = false;
     const result = writeLocalGameSave(stateRef.current);
     if (!result.ok) {
@@ -314,10 +369,11 @@ export function GameStateProvider({ children }) {
       status: 'saved',
       error: null,
       lastSavedAt: result.envelope.savedAt,
-      tabConflict: null
+      tabConflict: null,
+      remoteReset: false
     }));
     return true;
-  }, [persistence.tabConflict]);
+  }, [persistence.tabConflict, persistence.remoteReset]);
 
   const cloud = useCloudSave({
     state,
@@ -489,18 +545,18 @@ export function GameStateProvider({ children }) {
               // The lethal choice was explicit; the next investigation begins
               // with the system watching from a clean baseline.
               attention: 0,
-              discoveries: [...next.discoveries, {
+              discoveries: appendResidue(next.discoveries, {
                 day: next.day,
                 text: `THE INTERIM ${deathNumber}: the frame after termination and before shift start. The city forgot. You did not.`,
                 timestamp: Date.now()
-              }]
+              }, DISCOVERIES_CAP)
             }
           );
         }
 
         const seenStorylets = charged.seenStorylets.includes(storylet.id)
           ? charged.seenStorylets
-          : [...charged.seenStorylets, storylet.id];
+          : appendResidue(charged.seenStorylets, storylet.id, SEEN_STORYLETS_CAP);
 
         const zones = { ...charged.zones };
         let currentStorylet = charged.currentStorylet;
@@ -654,6 +710,16 @@ export function GameStateProvider({ children }) {
   }, []);
 
   const resetGame = useCallback(() => {
+    // An explicit wipe outranks the cross-tab pause: if this tab was blocked
+    // by a foreign write, the reset is the operator's answer to it. Clearing
+    // the block lets the fresh state persist instead of dying in memory.
+    localWritesBlocked.current = false;
+    setPersistence(prev => ({
+      ...prev,
+      status: 'ready',
+      error: null,
+      tabConflict: null
+    }));
     clearLocalGameSave();
     setState(hydrateActionTank(createInitialGameState()));
   }, []);

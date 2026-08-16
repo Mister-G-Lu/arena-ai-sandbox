@@ -170,6 +170,20 @@ describe('validateStoryGraph', () => {
       }],
     };
     expect(() => validateStoryGraph([badEffect])).toThrow(/unknown effect/);
+    // Prototype names must read as unknown, not as inherited members of the
+    // quality table — otherwise forged content passes validation and no-ops.
+    for (const name of ['__proto__', 'constructor', 'toString']) {
+      const forged = {
+        ...second,
+        choices: [{
+          id: `forged-${name}`,
+          label: 'Forged.',
+          outcome: { text: 'Forged.', qualities: { [name]: 1 } },
+          endZone: true,
+        }],
+      };
+      expect(() => validateStoryGraph([forged])).toThrow(/unknown effect/);
+    }
     expect(() => validateStoryGraph([first, second], { routine: 'missing' })).toThrow(/entry/);
     const floorCard: Storylet = { ...second, id: 'floor12-01', zone: 'floor12' };
     expect(() => validateStoryGraph([first, second, floorCard], {

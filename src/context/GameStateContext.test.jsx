@@ -6,7 +6,13 @@
 import React from 'react';
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach } from 'vitest';
-import { GameStateProvider, useGameState } from './GameStateContext';
+import {
+  GameStateProvider,
+  useGameState,
+  LOGBOOK_CAP,
+  DISCOVERIES_CAP,
+  SEEN_STORYLETS_CAP,
+} from './GameStateContext';
 import { CREDIT_LIMIT } from '../game/ledger';
 import { GAME_SAVE_KEY, LEGACY_GAME_SAVE_KEY } from '../lib/gameSave';
 
@@ -258,6 +264,176 @@ describe('effects pipeline', () => {
     await act(async () => { expect(api.actions.useOtherTabSave()).toBe(true); });
     expect(api.state.credits).toBe(75);
     expect(api.persistence.tabConflict).toBeNull();
+  });
+
+  it('importing under an outstanding tab-conflict block actually persists', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(10); });
+
+    // Another tab advances the canonical key; this tab's writes pause.
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.game.credits = 75;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.tabConflict).not.toBeNull();
+
+    // Importing a file is the operator choosing the winner: it resolves the
+    // block, and the imported bytes — not the foreign ones — reach the key.
+    const imported = JSON.parse(api.actions.exportGameSave());
+    imported.game.credits = 500;
+    await act(async () => { api.actions.importGameSave(JSON.stringify(imported)); });
+
+    expect(api.state.credits).toBe(500);
+    expect(api.persistence.tabConflict).toBeNull();
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(500);
+  });
+
+  it('resetting under an outstanding tab-conflict block persists the fresh file', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(10); });
+
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.game.credits = 75;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+
+    await act(async () => { api.actions.resetGame(); });
+    expect(api.state.credits).toBe(0);
+    expect(api.persistence.tabConflict).toBeNull();
+    // The fresh file is written — a reload must not resurrect the foreign one.
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(0);
+  });
+
+  it('treats a cross-tab reset as a foreign event instead of resurrecting the erased file', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(42); });
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(42);
+
+    // Another tab runs resetGame(): the canonical key disappears there.
+    localStorage.removeItem(GAME_SAVE_KEY);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: null,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.remoteReset).toBe(true);
+
+    // This tab keeps its work in memory, but its next ordinary write must not
+    // silently resurrect the file the other tab just erased.
+    await act(async () => { api.actions.addCredits(1); });
+    expect(api.state.credits).toBe(43);
+    expect(localStorage.getItem(GAME_SAVE_KEY)).toBeNull();
+
+    // KEEP THIS TAB works even though there is no foreign copy to compare.
+    await act(async () => { expect(api.actions.keepThisTabSave()).toBe(true); });
+    expect(api.persistence.remoteReset).toBe(false);
+    expect(api.persistence.status).toBe('saved');
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(43);
+  });
+
+  it('a foreign write after a foreign reset reads as an ordinary tab conflict', async () => {
+    mount();
+    localStorage.removeItem(GAME_SAVE_KEY);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: null,
+      }));
+    });
+    expect(api.persistence.remoteReset).toBe(true);
+
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.game.credits = 88;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.remoteReset).toBe(false);
+    expect(api.persistence.tabConflict.game.credits).toBe(88);
+  });
+
+  it('prunes the oldest logbook residue instead of outgrowing the writable schema', async () => {
+    mount();
+    // A legitimate file can arrive at the schema ceiling (5,000) via import.
+    const big = JSON.parse(api.actions.exportGameSave());
+    big.game.logbook = Array.from({ length: 5000 }, (_, i) => ({
+      day: 1,
+      text: `legacy residue ${i}`,
+      timestamp: 1000 + i,
+    }));
+    await act(async () => { api.actions.importGameSave(JSON.stringify(big)); });
+    expect(api.state.logbook).toHaveLength(5000);
+
+    // The next ordinary residue must not tip the file past the wall and into
+    // permanent write failure: the in-game cap prunes the oldest lines.
+    await act(async () => { api.actions.addLogEntry('one more line'); });
+    expect(api.state.logbook).toHaveLength(LOGBOOK_CAP);
+    expect(api.state.logbook.at(-1).text).toBe('one more line');
+    expect(api.persistence.status).not.toBe('error');
+    const written = JSON.parse(localStorage.getItem(GAME_SAVE_KEY));
+    expect(written.game.logbook).toHaveLength(LOGBOOK_CAP);
+  });
+
+  it('keeps discoveries writable past the schema ceiling', async () => {
+    mount();
+    const big = JSON.parse(api.actions.exportGameSave());
+    big.game.discoveries = Array.from({ length: 5000 }, (_, i) => ({
+      day: 1,
+      text: `old discovery ${i}`,
+      timestamp: 1000 + i,
+    }));
+    await act(async () => { api.actions.importGameSave(JSON.stringify(big)); });
+    expect(api.state.discoveries).toHaveLength(5000);
+
+    // The overflow glitch files a discovery; the file must stay writable.
+    await act(async () => { api.actions.addCredits(CREDIT_LIMIT + 1); });
+    expect(api.state.glitches).toContain('ledger-overflow');
+    expect(api.state.discoveries.length).toBeLessThanOrEqual(DISCOVERIES_CAP);
+    expect(api.state.discoveries.some((d) => d.text.includes('THE WORD'))).toBe(true);
+    expect(api.persistence.status).not.toBe('error');
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.discoveries.length)
+      .toBeLessThanOrEqual(DISCOVERIES_CAP);
+  });
+
+  it('keeps the seen-storylet record writable past the schema ceiling', async () => {
+    mount();
+    const big = JSON.parse(api.actions.exportGameSave());
+    big.game.seenStorylets = Array.from({ length: 10_000 }, (_, i) => `archived-${i}`);
+    big.game.zones.floor12 = 'open';
+    big.game.currentStorylet = { zone: 'floor12', storyletId: 'floor12-01' };
+    await act(async () => { api.actions.importGameSave(JSON.stringify(big)); });
+    expect(api.state.seenStorylets).toHaveLength(10_000);
+
+    const press = { id: 'press', outcome: { qualities: {} }, next: 'floor12-02' };
+    const card = { id: 'floor12-01', zone: 'floor12', choices: [press] };
+    await act(async () => { api.actions.resolveStorylet(card, press); });
+
+    expect(api.state.seenStorylets).toHaveLength(SEEN_STORYLETS_CAP);
+    expect(api.state.seenStorylets).toContain('floor12-01');
+    expect(api.persistence.status).not.toBe('error');
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.seenStorylets.length)
+      .toBeLessThanOrEqual(SEEN_STORYLETS_CAP);
   });
 
   it('exports and imports the same canonical envelope used by cloud sync', async () => {

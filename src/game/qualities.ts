@@ -61,7 +61,15 @@ export const QUALITY_DEFS: Record<string, QualityDef> = {
 };
 
 export function qualityDef(name: string): QualityDef | undefined {
-  return QUALITY_DEFS[String(name).trim().toLowerCase()];
+  const key = String(name).trim().toLowerCase();
+  // Own keys only: QUALITY_DEFS is a plain object, so a chain lookup would
+  // answer 'constructor', 'toString' or '__proto__' with inherited members —
+  // and every caller treats a truthy return as "the quality table knows
+  // this name" (content validation) or writes through def.key (undefined),
+  // pouring forged effects into a junk "undefined" bucket.
+  return Object.prototype.hasOwnProperty.call(QUALITY_DEFS, key)
+    ? QUALITY_DEFS[key]
+    : undefined;
 }
 
 export function visibleQualityDefs(): QualityDef[] {

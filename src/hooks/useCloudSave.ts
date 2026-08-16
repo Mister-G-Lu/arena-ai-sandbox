@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createStoredSaveEnvelope, gameStateFingerprint, type GameState } from '../lib/gameSave';
+import {
+  clockIndependentFingerprint,
+  createStoredSaveEnvelope,
+  gameStateFingerprint,
+  type GameState,
+} from '../lib/gameSave';
 import { getSupabase } from '../lib/supabase';
 import {
   CloudSaveConflictError,
@@ -128,6 +133,24 @@ export function useCloudSave({
           return;
         }
 
+        // Clock-only drift is not a conflict. Offline regen rewrites the tank
+        // at every cold open past a regen boundary; without this check every
+        // morning boot would present a bogus two-device conflict, and picking
+        // "Records copy" would discard honestly regenerated actions. Both
+        // copies describe the same file at different clock readings, so keep
+        // local (its clock is freshest) and let ordinary CAS autosave carry
+        // the regen forward to Records.
+        if (
+          clockIndependentFingerprint(stateRef.current) ===
+          clockIndependentFingerprint(remote.game)
+        ) {
+          remoteFingerprint.current = remotePrint;
+          readyToAutosave.current = true;
+          setStatus('synced');
+          setMessage('Local terminal and Records agree.');
+          return;
+        }
+
         setConflict(remote);
         setStatus('conflict');
         setMessage('Local terminal and Records contain different files. Choose one before syncing.');
@@ -183,6 +206,19 @@ export function useCloudSave({
               if (latest) {
                 remoteRevision.current = latest.updatedAt;
                 remoteFingerprint.current = gameStateFingerprint(latest.game);
+                // A revision race caused by clock drift alone (both devices
+                // idle-regenerating onto the same file) needs no operator
+                // decision: adopt the newer revision and let the next real
+                // change carry local forward.
+                if (
+                  clockIndependentFingerprint(latest.game) ===
+                  clockIndependentFingerprint(stateRef.current)
+                ) {
+                  readyToAutosave.current = true;
+                  setStatus('synced');
+                  setMessage('Local terminal and Records agree.');
+                  return;
+                }
                 setConflict(latest);
                 setStatus('conflict');
                 setMessage('Records changed on another device. Choose which copy to keep.');

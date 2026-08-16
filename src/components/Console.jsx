@@ -125,7 +125,16 @@ export default function Console() {
   useEffect(() => () => window.clearTimeout(processingTimer.current), []);
 
   useEffect(() => {
-    if (phase !== 'processing' || !pendingTask) return undefined;
+    if (phase !== 'processing') return undefined;
+    if (!pendingTask) {
+      // The reservation is canonical: if the reducer refused it (a future
+      // caller whose gate disagrees with the tank), the optimistic phase
+      // must roll back — otherwise the console sits at PROCESSING forever
+      // with the queue button disabled and no timer armed to end it.
+      startingTask.current = false;
+      setPhase('ready');
+      return undefined;
+    }
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     processingTimer.current = window.setTimeout(() => {
       setLogs(prev => prev.some((entry) => entry.id === pendingTask.logId) ? prev : [...prev, {
