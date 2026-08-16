@@ -448,7 +448,10 @@ export default function Console() {
                         filedClean: verb !== 'discrepancy',
                         resultText: pendingTask.displayedResult
                       });
-                      const consequences = describeEffects(filing.effects);
+                      const consequences = describeEffects(filing.effects, {
+                        qualities: state.qualities,
+                        attention: state.attention
+                      });
                       return (
                         <div key={verb} className="task-decision-option">
                           <span className="task-decision-label">{filing.label}</span>
