@@ -66,12 +66,15 @@ function timeForActionsSpent(actionsSpent) {
   return formatTime(Math.min(60 + actionsSpent * 6, 360));
 }
 
-function shiftInitializationText({ day, tasksThisShift, annexOrderComplete }) {
+function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, handwritingOrderComplete }) {
   if (day === 1 && tasksThisShift > 0) {
     return 'ORIENTATION RECORD RECEIVED // TASK VERIFIED // LIVE QUEUE OPEN.';
   }
   if (day >= 2 && !annexOrderComplete) {
     return 'SHIFT INITIALIZED // SECONDARY ORDER POSTED: ANNEX ELEVATOR, OUT-OF-RANGE STOP 12.';
+  }
+  if (day >= 3 && !handwritingOrderComplete) {
+    return 'SHIFT INITIALIZED // NIGHT DESK: ONE NEW ORDER, FILED IN YOUR HANDWRITING.';
   }
   return 'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN.';
 }
@@ -93,14 +96,17 @@ export default function Console() {
       text: shiftInitializationText({
         day: state.day,
         tasksThisShift: state.tasksThisShift,
-        annexOrderComplete: state.zones['annex-order'] === 'complete'
+        annexOrderComplete: state.zones['annex-order'] === 'complete',
+        handwritingOrderComplete: state.zones['handwritten-order'] === 'complete'
       })
     }];
     if (pendingTask) initial.push({
       id: pendingTask.logId,
       timestamp: pendingTask.timestamp,
       text: pendingTask.displayedResult,
-      type: pendingTask.isCorrupt ? 'corrupt' : ''
+      type: pendingTask.isCorrupt
+        ? pendingTask.isPersonal ? 'corrupt personal' : 'corrupt'
+        : ''
     });
     return initial;
   });
@@ -114,6 +120,7 @@ export default function Console() {
   // Out of budget: the clock, not the quota, is what stops the operator now.
   const outOfActions = actionTank.empty;
   const annexOrderPending = state.day >= 2 && state.zones['annex-order'] !== 'complete';
+  const handwritingOrderPending = state.day >= 3 && state.zones['handwritten-order'] !== 'complete';
   const nextAssignment = taskOrderFor(state.tasksCompleted);
 
   useEffect(() => {
@@ -141,7 +148,9 @@ export default function Console() {
         id: pendingTask.logId,
         timestamp: pendingTask.timestamp,
         text: pendingTask.displayedResult,
-        type: pendingTask.isCorrupt ? 'corrupt' : ''
+        type: pendingTask.isCorrupt
+          ? pendingTask.isPersonal ? 'corrupt personal' : 'corrupt'
+          : ''
       }]);
       startingTask.current = false;
       setPhase('result');
@@ -224,7 +233,8 @@ export default function Console() {
       text: shiftInitializationText({
         day: state.day + 1,
         tasksThisShift: 0,
-        annexOrderComplete: state.zones['annex-order'] === 'complete'
+        annexOrderComplete: state.zones['annex-order'] === 'complete',
+        handwritingOrderComplete: state.zones['handwritten-order'] === 'complete'
       })
     }]);
   }
@@ -312,6 +322,29 @@ export default function Console() {
             </aside>
           )}
 
+          {handwritingOrderPending && (
+            <aside className="secondary-order" aria-labelledby="handwritten-order-title">
+              <div>
+                <div className="secondary-order-kicker">NIGHT DESK // FILED 03:12 // IN YOUR HAND</div>
+                <div className="secondary-order-title" id="handwritten-order-title">
+                  WORK ORDER // STREETLIGHT 4-B, SECTOR 9
+                </div>
+                <p>
+                  The order is signed with your name, in your handwriting. You were at the
+                  terminal at 03:12. The queue has no memory of this order. The signature has
+                  a very good memory.
+                </p>
+                <p className="manager-aside">
+                  M. // “I did not authorise this. Do not authorise it either. Return it to the
+                  desk it came from — the one that is not there.”
+                </p>
+              </div>
+              <a className="btn btn-primary btn-compact" href="#investigations">
+                ▸ INVESTIGATE
+              </a>
+            </aside>
+          )}
+
           <div className="log" ref={logRef} aria-label="Dispatch log" aria-live="polite">
             {logs.map(log => (
               <div key={log.id} className={`log-line ${log.type}`}>
@@ -352,18 +385,24 @@ export default function Console() {
               <div className="task-card task-card-result">
                 <div className="task-kicker">
                   {pendingTask.isCorrupt
-                    ? 'RESULT RECEIVED // RECORD DOES NOT RECONCILE'
+                    ? pendingTask.isPersonal
+                      ? 'RESULT RECEIVED // IT IS YOUR HANDWRITING'
+                      : 'RESULT RECEIVED // RECORD DOES NOT RECONCILE'
                     : 'RESULT RECEIVED // ACKNOWLEDGMENT REQUIRED'}
                 </div>
                 <div className="task-title">{pendingTask.code} // {pendingTask.title}</div>
-                <p className={pendingTask.isCorrupt ? 'task-result corrupt' : 'task-result'}>
+                <p className={pendingTask.isCorrupt
+                  ? `task-result corrupt${pendingTask.isPersonal ? ' personal' : ''}`
+                  : 'task-result'}
+                >
                   {pendingTask.displayedResult}
                 </p>
                 {pendingTask.isCorrupt ? (
                   <div className="task-decision">
                     <p className="task-decision-lede">
-                      The returned record does not match the work order. Dispatch is waiting for
-                      you to decide what happened.
+                      {pendingTask.isPersonal
+                        ? 'The returned record is written in a hand you know — the same hand that signs your logbook. Dispatch is waiting for you to decide what happened.'
+                        : 'The returned record does not match the work order. Dispatch is waiting for you to decide what happened.'}
                     </p>
                     {['file-clean', 'discrepancy'].map((verb) => {
                       const filing = FILINGS[verb];

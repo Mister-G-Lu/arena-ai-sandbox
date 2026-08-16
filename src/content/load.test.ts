@@ -7,16 +7,27 @@ describe('content pipeline', () => {
   const cards = loadAllStorylets();
 
   it('loads every live deck, including the one-card Shift 2 lead', () => {
-    expect(cards).toHaveLength(21);
+    expect(cards).toHaveLength(26);
     expect(cardsInZone(cards, 'annex-order')).toHaveLength(1);
     expect(cardsInZone(cards, 'routine')).toHaveLength(6);
     expect(cardsInZone(cards, 'floor12')).toHaveLength(6);
+    // The Day 3 coincidences: three day-crew notes and the two-card case.
+    expect(cardsInZone(cards, 'day-crew-notes')).toHaveLength(3);
+    expect(cardsInZone(cards, 'handwritten-order')).toHaveLength(2);
     // Supply storylets: one card per good, plus the sealed drawer's two.
     const supplyZones = ['breakroom', 'night-radio', 'utility-closet', 'custodial-stores', 'window-ledge', 'doorman'] as const;
     for (const zone of supplyZones) {
       expect(cardsInZone(cards, zone), zone).toHaveLength(1);
     }
     expect(cardsInZone(cards, 'restricted-files')).toHaveLength(2);
+  });
+
+  it('walks the coincidences as one thread: notes chain, the case closes both ways', () => {
+    expect(findCard(cards, 'sticky-01')?.choices.find((c) => c.id === 'read')?.next).toBe('sticky-02');
+    expect(findCard(cards, 'sticky-02')?.choices.find((c) => c.id === 'take')?.next).toBe('sticky-03');
+    expect(findCard(cards, 'sticky-03')?.choices.every((c) => c.completeZone)).toBe(true);
+    expect(findCard(cards, 'handwritten-01')?.choices.find((c) => c.id === 'compare')?.next).toBe('handwritten-02');
+    expect(findCard(cards, 'handwritten-02')?.choices.every((c) => c.completeZone)).toBe(true);
   });
 
   it('keeps the content zone list pinned to the configured zones', () => {

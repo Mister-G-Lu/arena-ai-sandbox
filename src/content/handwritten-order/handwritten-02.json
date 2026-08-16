@@ -1,0 +1,26 @@
+{
+  "id": "handwritten-02",
+  "zone": "handwritten-order",
+  "title": "THE SAME HAND",
+  "body": "The comparison is done. The order was written by the same hand that writes your logbook — which means the handwriting is not like yours. It is yours. There is a second signature on the back, smaller, in the margin: a name that is almost yours, with one letter different, as if someone stopped halfway through forging a life. The light in the tray is the same amber as the light on the floor that does not exist.",
+  "choices": [
+    {
+      "id": "keep",
+      "label": "Keep it. It is evidence.",
+      "outcome": {
+        "text": "It goes into your logbook, folded with the yellow notes. Evidence, you tell yourself. Evidence is only evidence if you survive to file it. The order stays warm against your ribs, and the second signature reads like a warning, and you write down the date anyway.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "burn",
+      "label": "Burn it. Whatever wrote it can write another.",
+      "outcome": {
+        "text": "You burn it in the break-room machine's heat, like the system would want. The smoke smells like paper, and like something else — like a file closing itself. The tray is empty. The desk is clean. Somewhere, a hand that is yours is already warming the next sheet.",
+        "qualities": { "Routine": 1, "Attention": 1 }
+      },
+      "completeZone": true
+    }
+  ]
+}

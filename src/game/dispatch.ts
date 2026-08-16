@@ -114,6 +114,23 @@ export const CORRUPT_RESULTS = [
   '▓▓ ATTENDANCE ██ 100% ██ it was 100% before you were hired ▓▓',
 ] as const;
 
+/**
+ * The personal corruption pool — results that are not merely damaged, but
+ * addressed to the operator. After the Shift 2 Annex lead, the shift's first
+ * anomaly stops being a random glitch and becomes a signature: the city's
+ * errors have started knowing who files them (design/arcs.md §2.3 — the
+ * wrongness turns personal). Deliberately number-free: a corrupt field pays
+ * the number it contains when filed clean, and a guaranteed personal line
+ * must not hand out a guaranteed windfall (src/game/payouts.ts).
+ */
+export const PERSONAL_RESULTS = [
+  'OPERATOR: a work order in your handwriting was filed from the night desk. you did not write it. the desk is certain you did not.',
+  'the day crew left a note on the memo board: the night operator seems familiar. they mean you. you have never met the day crew.',
+  'message from your next shift: stop leaving notes where the day crew can find them. — you',
+  'ATTENDANCE: your signature appears on the sheet for a shift you have not worked yet. it is a good signature. it is yours.',
+  'you are on the roster twice tonight. one of you has already clocked in. neither of you has left.',
+] as const;
+
 export interface PendingDispatch {
   id: string;
   day: number;
@@ -125,6 +142,8 @@ export interface PendingDispatch {
   cleanResult: string;
   displayedResult: string;
   isCorrupt: boolean;
+  /** True when the corruption is addressed to the operator personally. */
+  isPersonal: boolean;
 }
 
 export interface CreateDispatchInput {
@@ -147,6 +166,18 @@ export function taskOrderFor(tasksCompleted: number): DispatchOrder {
   return DISPATCH_ORDERS[safeTotal % DISPATCH_ORDERS.length];
 }
 
+/**
+ * Whether an anomaly that fires right now must be *personal*. The first
+ * anomaly of every shift from Day 2 on is: after the Annex order, the queue
+ * itself starts answering in the operator's own hand (the opening-retention
+ * review's "one personal anomaly before task 10, not only a random corruption
+ * line"). Day 1 keeps generic corruption — the first shift is a glitch, the
+ * second is a pattern, and the pattern is about you.
+ */
+export function shouldUsePersonalAnomaly(day: number, anomaliesSeenThisShift: number): boolean {
+  return day >= 2 && anomaliesSeenThisShift <= 0;
+}
+
 /** Build the immutable work order that is reserved in the canonical save. */
 export function createPendingDispatch(input: CreateDispatchInput): PendingDispatch {
   const taskNumber = input.tasksThisShift + 1;
@@ -156,8 +187,11 @@ export function createPendingDispatch(input: CreateDispatchInput): PendingDispat
     anomaliesSeenThisShift: input.anomaliesSeenThisShift,
     roll: input.anomalyRoll,
   });
+  const isPersonal = isCorrupt && shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
   const displayedResult = isCorrupt
-    ? CORRUPT_RESULTS[indexFromRoll(input.corruptionRoll, CORRUPT_RESULTS.length)]
+    ? isPersonal
+      ? PERSONAL_RESULTS[indexFromRoll(input.corruptionRoll, PERSONAL_RESULTS.length)]
+      : CORRUPT_RESULTS[indexFromRoll(input.corruptionRoll, CORRUPT_RESULTS.length)]
     : order.result;
 
   return {
@@ -171,6 +205,7 @@ export function createPendingDispatch(input: CreateDispatchInput): PendingDispat
     cleanResult: order.result,
     displayedResult,
     isCorrupt,
+    isPersonal,
   };
 }
 

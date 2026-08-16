@@ -92,7 +92,9 @@ describe('zones', () => {
   it('keeps routine notices separate from active investigations', () => {
     expect(Object.fromEntries(ZONES.map((zone) => [zone.id, zone.board]))).toEqual({
       'annex-order': 'investigations',
+      'handwritten-order': 'investigations',
       routine: 'notices',
+      'day-crew-notes': 'notices',
       floor12: 'investigations',
       'restricted-files': 'notices',
       breakroom: 'notices',
@@ -102,6 +104,25 @@ describe('zones', () => {
       'window-ledge': 'notices',
       doorman: 'notices',
     });
+  });
+
+  it('lists the Day 3 coincidences once the shift arrives, gated on Perception', () => {
+    // Day 2: not yet — the Annex lead is the only case that shift.
+    expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).not.toContain('handwritten-order');
+    expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).not.toContain('day-crew-notes');
+
+    // Day 3: both are listed for everyone, sealed until the operator has the
+    // eye for their own name — the lock itself is the hint.
+    const day3 = ctx({ day: 3 });
+    const ids = visibleZones(day3).map((z) => z.id);
+    expect(ids).toContain('handwritten-order');
+    expect(ids).toContain('day-crew-notes');
+    expect(zoneState(zoneById('handwritten-order')!, day3)).toBe('locked');
+    expect(zoneState(zoneById('day-crew-notes')!, day3)).toBe('locked');
+
+    const noticing = ctx({ day: 3, qualities: { doubt: 0, perception: 1, routine: 0 } });
+    expect(zoneState(zoneById('handwritten-order')!, noticing)).toBe('open');
+    expect(zoneState(zoneById('day-crew-notes')!, noticing)).toBe('open');
   });
 
   it('reveals the universal Annex order on Shift 2 while promotion controls the rest', () => {

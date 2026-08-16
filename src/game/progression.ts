@@ -256,6 +256,22 @@ export const ZONES: ZoneDef[] = [
       'The discrepancy is filed. The attachment remains on your record; what it reveals depends on your clearance.',
   },
   {
+    id: 'handwritten-order',
+    title: 'The order in your handwriting',
+    kicker: 'CASE // COINCIDENCE',
+    blurb:
+      'Filed from the night desk at 03:12. Signed with your name, in your hand. You were at the desk at 03:12. You did not write this.',
+    board: 'investigations',
+    entry: 'handwritten-01',
+    visibleRequires: { day: 3 },
+    requires: { day: 3, perception: 1 },
+    onceEach: true,
+    lockedNote:
+      'The order is on file whether you notice it or not. Noticing requires the eye for your own hand — Perception.',
+    closedNote:
+      'The order is filed — or it is in your pocket. Either way, the night desk knows what you chose.',
+  },
+  {
     id: 'routine',
     title: 'The Routine Pool',
     kicker: 'NOTICES // OPTIONAL',
@@ -266,6 +282,22 @@ export const ZONES: ZoneDef[] = [
     requiresUnlock: 'notice-storylets',
     onceEach: true,
     closedNote: 'Every notice in the pool has been read. The pool refills on a schedule nobody has ever seen.',
+  },
+  {
+    id: 'day-crew-notes',
+    title: 'The day crew\u2019s notes',
+    kicker: 'NOTICES // DAY CREW',
+    blurb:
+      'Yellow notes on the memo board, in hands you never see. They are about you. They have been about you for longer than the building.',
+    board: 'notices',
+    entry: 'sticky-01',
+    visibleRequires: { day: 3 },
+    requires: { day: 3, perception: 1 },
+    onceEach: true,
+    lockedNote:
+      'The notes are there whether you notice them or not. Noticing requires the eye for your own name — Perception.',
+    closedNote:
+      'The memo board is clean of yellow. The day crew tidied it before you could read more. They have opinions about that, too.',
   },
   {
     id: 'floor12',
