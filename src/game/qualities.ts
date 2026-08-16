@@ -95,12 +95,22 @@ export function clampQuality(name: string, value: number): number {
   return Math.min(Math.max(0, value), max);
 }
 
+/** What the operator already holds, for cap-honest effect previews. */
+export interface EffectsContext {
+  qualities?: Record<string, number>;
+  attention?: number;
+}
+
 /**
  * Human-readable summary of an outcome, e.g. "Doubt +1 · ¤+10".
  * Hidden qualities (Attention) never appear. Credit-like effects are shown in
  * the currency the player actually receives, not in their storylet units.
+ *
+ * With a context, quality deltas are reported as the file will actually
+ * record them: a "+1" the cap absorbs renders "MAX" instead — a choice at
+ * the ceiling must not advertise a gain it cannot deliver.
  */
-export function describeEffects(raw: unknown): string {
+export function describeEffects(raw: unknown, ctx?: EffectsContext): string {
   const effects = normalizeEffects(raw);
   // Always render in table order so the same outcome reads the same way twice.
   return Object.keys(QUALITY_DEFS)
@@ -112,7 +122,14 @@ export function describeEffects(raw: unknown): string {
         const credits = delta * (def.rate ?? 1);
         return `¤${credits > 0 ? '+' : ''}${credits.toLocaleString()}`;
       }
-      return `${def.label} ${delta > 0 ? '+' : ''}${delta}`;
+      if (!ctx) {
+        return `${def.label} ${delta > 0 ? '+' : ''}${delta}`;
+      }
+      const current = key === 'attention' ? ctx.attention : ctx.qualities?.[key];
+      const applied =
+        current === undefined ? delta : clampQuality(key, current + delta) - current;
+      if (applied <= 0) return `${def.label} MAX`;
+      return `${def.label} ${applied > 0 ? '+' : ''}${applied}`;
     })
     .join(' · ');
 }

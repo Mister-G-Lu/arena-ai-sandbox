@@ -124,6 +124,28 @@ describe('municipal supply', () => {
     expect(order).toBeUndefined();
   });
 
+  it('labels the sealed Notices board when an Unknown Operator shops', async () => {
+    // The cautious roleplayer at tier 0: the terminal will take their money,
+    // but the board the good opens on is sealed. The card must say so.
+    seed({ promotion: { tier: 0, title: 'Unknown Operator', unlocks: ['basic-tasks', 'break-room', 'memos'] }, qualities: { doubt: 0 } });
+    render(<App />);
+    await go('shop');
+
+    expect(document.body.textContent).toContain('THE NOTICES BOARD IS SEALED');
+    // The purchase itself is still honest and possible.
+    await click('ORDER FOR ¤30');
+    await act(async () => { vi.advanceTimersByTime(50); });
+    expect(save().supplies.coffee).toBe(true);
+  });
+
+  it('drops the sealed label once the operator is recognized', async () => {
+    seed();
+    render(<App />);
+    await go('shop');
+
+    expect(document.body.textContent).not.toContain('THE NOTICES BOARD IS SEALED');
+  });
+
   it('gates the shop behind orientation like the console', async () => {
     seed({ orientation: { completed: false, skipped: false, taskRecorded: false } });
     render(<App />);

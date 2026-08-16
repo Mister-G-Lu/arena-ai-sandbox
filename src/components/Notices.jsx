@@ -89,7 +89,12 @@ export default function Notices({ board = 'notices' }) {
     setLastOutcome({
       title: card.title,
       text: choice.outcome?.text ?? '',
-      effects: revisit ? null : describeEffects(choice.outcome?.qualities),
+      effects: revisit
+        ? null
+        : describeEffects(choice.outcome?.qualities, {
+            qualities: state.qualities,
+            attention: state.attention
+          }),
       revisit
     });
   }
@@ -250,7 +255,10 @@ export default function Notices({ board = 'notices' }) {
             </div>
             <div className="storylet-choices">
               {card.choices.map((choice) => {
-                const effects = describeEffects(choice.outcome?.qualities);
+                const effects = describeEffects(choice.outcome?.qualities, {
+                  qualities: state.qualities,
+                  attention: state.attention
+                });
                 return (
                   <button
                     key={choice.id}

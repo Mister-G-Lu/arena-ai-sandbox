@@ -43,6 +43,7 @@ const WINDOW_VISTAS = [
   'The towers breathe. Thirty floors of wet glass inhaling amber, exhaling teal. On your screen: 0.00% variance.',
   'A drone convoy threads the gap between the municipal spires at 180 kph, obedient and bright. Below, a streetlight you cleared flickers and holds.',
   'Meridian at 02:47 — a cutter’s wail dopplers down the canyon between buildings and is answered by nothing. The coffee stays warm.',
+  'A man in a gray coat watches the annex from the corner, patient as a filing. His ID badge reads a different name every time the light changes.',
 ];
 
 /** Deterministic vista for a given shift moment — no extra state, just atmosphere that ticks forward. */
@@ -66,6 +67,45 @@ function timeForActionsSpent(actionsSpent) {
   return formatTime(Math.min(60 + actionsSpent * 6, 360));
 }
 
+/**
+ * The plain shift-open line, rotated by day so the later nights — after the
+ * bespoke opens of Days 1–3 — do not all read byte-identical. The first entry
+ * is the canonical line; the rest are variations on it.
+ */
+const GENERIC_INIT = [
+  'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN.',
+  'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN. AGAIN.',
+  'SHIFT INITIALIZED // TUESDAY // POPULATION: 41,312 // LIVE QUEUE OPEN.',
+  'SHIFT INITIALIZED // THE QUEUE REMEMBERS YOU // LIVE QUEUE OPEN.',
+];
+
+/**
+ * The one line a shift gets when the operator has never noticed anything.
+ * A cautious roleplayer can file everything clean for a week and never earn
+ * Doubt — the loop stays shut. M. is the game's pressure valve, and this is
+ * the pressure: noticing is the on-ramp, and the button has been there the
+ * whole time.
+ */
+const M_PROD =
+  'M. // “You file everything clean. Admirable. Also suspicious. Noticing is permitted — the button has been on your screen all along.”';
+
+/**
+ * M.'s direct-channel check-in, one per night from Day 4 on. Days 1–3 carry
+ * their own bespoke asides; after that the Manager goes quiet in the old
+ * build, and P7 asks for roughly one or two memorable exchanges per shift.
+ * Each line quietly keeps a thread warm without naming a reveal.
+ */
+const M_AMBIENT = [
+  'M. // “You are ahead of your paperwork. That is not a compliment.”',
+  'M. // “The doorman says he has seen you. The doorman is not on payroll. He has seen everyone.”',
+  'M. // “Sector 9 called. There is no Sector 9 line. Do not ask me to reconcile that.”',
+  'M. // “The roof is under maintenance. It has been under maintenance for forty-one weeks. Maintenance has never attended.”',
+  'M. // “A truck reports a street that is not on the map. I filed it under MAP ERRORS. The map does not make errors.”',
+  'M. // “Someone left you a note. It was me. No — it was not me. — M.”',
+  'M. // “06:00 approaches. We do not discuss 06:00. You were not going to ask.”',
+  'M. // “Your file grows. Files do that. I would not read it if I were you.”',
+];
+
 function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, handwritingOrderComplete }) {
   if (day === 1 && tasksThisShift > 0) {
     return 'ORIENTATION RECORD RECEIVED // TASK VERIFIED // LIVE QUEUE OPEN.';
@@ -76,7 +116,7 @@ function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, hand
   if (day >= 3 && !handwritingOrderComplete) {
     return 'SHIFT INITIALIZED // NIGHT DESK: ONE NEW ORDER, FILED IN YOUR HANDWRITING.';
   }
-  return 'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN.';
+  return GENERIC_INIT[day % GENERIC_INIT.length];
 }
 
 export default function Console() {
@@ -353,6 +393,14 @@ export default function Console() {
             ))}
           </div>
 
+          {state.day >= 3 && state.promotion.tier === 0 && (state.qualities.doubt ?? 0) <= 0 ? (
+            <p className="manager-aside console-ambient">{M_PROD}</p>
+          ) : state.day >= 4 ? (
+            <p className="manager-aside console-ambient">
+              {M_AMBIENT[(state.day - 4) % M_AMBIENT.length]}
+            </p>
+          ) : null}
+
           <div className={`task-workflow task-workflow-${phase}`} aria-live="polite">
             {phase === 'ready' && !shiftComplete && !outOfActions && (
               <div className="task-card task-card-ready">
@@ -412,7 +460,10 @@ export default function Console() {
                         filedClean: verb !== 'discrepancy',
                         resultText: pendingTask.displayedResult
                       });
-                      const consequences = describeEffects(filing.effects);
+                      const consequences = describeEffects(filing.effects, {
+                        qualities: state.qualities,
+                        attention: state.attention
+                      });
                       return (
                         <div key={verb} className="task-decision-option">
                           <span className="task-decision-label">{filing.label}</span>

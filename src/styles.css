@@ -1035,6 +1035,18 @@ h2 {
 }
 .secondary-order .btn { flex: 0 0 auto; }
 
+/* M.'s nightly direct-channel check-in (Console, Day 4+) — the same voice
+   as the secondary-order asides, quieter, under the log. */
+.console-ambient {
+  margin: 12px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 198, 107, 0.4);
+  color: var(--amber);
+  font-style: italic;
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
 .task-workflow {
   min-height: 198px;
   padding: 18px 20px;
@@ -1523,6 +1535,18 @@ h2 {
   }
   50% { transform: translateX(2px); opacity: 0.9; }
   75% { transform: translateX(-1px); opacity: 0.7; }
+}
+
+/* Generic corruption *arrives* glitching: the moment a record comes back
+   wrong is a visual event, not just red text. The animation runs once on
+   mount (150ms, twice), then the line sits still — persistent jitter would
+   turn a wrong record into a broken page. Deliberate contrast: personal
+   lines do NOT flicker. They are the opposite of noise — precise, in your
+   own hand — and the horror is that they hold still. (Both are silenced by
+   the prefers-reduced-motion block above.) */
+.log-line.corrupt:not(.personal),
+.task-card .task-result.corrupt:not(.personal) {
+  animation: fx-flicker 150ms steps(2) 2;
 }
 
 /* ====================================================================

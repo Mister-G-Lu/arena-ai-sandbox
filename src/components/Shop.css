@@ -89,6 +89,14 @@
   letter-spacing: 0.1em;
 }
 
+/* The good opens a storylet on a board the operator cannot reach yet. */
+.supply-sealed {
+  color: #b08b4a;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
 .supply-locked-note {
   color: #ff9c9c;
   font-family: 'Share Tech Mono', monospace;

@@ -53,6 +53,18 @@ describe('qualities', () => {
     expect(describeEffects({ Routine: 1, Salary: 2 })).toBe('Routine +1 · ¤+10');
   });
 
+  it('reports what the cap will actually absorb when the file is known', () => {
+    // At the ceiling, a "+1" is a phantom: the file cannot record it.
+    expect(describeEffects({ Doubt: 1 }, { qualities: { doubt: 5 } })).toBe('Doubt MAX');
+    // A partial gain reports the real delta, not the advertised one.
+    expect(describeEffects({ Doubt: 2 }, { qualities: { doubt: 4 } })).toBe('Doubt +1');
+    // Below the ceiling, context changes nothing.
+    expect(describeEffects({ Doubt: 1, Perception: 1 }, { qualities: { doubt: 2, perception: 0 } }))
+      .toBe('Doubt +1 · Perception +1');
+    // Credits have no cap and never go MAX.
+    expect(describeEffects({ Salary: 3 }, { qualities: {} })).toBe('¤+15');
+  });
+
   it('hides Attention from the visible table', () => {
     expect(visibleQualityDefs().map((d) => d.key)).not.toContain('attention');
     expect(qualityDef('ATTENTION')?.hidden).toBe(true);

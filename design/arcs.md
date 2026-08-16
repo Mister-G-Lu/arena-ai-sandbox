@@ -171,6 +171,15 @@ The mathematical requirement gates, supply costs, and quality accumulation are t
 ### 2.5 — The Arc I Payoff: Floor 12 Breach & The First Death (Day 30+)
 *Requirements: Senior Operator Clearance, Doubt ≥ 3, Perception ≥ 2, Floor 12 Expedition Unlocked.*
 
+> **Implemented gate (pre-alpha):** the expedition is listed from Shift 2 and
+> sealed until **Day 4 + Doubt ≥ 3 + Perception ≥ 2** — the §2.5 evidence bar,
+> plus the earliest shift the file can cohere (lead on 2, coincidences on 3,
+> the breach as its own evening). This is a stopgap: the true Day-30 floor
+> arrives with the rest of the Month-1 web (VANTABLACK's weekly mutations,
+> the radio thread, further day-crew notes, the Ledger on-ramp), not by
+> raising this number in isolation. See also the pacing regression test in
+> `src/__tests__/pacing.test.tsx`.
+
 - **The Expedition:** A 20-action deep mini-expedition into the unlisted 12th floor of the Municipal Annex.
   - *The Corridors:* Hallways numbering 1201, 1202, 1203 with no exterior distance — only a flat amber wash outside the glass.
   - *Room 1207:* A vast records room of filing cabinets labelled "TUESDAY". On the desk: the player's own termination order, with the signature still wet.

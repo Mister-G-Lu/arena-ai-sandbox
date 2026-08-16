@@ -156,6 +156,10 @@ describe('opening narrative', () => {
     await tick(100);
     expect(save().orientation).toEqual({ completed: true, skipped: true, taskRecorded: false });
     expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+    // The waiver pays in Routine, not curiosity: prior knowledge is filed as
+    // compliance, so skipping is not strictly worse than sitting through it.
+    expect(save().qualities.routine).toBe(2);
+    expect(save().qualities.doubt).toBe(0);
   });
 
   it('files the break-room answer as a real consequence', async () => {
@@ -466,6 +470,10 @@ describe('opening narrative', () => {
     expect(after.attention).toBe(0);
     expect(after.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-06' });
     expect(after.logbook.some((entry: { text: string }) => entry.text.includes('TERMINATION 1'))).toBe(true);
+    // P3/§6: dying is priced. The opt-in death docks an hour of budget from
+    // the tank — six actions at the ten-minute regen rate (on top of the one
+    // the choice itself charged).
+    expect(after.actions).toBe(43);
   });
 
   it('walks Doubt into Floor 12 and pays out the first Component', async () => {
@@ -563,8 +571,38 @@ describe('opening narrative', () => {
     const zoneButtons = Array.from(document.querySelectorAll('.zone-card')) as HTMLElement[];
     const floor12 = zoneButtons.find((z) => z.textContent?.includes('Floor 12'))!;
     const openFloor12 = floor12.querySelector('button') as HTMLButtonElement;
-    expect(openFloor12.disabled).toBe(false);
-    await act(async () => { openFloor12.click(); });
+    // The breach is not an annex-trace afterthought: on Shift 2 the card is
+    // sealed, and the lock itself shows what evidence the file still lacks.
+    expect(openFloor12.disabled).toBe(true);
+    expect(floor12.textContent).toContain('Doubt');
+    expect(floor12.textContent).toContain('Perception');
+    expect(floor12.textContent).toContain('Day');
+
+    // Two more nights of shifts and coincidences before the file is thick
+    // enough for the expedition (arcs §2.5 — Day 4, Doubt ≥ 3, Perception ≥ 2).
+    await go('console');
+    await tick(100);
+    await waitForActions(50);
+    await finishCurrentShift();
+    await click('BEGIN NEXT SHIFT');
+    await tick(200);
+    expect(save().day).toBe(3);
+    // Shift 3 opens with the night desk's own coincidence.
+    expect(document.body.textContent).toContain('NIGHT DESK // FILED 03:12 // IN YOUR HAND');
+    await waitForActions(50);
+    await finishCurrentShift();
+    await click('BEGIN NEXT SHIFT');
+    await tick(200);
+    expect(save().day).toBe(4);
+    await waitForActions(50);
+
+    await go('investigations');
+    await tick(100);
+    const day4Floor12 = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('Floor 12')) as HTMLElement;
+    const day4Open = day4Floor12.querySelector('button') as HTMLButtonElement;
+    expect(day4Open.disabled).toBe(false);
+    await act(async () => { day4Open.click(); });
     await tick(100);
 
     for (let i = 0; i < 8; i++) {
@@ -583,6 +621,77 @@ describe('opening narrative', () => {
     expect(done.components.key).toBe(true);
     expect(resource('Components')).toBe('1/6');
     expect(done.logbook.some((e: { text: string }) => e.text.includes('NULL KEY'))).toBe(true);
+  }, 60000);
+
+  it('keeps M. checking in from Day 4 on, one ambient line per night', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 4;
+    state.qualities.doubt = 1; // an operator who has noticed — no prod needed
+    state.zones = { 'annex-order': 'complete', 'handwritten-order': 'complete' };
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+    // Day 4 opens with the first ambient direct-channel line; the generic
+    // shift-open line rotates with the day rather than repeating verbatim.
+    expect(document.body.textContent).toContain('You are ahead of your paperwork');
+    expect(document.body.textContent).toContain('SHIFT INITIALIZED');
+  }, 60000);
+
+  it('keeps Days 1–3 free of the ambient M. lines their own asides replace', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 2;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+    // The Shift 2 annex aside is there; the Day 4+ rotation is not.
+    expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
+    expect(document.body.textContent).not.toContain('You are ahead of your paperwork');
+  }, 60000);
+
+  it('prods an operator who has never noticed anything', async () => {
+    // The cautious roleplayer: a week of filing everything clean, zero Doubt.
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 3;
+    state.qualities.doubt = 0;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+    expect(document.body.textContent).toContain('You file everything clean');
+    expect(document.body.textContent).toContain('Noticing is permitted');
+
+    // One logged discrepancy ends the prod — M. has been answered.
+    await click('EXECUTE TASK');
+    await tick(1200);
+    if (button('LOG THE DISCREPANCY')) {
+      await click('LOG THE DISCREPANCY');
+      await tick(300);
+    } else {
+      await click('ACKNOWLEDGE RESULT');
+      await tick(200);
+      // A clean task is not an answer; the prod stays.
+      expect(document.body.textContent).toContain('You file everything clean');
+      return;
+    }
+    expect(save().qualities.doubt).toBeGreaterThanOrEqual(1);
+    expect(document.body.textContent).not.toContain('You file everything clean');
   }, 60000);
 
   it('guarantees a personal anomaly before task 10 from Shift 2 on', async () => {
@@ -623,6 +732,9 @@ describe('opening narrative', () => {
           'message from your next shift',
           'your signature appears on the sheet for a shift you have not worked yet',
           'you are on the roster twice tonight',
+          'it was warm because you will have turned it on',
+          'you are reading this memo earlier than you filed it',
+          'it asked in your voice',
         ];
         expect(personal.some((p) => text.includes(p))).toBe(true);
 

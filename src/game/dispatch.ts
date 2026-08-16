@@ -1,3 +1,5 @@
+import { ACTION_CAP } from './actions';
+
 export const TASKS_PER_SHIFT = 50;
 export const ANOMALY_CHANCE = 0.06;
 
@@ -112,6 +114,10 @@ export const CORRUPT_RESULTS = [
   '██ 06:00 ██ DO NOT BE AWAKE ██ DO NOT ██',
   'ERROR: the coffee was warm before you arrived. it was warm before the building existed.',
   '▓▓ ATTENDANCE ██ 100% ██ it was 100% before you were hired ▓▓',
+  'DELIVERY LOG: driver VANTABLACK reports street names that do not appear on the municipal map. the map agrees. the map is wrong. report filed.',
+  'FLEET TELEMETRY ▓▓ truck 312 ▓▓ truck 312 ▓▓ trucks on site: 0 ▓▓',
+  '▓▓ 05:59 ▓▓ 05:59 ▓▓ 05:59 ▓▓ the clock refused the next minute ▓▓',
+  'MEMO BOARD: the night shift is requested not to look out of the window after 05:00. the window is not there after 05:00.',
 ] as const;
 
 /**
@@ -123,13 +129,43 @@ export const CORRUPT_RESULTS = [
  * the number it contains when filed clean, and a guaranteed personal line
  * must not hand out a guaranteed windfall (src/game/payouts.ts).
  */
-export const PERSONAL_RESULTS = [
-  'OPERATOR: a work order in your handwriting was filed from the night desk. you did not write it. the desk is certain you did not.',
-  'the day crew left a note on the memo board: the night operator seems familiar. they mean you. you have never met the day crew.',
-  'message from your next shift: stop leaving notes where the day crew can find them. — you',
-  'ATTENDANCE: your signature appears on the sheet for a shift you have not worked yet. it is a good signature. it is yours.',
-  'you are on the roster twice tonight. one of you has already clocked in. neither of you has left.',
-] as const;
+export interface PersonalResult {
+  text: string;
+  /**
+   * The zone whose resolution makes this line a stale reveal. A personal
+   * anomaly is written like a first-time discovery; once the operator has
+   * already closed the matching case, replaying it reads as a continuity
+   * error, so it retires from the pool.
+   */
+  excludesZone?: string;
+}
+
+export const PERSONAL_RESULTS: PersonalResult[] = [
+  {
+    text: 'OPERATOR: a work order in your handwriting was filed from the night desk. you did not write it. the desk is certain you did not.',
+    excludesZone: 'handwritten-order',
+  },
+  {
+    text: 'the day crew left a note on the memo board: the night operator seems familiar. they mean you. you have never met the day crew.',
+    excludesZone: 'day-crew-notes',
+  },
+  { text: 'message from your next shift: stop leaving notes where the day crew can find them. — you' },
+  { text: 'ATTENDANCE: your signature appears on the sheet for a shift you have not worked yet. it is a good signature. it is yours.' },
+  { text: 'you are on the roster twice tonight. one of you has already clocked in. neither of you has left.' },
+  { text: 'the coffee maker was warm before you arrived. it was warm because you will have turned it on. this sentence was filed by you.' },
+  { text: 'a memo from M.: you are reading this memo earlier than you filed it. please continue. — M.' },
+  { text: 'the terminal asked if you were still awake. it asked in your voice. you answered. the log shows no question was asked.' },
+];
+
+/**
+ * The personal lines still valid tonight. Lines whose case the operator has
+ * already closed retire so the queue never re-reveals a resolved mystery as
+ * if it were new.
+ */
+export function personalPoolFor(completedZones?: string[]): string[] {
+  const done = new Set(completedZones ?? []);
+  return PERSONAL_RESULTS.filter((r) => !r.excludesZone || !done.has(r.excludesZone)).map((r) => r.text);
+}
 
 export interface PendingDispatch {
   id: string;
@@ -154,6 +190,8 @@ export interface CreateDispatchInput {
   anomaliesSeenThisShift: number;
   anomalyRoll: number;
   corruptionRoll: number;
+  /** Zones the operator has closed; retires stale personal reveals. */
+  completedZones?: string[];
 }
 
 function indexFromRoll(roll: number, length: number): number {
@@ -186,11 +224,25 @@ export function createPendingDispatch(input: CreateDispatchInput): PendingDispat
     taskNumber,
     anomaliesSeenThisShift: input.anomaliesSeenThisShift,
     roll: input.anomalyRoll,
+    // The caller charges this reservation's own action around the mutate, so
+    // `actionsSpentThisShift` here is still the pre-reservation count. What
+    // remains is the number of further tasks the shift can start after this
+    // one: the cap minus everything spent before it minus this task itself.
+    taskSlotsLeft: Math.max(0, ACTION_CAP - input.actionsSpentThisShift - 1),
   });
-  const isPersonal = isCorrupt && shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
+  const personalPool = personalPoolFor(input.completedZones);
+  const isPersonal =
+    isCorrupt &&
+    personalPool.length > 0 &&
+    shouldUsePersonalAnomaly(input.day, input.anomaliesSeenThisShift);
   const displayedResult = isCorrupt
     ? isPersonal
-      ? PERSONAL_RESULTS[indexFromRoll(input.corruptionRoll, PERSONAL_RESULTS.length)]
+      ? // One personal line per shift, rotated by night so the queue never
+        // draws the same wrongness twice in a row. Random pulls did (a run
+        // repeated 'a memo from M.' on consecutive nights, reading as a
+        // stuck record); a stateless rotation guarantees the deck advances
+        // and costs no save surface.
+        personalPool[input.day % personalPool.length]
       : CORRUPT_RESULTS[indexFromRoll(input.corruptionRoll, CORRUPT_RESULTS.length)]
     : order.result;
 
@@ -227,6 +279,12 @@ export interface AnomalyRoll {
   taskNumber: number;
   anomaliesSeenThisShift: number;
   roll: number;
+  /**
+   * Tasks the shift's remaining action budget can still start after this one.
+   * Defaults to a full quota (the classic pure-grind shift) so callers that
+   * only know the task number keep the original schedule.
+   */
+  taskSlotsLeft?: number;
 }
 
 /**
@@ -234,9 +292,20 @@ export interface AnomalyRoll {
  * already produced. Once the shift has paid its debt, there is no deadline
  * and the authored chance runs unmodified.
  */
-export function anomalyDeadline(anomaliesSeenThisShift: number): number {
-  if (anomaliesSeenThisShift <= 0) return HOOK_DEADLINE;
-  if (anomaliesSeenThisShift < GUARANTEED_ANOMALIES_PER_SHIFT) return TASKS_PER_SHIFT;
+export function anomalyDeadline(
+  taskNumber: number,
+  anomaliesSeenThisShift: number,
+  taskSlotsLeft = TASKS_PER_SHIFT - taskNumber,
+): number {
+  if (anomaliesSeenThisShift <= 0) {
+    return Math.min(HOOK_DEADLINE, taskNumber + taskSlotsLeft);
+  }
+  if (anomaliesSeenThisShift < GUARANTEED_ANOMALIES_PER_SHIFT) {
+    // Owed by the last task the budget can still afford — a shift that spends
+    // actions on notices files fewer tasks, and its second anomaly must land
+    // inside whichever tasks it does file, not in the unfiled remainder.
+    return taskNumber + taskSlotsLeft;
+  }
   return Infinity;
 }
 
@@ -252,8 +321,13 @@ export function anomalyDeadline(anomaliesSeenThisShift: number): number {
 export function anomalyChance({
   taskNumber,
   anomaliesSeenThisShift,
+  taskSlotsLeft,
 }: Omit<AnomalyRoll, 'roll'>): number {
-  const deadline = anomalyDeadline(anomaliesSeenThisShift);
+  const deadline = anomalyDeadline(
+    taskNumber,
+    anomaliesSeenThisShift,
+    taskSlotsLeft ?? TASKS_PER_SHIFT - taskNumber,
+  );
   if (!Number.isFinite(deadline)) return ANOMALY_CHANCE;
   if (taskNumber >= deadline) return 1;
 
@@ -264,12 +338,15 @@ export function anomalyChance({
 /**
  * Normal results use the authored chance, but progression can never be
  * blocked by an unlucky shift. Two anomalies are owed per shift: the first by
- * task 10, the second by the time the fiftieth result is filed.
+ * task 10, the second by the last result the shift's budget can file — a
+ * shift that spends actions on notices still pays its second anomaly, just
+ * inside the shorter queue of tasks it actually files.
  */
 export function shouldTriggerAnomaly({
   taskNumber,
   anomaliesSeenThisShift,
   roll,
+  taskSlotsLeft,
 }: AnomalyRoll): boolean {
-  return roll < anomalyChance({ taskNumber, anomaliesSeenThisShift });
+  return roll < anomalyChance({ taskNumber, anomaliesSeenThisShift, taskSlotsLeft });
 }

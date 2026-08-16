@@ -67,6 +67,12 @@ export default function Shop() {
                   </p>
                 )}
 
+                {zone && zone.board === 'notices' && !state.promotion.unlocks.includes('notice-storylets') && (
+                  <p className="fine supply-sealed">
+                    THE NOTICES BOARD IS SEALED UNTIL THE SYSTEM RECOGNIZES YOU. THE GOOD WILL WAIT.
+                  </p>
+                )}
+
                 {supply.locked && supply.lockedNote && (
                   <p className="fine supply-locked-note">{supply.lockedNote}</p>
                 )}

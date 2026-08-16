@@ -37,6 +37,10 @@ export default function FirstShift() {
   }
 
   function acceptWaiver() {
+    // Prior operating knowledge is still knowledge: the system files the
+    // waiver as compliance, so skipping orientation is not strictly worse
+    // than sitting through it — it simply pays in Routine, not curiosity.
+    actions.applyEffects({ Routine: 2 });
     actions.completeOrientation(true);
     window.location.hash = '#console';
   }

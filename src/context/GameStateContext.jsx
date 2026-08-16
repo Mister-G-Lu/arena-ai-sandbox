@@ -105,6 +105,13 @@ export const LOGBOOK_CAP = 1000;
 export const DISCOVERIES_CAP = 500;
 export const SEEN_STORYLETS_CAP = 9500;
 
+/**
+ * What a termination costs, in actions. Design P3/§6 prices a death at one
+ * hour of the next shift's budget ("you wake at 01:00 minus the hours you
+ * spent dead") — six actions at the ten-minutes-per-action regen rate.
+ */
+export const DEATH_ACTION_DOCK = 6;
+
 function appendResidue(list, entry, cap) {
   const next = [...list, entry];
   return next.length > cap ? next.slice(next.length - cap) : next;
@@ -538,13 +545,18 @@ export function GameStateProvider({ children }) {
           next = withLog(
             next,
             `TERMINATION ${deathNumber} // You remember the interval the city removed. ` +
-              'The operator file remained open because you did.',
+              'The operator file remained open because you did. The paperwork docked an hour ' +
+              'of your budget: −6 actions.',
             {
               deaths: deathNumber,
               // Death is a patch boundary, not an accidental chain-death loop.
               // The lethal choice was explicit; the next investigation begins
               // with the system watching from a clean baseline.
               attention: 0,
+              // P3/§6: the next shift begins an hour late. The dock lands on
+              // the tank now (accrual keeps running), so an opt-in death is
+              // expensive — never a free reset — exactly as the design prices it.
+              actions: Math.max(0, (next.actions ?? 0) - DEATH_ACTION_DOCK),
               discoveries: appendResidue(next.discoveries, {
                 day: next.day,
                 text: `THE INTERIM ${deathNumber}: the frame after termination and before shift start. The city forgot. You did not.`,
@@ -667,7 +679,12 @@ export function GameStateProvider({ children }) {
           actionsSpentThisShift: charged.actionsSpentThisShift,
           anomaliesSeenThisShift: charged.anomaliesSeenThisShift,
           anomalyRoll,
-          corruptionRoll
+          corruptionRoll,
+          // A personal line whose case is already closed is a stale reveal;
+          // the pool retires it for the night.
+          completedZones: Object.entries(charged.zones)
+            .filter(([, status]) => status === 'complete')
+            .map(([id]) => id)
         })
       }));
     });

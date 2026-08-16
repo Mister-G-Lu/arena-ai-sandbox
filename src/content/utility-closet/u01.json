@@ -2,7 +2,7 @@
   "id": "utility-closet-01",
   "zone": "utility-closet",
   "title": "The third fuse box",
-  "body": "The closet behind the break room is on no plan. The lock is a latch. Inside: mops that have never dried, a fuse box labelled with a floor that does not exist, and a fuse box labelled with the current one. Your torch shows a third fuse box, behind the first two, painted over. It is warm.",
+  "body": "The closet behind the break room is on no plan. The lock is a latch. Inside: mops that have never dried, a fuse box labelled with a floor that does not exist, and a second labelled with the floor you are standing on. Your torch shows a third fuse box, behind the first two, painted over. It is warm.",
   "choices": [
     {
       "id": "open",

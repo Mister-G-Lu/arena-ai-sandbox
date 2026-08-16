@@ -8,6 +8,7 @@ import {
   TASKS_PER_SHIFT,
   anomalyChance,
   createPendingDispatch,
+  personalPoolFor,
   shouldTriggerAnomaly,
   shouldUsePersonalAnomaly,
 } from './dispatch';
@@ -34,7 +35,7 @@ describe('dispatch anomaly schedule', () => {
     expect(pending.displayedResult).not.toBe(pending.cleanResult);
     // Day 3, first anomaly of the shift: the corruption is personal.
     expect(pending.isPersonal).toBe(true);
-    expect(PERSONAL_RESULTS).toContain(pending.displayedResult);
+    expect(personalPoolFor()).toContain(pending.displayedResult);
   });
 
   it('uses at least the authored chance on the first task', () => {
@@ -100,6 +101,43 @@ describe('dispatch anomaly schedule', () => {
     ).toBe(false);
   });
 
+  it('owes the second anomaly by the last task the budget can still afford', () => {
+    // A shift that spends actions on notices files fewer tasks: with no slots
+    // left after this one, the owed anomaly must land now or never.
+    expect(
+      shouldTriggerAnomaly({
+        taskNumber: 45,
+        anomaliesSeenThisShift: 1,
+        taskSlotsLeft: 0,
+        roll: 0.999999,
+      }),
+    ).toBe(true);
+  });
+
+  it('spreads the owed second anomaly across the remaining budget', () => {
+    // Nine tasks left after this one: one in ten.
+    expect(anomalyChance({ taskNumber: 40, anomaliesSeenThisShift: 1, taskSlotsLeft: 9 })).toBe(1 / 10);
+    // The classic call (no budget info) keeps the old full-quota schedule.
+    expect(anomalyChance({ taskNumber: 40, anomaliesSeenThisShift: 1 })).toBeCloseTo(1 / 11);
+  });
+
+  it('forces the second anomaly into the last filed task of a shortened shift', () => {
+    // 49 actions already spent (48 tasks + one notice) and this is the final
+    // reservation the budget can afford. `actionsSpentThisShift` is the
+    // pre-reservation count, as the caller passes it.
+    const pending = createPendingDispatch({
+      day: 3,
+      tasksCompleted: 48,
+      tasksThisShift: 48,
+      actionsSpentThisShift: 49,
+      anomaliesSeenThisShift: 1,
+      anomalyRoll: 0.999999,
+      corruptionRoll: 0.5,
+    });
+    expect(pending.taskNumber).toBe(49);
+    expect(pending.isCorrupt).toBe(true);
+  });
+
   it('delivers both guaranteed anomalies across a maximally unlucky shift', () => {
     let anomalies = 0;
     for (let taskNumber = 1; taskNumber <= TASKS_PER_SHIFT; taskNumber += 1) {
@@ -125,7 +163,42 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
     expect(pending.isCorrupt).toBe(true);
     expect(pending.isPersonal).toBe(false);
     expect(CORRUPT_RESULTS).toContain(pending.displayedResult);
-    expect(PERSONAL_RESULTS).not.toContain(pending.displayedResult);
+    expect(personalPoolFor()).not.toContain(pending.displayedResult);
+  });
+
+  it('widens the decks so a week of shifts does not recycle the same lines', () => {
+    // A shift owes two anomalies; a week owes ~fourteen. Pools this size mean
+    // a given line lands roughly once a week, not twice a shift.
+    expect(CORRUPT_RESULTS.length).toBeGreaterThanOrEqual(10);
+    expect(personalPoolFor().length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('retires a personal reveal whose case the operator already closed', () => {
+    const open = personalPoolFor();
+    const closed = personalPoolFor(['handwritten-order', 'day-crew-notes']);
+    expect(closed.length).toBe(open.length - 2);
+    expect(closed.some((line) => line.includes('a work order in your handwriting'))).toBe(false);
+    expect(closed.some((line) => line.includes('the night operator seems familiar'))).toBe(false);
+    // The rest of the deck is untouched.
+    expect(closed.some((line) => line.includes('you are on the roster twice'))).toBe(true);
+  });
+
+  it('draws around a closed case so the first personal anomaly stays fresh', () => {
+    const pending = createPendingDispatch({
+      day: 3,
+      tasksCompleted: 60,
+      tasksThisShift: 1,
+      actionsSpentThisShift: 1,
+      anomaliesSeenThisShift: 0,
+      anomalyRoll: 0,
+      corruptionRoll: 0,
+      completedZones: ['handwritten-order'],
+    });
+    expect(pending.isPersonal).toBe(true);
+    // The retired line is gone from the deck the night rotates through.
+    expect(pending.displayedResult).not.toContain('a work order in your handwriting');
+    const deck = personalPoolFor(['handwritten-order']);
+    expect(pending.displayedResult).toBe(deck[3 % deck.length]);
   });
 
   it('makes the first anomaly of every shift from Day 2 on personal', () => {
@@ -137,8 +210,8 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
     expect(shouldUsePersonalAnomaly(2, 3)).toBe(false);
   });
 
-  it('draws the personal line from the personal pool, deterministically by roll', () => {
-    const first = createPendingDispatch({
+  it('rotates the personal line by night so two shifts never repeat the reveal', () => {
+    const day2 = createPendingDispatch({
       day: 2,
       tasksCompleted: 10,
       tasksThisShift: 1,
@@ -147,8 +220,8 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
       anomalyRoll: 0,
       corruptionRoll: 0,
     });
-    const last = createPendingDispatch({
-      day: 2,
+    const day3 = createPendingDispatch({
+      day: 3,
       tasksCompleted: 10,
       tasksThisShift: 1,
       actionsSpentThisShift: 1,
@@ -156,11 +229,11 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
       anomalyRoll: 0,
       corruptionRoll: 0.999999,
     });
-    expect(PERSONAL_RESULTS).toContain(first.displayedResult);
-    expect(PERSONAL_RESULTS).toContain(last.displayedResult);
-    expect(first.displayedResult).not.toBe(last.displayedResult);
-    expect(first.displayedResult).toBe(PERSONAL_RESULTS[0]);
-    expect(last.displayedResult).toBe(PERSONAL_RESULTS[PERSONAL_RESULTS.length - 1]);
+    // The night picks the line, not the roll: consecutive shifts advance
+    // through the deck instead of gambling on a repeat.
+    expect(day2.displayedResult).toBe(personalPoolFor()[2 % personalPoolFor().length]);
+    expect(day3.displayedResult).toBe(personalPoolFor()[3 % personalPoolFor().length]);
+    expect(day2.displayedResult).not.toBe(day3.displayedResult);
   });
 
   it('flags clean results as never personal', () => {
@@ -215,7 +288,7 @@ describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal
 
   it('keeps personal lines free of digits so filing them clean cannot pay a field', () => {
     for (const line of PERSONAL_RESULTS) {
-      expect(line).not.toMatch(/\d/);
+      expect(line.text).not.toMatch(/\d/);
     }
   });
 });
