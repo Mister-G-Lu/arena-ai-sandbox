@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { deposit, withdraw, formatCredits, wordPressure, CREDIT_LIMIT } from '../game/ledger';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { QUALITY_DEFS, normalizeEffects, clampQuality, qualityDef } from '../game/qualities';
 import { GLITCH_DEFS } from '../game/glitches';
 import {
@@ -11,115 +12,17 @@ import {
   zoneState,
   zoneById
 } from '../game/progression';
+import {
+  createInitialGameState,
+  createStoredSaveEnvelope,
+  parseSaveJson,
+  parseStoredSaveEnvelope,
+  serializeSaveEnvelope
+} from '../lib/gameSave';
+import { clearLocalGameSave, loadLocalGameSave, writeLocalGameSave } from '../lib/localGameSave';
+import { useCloudSave } from '../hooks/useCloudSave';
 
 const GameStateContext = createContext();
-const STORAGE_KEY = 'fr:player-progress:v1';
-
-// Initial state
-const INITIAL_STATE = {
-  // Resources — the ledger has no design cap. Only the word has a ceiling.
-  credits: 0,
-  ledgerUnbound: false,
-
-  // Components (story resources)
-  components: {
-    key: false,      // NULL KEY from Floor 12
-    lens: false,     // LENS from Records Basement
-    wire: false,     // WIRE from Vent Network
-    crystal: false,  // CRYSTAL from Rooftop Array
-    chip: false,     // CHIP from Off-Map Sectors
-    interim: false   // INTERIM from The Interim
-  },
-
-  // Qualities
-  qualities: {
-    doubt: 0,        // Understanding meter (0-5)
-    perception: 0,   // Observation meter (0-5)
-    routine: 0       // Camouflage; the system likes workers who work
-  },
-
-  // Hidden
-  attention: 0,      // Heat meter (0-10, death at 10)
-
-  // Progress
-  day: 1,
-  tasksCompleted: 0,
-  discrepanciesLogged: 0,
-  deaths: 0,
-  orientation: {
-    completed: false,
-    skipped: false,
-    taskRecorded: false
-  },
-
-  // Promotion
-  promotion: {
-    tier: 0,
-    title: PROMOTIONS[0].title,
-    unlocks: [...PROMOTIONS[0].unlocks]
-  },
-
-  // Storylet zones: id -> 'open' | 'complete'
-  zones: {},
-  // Cards already resolved, so a notice is never served twice
-  seenStorylets: [],
-  // Where the operator currently stands inside a zone: { zone, storyletId }
-  currentStorylet: null,
-
-  // Glitches the operator has *kept*. Proof the city is a program.
-  glitches: [],
-
-  // Logbook (Residue)
-  logbook: [],
-  discoveries: [],
-  contacts: []
-};
-
-function loadSavedState() {
-  if (typeof window === 'undefined') return INITIAL_STATE;
-
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (!saved) return INITIAL_STATE;
-
-    const parsed = JSON.parse(saved, (_key, value) => value === '__INFINITY__' ? Infinity : value);
-    const hasLegacyConsoleProgress = !parsed.orientation && (
-      Number(parsed.tasksCompleted) > 0 || Number(parsed.day) > 1
-    );
-
-    // Legacy saves carried a `maxCredits` ceiling. The ceiling is gone; a save
-    // that was pinned to it keeps its balance and simply stops being capped.
-    const legacyUnbound = parsed.maxCredits === Infinity || parsed.credits === Infinity;
-
-    const migrated = {
-      ...INITIAL_STATE,
-      ...parsed,
-      credits: parsed.credits === Infinity ? Infinity : Number(parsed.credits) || 0,
-      ledgerUnbound: Boolean(parsed.ledgerUnbound || legacyUnbound),
-      components: { ...INITIAL_STATE.components, ...parsed.components },
-      qualities: { ...INITIAL_STATE.qualities, ...parsed.qualities },
-      orientation: {
-        ...INITIAL_STATE.orientation,
-        ...parsed.orientation,
-        ...(hasLegacyConsoleProgress ? { completed: true, skipped: true } : {})
-      },
-      promotion: { ...INITIAL_STATE.promotion, ...parsed.promotion },
-      zones: { ...INITIAL_STATE.zones, ...parsed.zones },
-      seenStorylets: Array.isArray(parsed.seenStorylets) ? parsed.seenStorylets : [],
-      currentStorylet: parsed.currentStorylet ?? null,
-      glitches: Array.isArray(parsed.glitches) ? parsed.glitches : [],
-      logbook: Array.isArray(parsed.logbook) ? parsed.logbook : [],
-      discoveries: Array.isArray(parsed.discoveries) ? parsed.discoveries : [],
-      contacts: Array.isArray(parsed.contacts) ? parsed.contacts : []
-    };
-
-    // The credit ceiling is retired. Drop it rather than carrying a dead key.
-    delete migrated.maxCredits;
-    return migrated;
-  } catch {
-    return INITIAL_STATE;
-  }
-}
 
 /** Append a logbook entry inside a reducer without duplicating the shape. */
 function withLog(prev, text, extra = {}) {
@@ -188,19 +91,56 @@ function commitLedger(prev, result) {
 }
 
 export function GameStateProvider({ children }) {
-  const [state, setState] = useState(loadSavedState);
+  const [boot] = useState(() => loadLocalGameSave());
+  const [state, setState] = useState(boot.state);
+  const [persistence, setPersistence] = useState(() => ({
+    status: boot.error ? 'recovered' : boot.migrated ? 'migrating' : 'ready',
+    error: null,
+    recoveryError: boot.error,
+    lastSavedAt: boot.envelope?.savedAt ?? null,
+    hadLocalSaveAtBoot: boot.hadLocalSave
+  }));
+  const firstPersistence = useRef(true);
 
   useEffect(() => {
-    try {
-      const serialized = JSON.stringify(
-        state,
-        (_key, value) => value === Infinity ? '__INFINITY__' : value
-      );
-      window.localStorage.setItem(STORAGE_KEY, serialized);
-    } catch {
-      // Storage can be unavailable in private browsing. The in-memory file remains valid.
+    // A valid canonical file was already read; do not rewrite it just because
+    // React mounted. Fresh and migrated files are committed immediately.
+    if (firstPersistence.current) {
+      firstPersistence.current = false;
+      if (boot.envelope && !boot.migrated) return;
     }
-  }, [state]);
+    const result = writeLocalGameSave(state);
+    if (result.ok) {
+      setPersistence(prev => ({
+        ...prev,
+        status: prev.recoveryError ? 'recovered' : 'saved',
+        error: null,
+        lastSavedAt: result.envelope.savedAt
+      }));
+    } else {
+      setPersistence(prev => ({ ...prev, status: 'error', error: result.error }));
+    }
+  }, [boot.envelope, boot.migrated, state]);
+
+  const replaceGameState = useCallback((nextState) => {
+    const envelope = createStoredSaveEnvelope(nextState);
+    setState(parseStoredSaveEnvelope(envelope).game);
+  }, []);
+
+  const importGameSave = useCallback((text) => {
+    const loaded = parseSaveJson(text);
+    setState(loaded.game);
+    return loaded.game;
+  }, []);
+
+  const exportGameSave = useCallback(() =>
+    serializeSaveEnvelope(createStoredSaveEnvelope(state)), [state]);
+
+  const cloud = useCloudSave({
+    state,
+    hadLocalSaveAtBoot: persistence.hadLocalSaveAtBoot,
+    replaceState: replaceGameState
+  });
 
   /* ---------------- ledger ---------------- */
 
@@ -398,14 +338,15 @@ export function GameStateProvider({ children }) {
     setState(prev => ({
       ...prev,
       day: prev.day + 1,
-      tasksCompleted: 0
+      tasksCompleted: 0,
+      anomaliesSeenThisShift: 0
     }));
   }, []);
 
   const completeTask = useCallback(() => {
     setState(prev => ({
       ...prev,
-      tasksCompleted: Math.min(prev.tasksCompleted + 1, 50)
+      tasksCompleted: Math.min(prev.tasksCompleted + 1, TASKS_PER_SHIFT)
     }));
   }, []);
 
@@ -413,7 +354,13 @@ export function GameStateProvider({ children }) {
    * File a task result. `effects` and `payout` are computed by the caller from
    * data (see src/game/payouts.ts) so the console holds no balance numbers.
    */
-  const fileTaskResult = useCallback(({ effects, payout = 0, logbookEntry, discrepancy = false }) => {
+  const fileTaskResult = useCallback(({
+    effects,
+    payout = 0,
+    logbookEntry,
+    discrepancy = false,
+    anomaly = false
+  }) => {
     setState(prev => {
       let next = applyEffectsToState(prev, effects);
       if (payout) {
@@ -421,7 +368,8 @@ export function GameStateProvider({ children }) {
       }
       next = {
         ...next,
-        tasksCompleted: Math.min(next.tasksCompleted + 1, 50),
+        tasksCompleted: Math.min(next.tasksCompleted + 1, TASKS_PER_SHIFT),
+        anomaliesSeenThisShift: next.anomaliesSeenThisShift + (anomaly ? 1 : 0),
         discrepanciesLogged: next.discrepanciesLogged + (discrepancy ? 1 : 0)
       };
       return withLog(next, logbookEntry);
@@ -455,7 +403,10 @@ export function GameStateProvider({ children }) {
     });
   }, []);
 
-  const resetGame = useCallback(() => setState(INITIAL_STATE), []);
+  const resetGame = useCallback(() => {
+    clearLocalGameSave();
+    setState(createInitialGameState());
+  }, []);
 
   const ledger = useMemo(() => ({
     credits: state.credits,
@@ -467,6 +418,8 @@ export function GameStateProvider({ children }) {
 
   const value = {
     state,
+    persistence,
+    cloud,
     ledger,
     requirementCtx,
     availableZones,
@@ -496,6 +449,8 @@ export function GameStateProvider({ children }) {
       addLogEntry,
       addDiscovery,
       addContact,
+      importGameSave,
+      exportGameSave,
       resetGame
     }
   };

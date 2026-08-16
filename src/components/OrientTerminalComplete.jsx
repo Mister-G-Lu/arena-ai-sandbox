@@ -1,32 +1,35 @@
 import React from 'react';
 
-function completionCopy(reviewMode) {
+function CompletionCopy({ reviewMode }) {
   if (reviewMode) {
-    return `ORIENTATION REVIEW COMPLETE.
-
-The archived procedure has ended.
-
-  — Your live shift is <em>unchanged</em>.
-  — Your quota is <em>unchanged</em>.
-  — Your coffee is probably still <em>warm</em>.
-
-The active queue is waiting where you left it.
-<span class="dim">It noticed you were gone.</span>`;
+    return (
+      <div className="orient-content">
+        {'ORIENTATION REVIEW COMPLETE.\n\nThe archived procedure has ended.\n\n  — Your live shift is '}
+        <em>unchanged</em>
+        {'.\n  — Your quota is '}
+        <em>unchanged</em>
+        {'.\n  — Your coffee is probably still '}
+        <em>warm</em>
+        {'.\n\nThe active queue is waiting where you left it.\n'}
+        <span className="dim">It noticed you were gone.</span>
+      </div>
+    );
   }
 
-  return `ORIENTATION COMPLETE.
-
-You have been oriented, Operator.
-
-  — Your shift is <em>active</em>.
-  — Your quota is <em>loaded</em>.
-  — Your coffee is <em>warm</em>.
-
-The city is counting on you.
-<span class="warn">The city has always been counting on you.</span>
-
-Your first result is in the record. Forty-nine work orders remain in the live queue.
-<span class="dim">They have always been waiting.</span>`;
+  return (
+    <div className="orient-content">
+      {'ORIENTATION COMPLETE.\n\nYou have been oriented, Operator.\n\n  — Your shift is '}
+      <em>active</em>
+      {'.\n  — Your quota is '}
+      <em>loaded</em>
+      {'.\n  — Your coffee is '}
+      <em>warm</em>
+      {'.\n\nThe city is counting on you.\n'}
+      <span className="warn">The city has always been counting on you.</span>
+      {'\n\nYour first result is in the record. Forty-nine work orders remain in the live queue.\n'}
+      <span className="dim">They have always been waiting.</span>
+    </div>
+  );
 }
 
 export default function OrientTerminalComplete({ reviewMode = false, onContinue, onReplay }) {
@@ -39,10 +42,7 @@ export default function OrientTerminalComplete({ reviewMode = false, onContinue,
       </div>
       <div className="orient-screen">
         <div className="orient-stage">
-          <div
-            className="orient-content"
-            dangerouslySetInnerHTML={{ __html: completionCopy(reviewMode) }}
-          />
+          <CompletionCopy reviewMode={reviewMode} />
           <div className="orient-complete">
             <span className="orient-arrow">↓</span>
             <button className="btn btn-primary" type="button" onClick={onContinue}>

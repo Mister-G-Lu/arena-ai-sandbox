@@ -6,6 +6,7 @@ import OrientTerminalBreakRoom from './OrientTerminalBreakRoom';
 import OrientTerminalTask from './OrientTerminalTask';
 import OrientTerminalComplete from './OrientTerminalComplete';
 import { useGameState } from '../context/GameStateContext';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 
 export default function FirstShift() {
   const { state, actions } = useGameState();
@@ -117,7 +118,9 @@ export default function FirstShift() {
           {stage === 'station' && (
             <OrientTerminalStation
               day={reviewMode ? 1 : state.day}
-              tasksRemaining={reviewMode ? 50 : Math.max(0, 50 - state.tasksCompleted)}
+              tasksRemaining={reviewMode
+                ? TASKS_PER_SHIFT
+                : Math.max(0, TASKS_PER_SHIFT - state.tasksCompleted)}
               onComplete={() => transitionTo('breakroom')}
             />
           )}
@@ -133,7 +136,7 @@ export default function FirstShift() {
           {stage === 'task' && (
             <OrientTerminalTask
               reviewMode={reviewMode}
-              tasksRemaining={Math.max(0, 50 - state.tasksCompleted)}
+              tasksRemaining={Math.max(0, TASKS_PER_SHIFT - state.tasksCompleted)}
               onTaskLogged={actions.recordOrientationTask}
               onComplete={finishOrientation}
             />

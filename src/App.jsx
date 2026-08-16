@@ -28,7 +28,7 @@ function GameShell() {
 
   useEffect(() => {
     if (blocked) navigate(gate.fallback);
-  }, [blocked, gate?.fallback]);
+  }, [blocked, gate?.fallback, navigate]);
 
   return (
     <>

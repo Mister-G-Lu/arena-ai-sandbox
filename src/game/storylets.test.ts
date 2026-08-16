@@ -8,6 +8,7 @@ import {
   parseProgress,
   validateChoice,
   validateOutcome,
+  validateStoryGraph,
   validateStorylet,
   visibleQualities,
   type Storylet,
@@ -94,6 +95,77 @@ describe('validateStorylet', () => {
     ).toThrow(/completeZone/);
     expect(() => validateOutcome({ text: 't', qualities: 4 })).toThrow(/qualities/);
     expect(() => validateOutcome({ text: 't', qualities: { X: 'no' } })).toThrow(/finite/);
+  });
+});
+
+describe('validateStoryGraph', () => {
+  const first = validateStorylet(base);
+  const second = validateStorylet({
+    ...base,
+    id: 'tutorial-02',
+    title: 'Continue',
+    choices: [{ id: 'done', label: 'Done', outcome: { text: 'Done.' }, completeZone: true }],
+  });
+
+  it('accepts a closed graph and verifies configured entry points', () => {
+    expect(validateStoryGraph([first, second], { tutorial: 'tutorial-01' })).toEqual([
+      first,
+      second,
+    ]);
+  });
+
+  it('rejects duplicate cards and choices', () => {
+    expect(() => validateStoryGraph([first, first])).toThrow(/duplicate storylet/);
+    expect(() =>
+      validateStoryGraph([
+        {
+          ...second,
+          choices: [second.choices[0], second.choices[0]],
+        },
+      ]),
+    ).toThrow(/duplicate choice/);
+  });
+
+  it('rejects missing, cross-zone, and ambiguous transitions', () => {
+    expect(() => validateStoryGraph([first])).toThrow(/missing tutorial-02/);
+    expect(() =>
+      validateStoryGraph([
+        first,
+        { ...second, zone: 'routine' },
+      ]),
+    ).toThrow(/crosses/);
+    expect(() =>
+      validateStoryGraph([
+        {
+          ...second,
+          choices: [{
+            id: 'ambiguous',
+            label: 'Both',
+            outcome: { text: 'No.' },
+            endZone: true,
+            completeZone: true,
+          }],
+        },
+      ]),
+    ).toThrow(/exactly one/);
+  });
+
+  it('rejects unknown effects and invalid zone entries', () => {
+    const badEffect = {
+      ...second,
+      choices: [{
+        id: 'bad',
+        label: 'Bad',
+        outcome: { text: 'Bad.', qualities: { TypoQuality: 1 } },
+        endZone: true,
+      }],
+    };
+    expect(() => validateStoryGraph([badEffect])).toThrow(/unknown effect/);
+    expect(() => validateStoryGraph([first, second], { tutorial: 'missing' })).toThrow(/entry/);
+    const routineCard: Storylet = { ...second, id: 'routine-01', zone: 'routine' };
+    expect(() => validateStoryGraph([first, second, routineCard], {
+      routine: 'tutorial-01',
+    })).toThrow(/belongs/);
   });
 });
 

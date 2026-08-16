@@ -10,8 +10,7 @@ import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GameStateProvider, useGameState } from './GameStateContext';
 import { CREDIT_LIMIT } from '../game/ledger';
-
-const SAVE_KEY = 'fr:player-progress:v1';
+import { GAME_SAVE_KEY, LEGACY_GAME_SAVE_KEY } from '../lib/gameSave';
 
 let api;
 
@@ -80,7 +79,7 @@ describe('ledger overflow glitch', () => {
   it('survives a save/load round trip', async () => {
     mount();
     await act(async () => { api.actions.addCredits(Infinity); });
-    expect(JSON.parse(localStorage.getItem(SAVE_KEY)).credits).toBe('__INFINITY__');
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe('__INFINITY__');
 
     api = undefined;
     mount();
@@ -89,7 +88,7 @@ describe('ledger overflow glitch', () => {
   });
 
   it('migrates a legacy capped save without losing the balance', () => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
+    localStorage.setItem(LEGACY_GAME_SAVE_KEY, JSON.stringify({
       credits: 500,
       maxCredits: 500,
       day: 3,
@@ -104,7 +103,7 @@ describe('ledger overflow glitch', () => {
   });
 
   it('migrates a legacy Manager save (maxCredits: Infinity) to an unbound ledger', () => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
+    localStorage.setItem(LEGACY_GAME_SAVE_KEY, JSON.stringify({
       credits: 9000,
       maxCredits: '__INFINITY__',
       orientation: { completed: true, skipped: true, taskRecorded: true },
@@ -142,5 +141,34 @@ describe('effects pipeline', () => {
     expect(api.state.promotion.tier).toBe(1);
     expect(api.state.promotion.unlocks).toContain('notice-storylets');
     expect(api.state.logbook.some((e) => e.text.includes('OPERATOR'))).toBe(true);
+  });
+
+  it('tracks anomalies per shift and resets the guarantee counter tomorrow', async () => {
+    mount();
+    await act(async () => {
+      api.actions.fileTaskResult({ anomaly: true, payout: 10 });
+    });
+    expect(api.state.anomaliesSeenThisShift).toBe(1);
+    await act(async () => { api.actions.incrementDay(); });
+    expect(api.state.anomaliesSeenThisShift).toBe(0);
+  });
+
+  it('exports and imports the same canonical envelope used by cloud sync', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(321); });
+    const exported = api.actions.exportGameSave();
+    expect(JSON.parse(exported).version).toBe(2);
+
+    await act(async () => { api.actions.resetGame(); });
+    expect(api.state.credits).toBe(0);
+    await act(async () => { api.actions.importGameSave(exported); });
+    expect(api.state.credits).toBe(321);
+  });
+
+  it('refuses an invalid imported save without replacing live state', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(12); });
+    expect(() => api.actions.importGameSave('{"version":2}')).toThrow(/validation/i);
+    expect(api.state.credits).toBe(12);
   });
 });

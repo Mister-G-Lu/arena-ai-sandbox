@@ -1,3 +1,5 @@
+import { qualityDef } from './qualities';
+
 export const ZONE_IDS = ['tutorial', 'routine', 'floor12'] as const;
 export type ZoneId = (typeof ZONE_IDS)[number];
 export type ZoneStatus = 'locked' | 'open' | 'complete';
@@ -127,6 +129,62 @@ export function validateStorylet(raw: unknown): Storylet {
   }
   const choices = obj.choices.map((c, i) => validateChoice(c, `storylet.choices[${i}]`));
   return { id, zone: zone as ZoneId, title, body, choices };
+}
+
+export function validateStoryGraph(
+  cards: Storylet[],
+  entryPoints: Partial<Record<ZoneId, string>> = {},
+): Storylet[] {
+  const byId = new Map<string, Storylet>();
+  for (const card of cards) {
+    if (byId.has(card.id)) throw new SchemaError(`duplicate storylet id: ${card.id}`);
+    byId.set(card.id, card);
+  }
+
+  for (const card of cards) {
+    const choiceIds = new Set<string>();
+    for (const choice of card.choices) {
+      if (choiceIds.has(choice.id)) {
+        throw new SchemaError(`${card.id} has duplicate choice id: ${choice.id}`);
+      }
+      choiceIds.add(choice.id);
+
+      const transitions = [Boolean(choice.next), choice.endZone === true, choice.completeZone === true]
+        .filter(Boolean).length;
+      if (transitions !== 1) {
+        throw new SchemaError(
+          `${card.id}.${choice.id} must declare exactly one of next, endZone, or completeZone`,
+        );
+      }
+
+      if (choice.next) {
+        const target = byId.get(choice.next);
+        if (!target) throw new SchemaError(`${card.id}.${choice.id} points to missing ${choice.next}`);
+        if (target.zone !== card.zone) {
+          throw new SchemaError(
+            `${card.id}.${choice.id} crosses from ${card.zone} to ${target.zone}`,
+          );
+        }
+      }
+
+      for (const effect of Object.keys(choice.outcome.qualities ?? {})) {
+        if (!qualityDef(effect)) {
+          throw new SchemaError(`${card.id}.${choice.id} uses unknown effect: ${effect}`);
+        }
+      }
+    }
+  }
+
+  for (const [zone, entryId] of Object.entries(entryPoints)) {
+    if (!entryId) continue;
+    const entry = byId.get(entryId);
+    if (!entry) throw new SchemaError(`${zone} entry points to missing ${entryId}`);
+    if (entry.zone !== zone) {
+      throw new SchemaError(`${zone} entry ${entryId} belongs to ${entry.zone}`);
+    }
+  }
+
+  return cards;
 }
 
 export function createProgress(): Progress {

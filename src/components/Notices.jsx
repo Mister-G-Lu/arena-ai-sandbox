@@ -85,6 +85,23 @@ export default function Notices() {
           </div>
         )}
 
+        {current && !card && (
+          <div className="console notice-error" role="alert">
+            <div className="console-head">
+              <span className="dot"></span>
+              SAVED ORDER COULD NOT BE RESTORED
+              <span className="console-status">▣ RECOVERY</span>
+            </div>
+            <p className="fine">
+              The saved pointer “{current.storyletId}” does not exist in this content build.
+              Clear only the open order to keep the rest of the operator file.
+            </p>
+            <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>
+              CLEAR INVALID ORDER
+            </button>
+          </div>
+        )}
+
         <div className="zone-board">
           {availableZones.map((zone) => {
             const remaining = remainingIn(zone);

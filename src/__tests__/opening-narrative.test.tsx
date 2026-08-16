@@ -9,11 +9,17 @@
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import App from '../App';
-
-const SAVE_KEY = 'fr:player-progress:v1';
+import {
+  GAME_SAVE_KEY,
+  createInitialGameState,
+  createStoredSaveEnvelope,
+  parseStoredSaveEnvelope,
+  serializeSaveEnvelope,
+} from '../lib/gameSave';
 
 function save() {
-  return JSON.parse(localStorage.getItem(SAVE_KEY) ?? '{}');
+  const raw = JSON.parse(localStorage.getItem(GAME_SAVE_KEY) ?? '{}');
+  return parseStoredSaveEnvelope(raw).game;
 }
 
 function resource(label: string): string | null {
@@ -93,6 +99,7 @@ describe('opening narrative', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -136,6 +143,24 @@ describe('opening narrative', () => {
     await tick(100);
     // The gate redirects rather than rendering an empty page.
     expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+  });
+
+  it('recovers from a story pointer removed by a content update', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.qualities.doubt = 1;
+    state.promotion = { ...state.promotion, tier: 1 };
+    state.currentStorylet = { zone: 'routine', storyletId: 'routine-removed-in-update' };
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#notices';
+
+    render(<App />);
+    expect(document.body.textContent).toContain('SAVED ORDER COULD NOT BE RESTORED');
+    await click('CLEAR INVALID ORDER');
+    expect(save().currentStorylet).toBeNull();
   });
 
   it('turns a corrupted result into a choice with opposite consequences', async () => {
@@ -182,6 +207,32 @@ describe('opening narrative', () => {
 
     random.mockRestore();
   });
+
+  it('guarantees an anomaly by the final task when random rolls never produce one', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    render(<App />);
+    await runOrientation("IT'S FINE");
+
+    // Orientation records task 1. File clean results through task 49.
+    for (let i = 0; i < 48; i++) {
+      await click('EXECUTE TASK');
+      await tick(1200);
+      expect(button('LOG THE DISCREPANCY')).toBeUndefined();
+      await click('ACKNOWLEDGE RESULT');
+      await tick(100);
+    }
+
+    expect(save().tasksCompleted).toBe(49);
+    expect(save().anomaliesSeenThisShift).toBe(0);
+    await click('EXECUTE TASK');
+    await tick(1200);
+    expect(button('LOG THE DISCREPANCY')).toBeDefined();
+    await click('FILE AS CLEAN');
+    await tick(100);
+    expect(save().anomaliesSeenThisShift).toBe(1);
+
+    random.mockRestore();
+  }, 60000);
 
   it('runs a full shift without ever hitting a ceiling', async () => {
     render(<App />);

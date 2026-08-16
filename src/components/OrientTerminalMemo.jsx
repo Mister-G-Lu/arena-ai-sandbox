@@ -1,22 +1,19 @@
 import React from 'react';
 
-const MEMO_CONTENT = `Operator.
-
-Your name appeared on the overnight roster this morning.
-It has been there for <em>some time</em>.
-
-Do not be concerned. This is normal.
-New operators are always on the roster before they apply.
-The paperwork arrives in the correct order.
-It has <em>always</em> arrived in the correct order.
-
-Your station is assigned. Your shift begins at 01:00.
-The coffee in the break room is already warm.
-You did not turn it on. <span class="warn">This is fine.</span>
-
-Proceed to your station.
-
-<span class="dim">— M.</span>`;
+function MemoCopy() {
+  return (
+    <div className="orient-content">
+      {'Operator.\n\nYour name appeared on the overnight roster this morning.\nIt has been there for '}
+      <em>some time</em>
+      {'.\n\nDo not be concerned. This is normal.\nNew operators are always on the roster before they apply.\nThe paperwork arrives in the correct order.\nIt has '}
+      <em>always</em>
+      {' arrived in the correct order.\n\nYour station is assigned. Your shift begins at 01:00.\nThe coffee in the break room is already warm.\nYou did not turn it on. '}
+      <span className="warn">This is fine.</span>
+      {'\n\nProceed to your station.\n\n'}
+      <span className="dim">— M.</span>
+    </div>
+  );
+}
 
 export default function OrientTerminalMemo({ onComplete }) {
   return (
@@ -30,7 +27,7 @@ export default function OrientTerminalMemo({ onComplete }) {
         <div className="orient-stage">
           <div className="orient-header">FROM: M. — RE: YOUR FIRST SHIFT</div>
           <div className="orient-divider">────────────────────────────────────────</div>
-          <div className="orient-content" dangerouslySetInnerHTML={{ __html: MEMO_CONTENT }} />
+          <MemoCopy />
           <button className="btn btn-primary" onClick={onComplete}>
             ▸ PROCEED TO STATION
           </button>

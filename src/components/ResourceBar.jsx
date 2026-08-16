@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameState } from '../context/GameStateContext';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 import './ResourceBar.css';
 
 export default function ResourceBar() {
@@ -69,7 +70,7 @@ export default function ResourceBar() {
           <span className="resource-icon">▸</span>
           <div className="resource-info">
             <span className="resource-label">Tasks</span>
-            <span className="resource-value">{tasksCompleted}/50</span>
+            <span className="resource-value">{tasksCompleted}/{TASKS_PER_SHIFT}</span>
           </div>
         </div>
 

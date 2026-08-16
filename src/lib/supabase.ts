@@ -1,38 +1,34 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
+import { SUPABASE_CONFIG } from './config';
 
 let cached: SupabaseClient | null = null;
 
-function testStub(): SupabaseClient {
-  return {
-    auth: {
-      getSession: async () => ({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
-      signInWithOtp: async () => ({ error: null }),
-      signOut: async () => ({ error: null }),
-    },
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
-      upsert: async () => ({ error: null }),
-      delete: () => ({ eq: async () => ({ error: null }) }),
-    }),
-  } as unknown as SupabaseClient;
+export class SupabaseConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SupabaseConfigurationError';
+  }
+}
+
+export function isSupabaseConfigured(): boolean {
+  return cached != null || SUPABASE_CONFIG.enabled;
 }
 
 export function getSupabase(): SupabaseClient {
-  if (!cached) {
-    if (import.meta.env.MODE === 'test') {
-      cached = testStub();
-    } else {
-      cached = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-        },
-      });
-    }
+  if (cached) return cached;
+  if (!SUPABASE_CONFIG.enabled) {
+    throw new SupabaseConfigurationError(
+      SUPABASE_CONFIG.error ??
+        'Cloud saves are disabled. Configure the two VITE_SUPABASE_* variables.',
+    );
   }
+  cached = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.publishableKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
   return cached;
 }
 

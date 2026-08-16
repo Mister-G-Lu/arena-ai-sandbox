@@ -9,6 +9,7 @@ You are the night operator at Meridian Central Dispatch. Fifty tasks a shift. At
 - **Design docs:** [`design/`](design/) — core design bible and drafts (⚠ full spoilers)
 - **Narration system:** [`NARRATION_SETS.md`](NARRATION_SETS.md) — all story text with critical lines marked for polish
 - **Latest review:** [`design/adversarial-review-01.md`](design/adversarial-review-01.md) — integration pass on the opening narrative, and what the current PR fixes
+- **Developer handoff:** [`DEVELOPMENT.md`](DEVELOPMENT.md) — canonical save, Supabase config, content safety, tests, and deployment
 
 ## Architecture
 
@@ -56,6 +57,14 @@ src/
   validated at load. Adding a card or a zone is not a code change.
 - **There are no caps that the fiction doesn't justify.** Credits are limited
   only by a 32-bit word, and reaching it is a reward (see P2a in the design bible).
+- **There is one operator file.** Local persistence, file import/export, and
+  Supabase all use the versioned schema in `src/lib/gameSave.ts`. New persisted
+  fields extend that schema; they do not create a second storage key or partial
+  cloud payload.
+- **Content is text, not HTML.** JSON, saves, Supabase rows, URL data, and future
+  translations render through React interpolation. Rich local copy is JSX or a
+  structured allowlist. Never pass content strings to `dangerouslySetInnerHTML`,
+  `innerHTML`, or `eval`. See [`DEVELOPMENT.md`](DEVELOPMENT.md#content-safety).
 
 ## Local dev
 
@@ -71,8 +80,8 @@ Build for production (outputs to `docs/` for GitHub Pages):
 npm run build
 ```
 
-Run the test suite (208 tests — unit rules + a full integration click-through of
-the opening narrative):
+Run the test suite (unit rules, save/cloud validation, content safety, and full
+integration click-throughs of the opening narrative):
 ```bash
 npm test
 ```
@@ -107,7 +116,10 @@ npm test
 - Notices: storylet zones driven by validated JSON content
 - Floor 12 expedition — the first Component (NULL KEY)
 - Two-step task confirmation (execute → confirm)
-- State persistence across sessions, with migration for legacy capped saves
+- One validated, versioned operator file for local saves, import/export, and Supabase sync
+- Conflict-safe cloud restore with migration and recovery backups for legacy/corrupt files
+- Guaranteed anomaly by the final task when random rolls produce none
+- Whole-graph storylet validation (IDs, transitions, entries, and effect names)
 
 **Narration System:**
 - All narration text written (2,650+ words)
@@ -168,10 +180,10 @@ npm test
    - Narration voiceover (optional, text-to-speech or recorded)
    - Death transition sound effects
 
-6. **Save/Load System** (est. 2-3 hours)
-   - ~~Persist game state to localStorage~~ (done)
-   - Add save/load UI
-   - ~~Handle state migration for future updates~~ (done for the retired credit cap)
+6. **Save/Load System**
+   - ~~Persist and validate one versioned local operator file~~
+   - ~~Add import/export and Supabase cloud-sync UI~~
+   - ~~Handle migration, backup, recovery, and local/cloud conflicts~~
 
 **Low Priority:**
 
@@ -191,10 +203,10 @@ npm test
    - Create component usage guide
    - Document state management patterns
 
-10. **Deployment & CI/CD** (est. 1-2 hours)
-    - Set up GitHub Actions for automated builds
-    - Configure deployment to GitHub Pages
-    - Add build validation checks
+10. **Deployment & CI/CD**
+    - ~~Run typecheck, lint, coverage, and build gates in GitHub Actions~~
+    - ~~Build and deploy GitHub Pages from source~~
+    - Configure the repository's Pages source as **GitHub Actions** once after merge
 
 ## Estimated Remaining Work
 

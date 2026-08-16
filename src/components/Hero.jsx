@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
 
 const SECTORS = [
   { id: 1, status: 'NOMINAL', signal: 'Street grid synchronized.' },
@@ -32,7 +33,7 @@ const BULLETINS = [
 ];
 
 const DIRECTIVES = [
-  ['QUOTA', '50/50', 'Every result must be acknowledged.'],
+  ['QUOTA', `${TASKS_PER_SHIFT}/${TASKS_PER_SHIFT}`, 'Every result must be acknowledged.'],
   ['ROSTER', 'CONFIRMED', 'Your entry predates your application.'],
   ['COFFEE', 'WARM', 'Preparation timestamp unavailable.'],
   ['ATTENDANCE', '100.0%', 'The record cannot be broken.']

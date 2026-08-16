@@ -3,6 +3,8 @@ import { useGameState } from '../context/GameStateContext';
 import { QUALITY_DEFS, visibleQualityDefs, attentionTone } from '../game/qualities';
 import { requirementLabel, missingRequirements } from '../game/progression';
 import { GLITCH_DEFS } from '../game/glitches';
+import { TASKS_PER_SHIFT } from '../game/dispatch';
+import SaveManagement from './SaveManagement';
 import './ProfilePage.css';
 
 /** Quality unlock captions, keyed by quality and threshold. Data, not markup. */
@@ -65,7 +67,7 @@ export default function ProfilePage() {
               </div>
               <div className="info-item">
                 <span className="info-label">Tasks This Shift:</span>
-                <span className="info-value">{tasksCompleted} / 50</span>
+                <span className="info-value">{tasksCompleted} / {TASKS_PER_SHIFT}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Deaths:</span>
@@ -313,6 +315,8 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        <SaveManagement />
 
         {/* Actions */}
         <div className="profile-actions">

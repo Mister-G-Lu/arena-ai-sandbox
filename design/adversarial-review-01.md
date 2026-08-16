@@ -100,7 +100,7 @@ the other.
 | A6 | A corrupted result is now a **decision**, not an animation. It stays wrong until the operator files it. Logging the discrepancy keeps the corrupt line in the log *and* in the logbook. |
 | B1, B2, B3 | The cap is gone (`src/game/ledger.ts`). The only ceiling is the machine's 32-bit word — and breaking it is a reward, not an error (below). |
 | C1, C2, C3 | Partially: notices give the shift a second texture and the profile now only promises what the data can deliver. Shift-end beats remain open (see below). |
-| D1, D2, D3 | Shadowed, unrenderable duplicates (`App.tsx`, `main.tsx`, `Hero.tsx`, `Footer.tsx`, `App.test.tsx`) retired; test tooling restored; `npm test` runs 208 tests green. The remaining TS modules are now **reused by the live app**, not orphaned. |
+| D1, D2, D3 | Shadowed shells were retired. The later canonical-save pass removed the remaining parallel action/shift/save runtime entirely; Supabase, local persistence, and import/export now share `src/lib/gameSave.ts`. Test count is intentionally not frozen here; `npm run check` is the source of truth. |
 
 ## The Overflow glitch (new canon)
 

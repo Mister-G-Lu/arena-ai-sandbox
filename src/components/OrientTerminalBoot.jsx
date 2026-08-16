@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
 const BOOT_LINES = [
-  '> MERIDIAN CENTRAL DISPATCH',
-  '> TERMINAL v0.41.312',
-  '> ──────────────────────────────',
-  '> HARDWARE CHECK ........... <em>OK</em>',
-  '> NETWORK LINK ............. <em>ESTABLISHED</em>',
-  '> ROSTER SYNC .............. <em>1 OPERATOR PENDING</em>',
-  '> SHIFT WINDOW ............ 01:00–06:00',
-  '> COFFEE STATUS ........... <em>WARM</em>',
-  '> MEMORY INTEGRITY ......... <em>UNVERIFIED</em>',
-  '> ──────────────────────────────',
-  '> LOADING ORIENTATION PROTOCOL...',
+  <>&gt; MERIDIAN CENTRAL DISPATCH</>,
+  <>&gt; TERMINAL v0.41.312</>,
+  <>&gt; ──────────────────────────────</>,
+  <>&gt; HARDWARE CHECK ........... <em>OK</em></>,
+  <>&gt; NETWORK LINK ............. <em>ESTABLISHED</em></>,
+  <>&gt; ROSTER SYNC .............. <em>1 OPERATOR PENDING</em></>,
+  <>&gt; SHIFT WINDOW ............ 01:00–06:00</>,
+  <>&gt; COFFEE STATUS ........... <em>WARM</em></>,
+  <>&gt; MEMORY INTEGRITY ......... <em>UNVERIFIED</em></>,
+  <>&gt; ──────────────────────────────</>,
+  <>&gt; LOADING ORIENTATION PROTOCOL...</>,
 ];
 
 export default function OrientTerminalBoot({ onComplete }) {
@@ -41,7 +41,7 @@ export default function OrientTerminalBoot({ onComplete }) {
       <div className="orient-screen">
         <div className="boot-sequence">
           {bootLines.map((line, i) => (
-            <div key={i} className="boot-line" dangerouslySetInnerHTML={{ __html: line }} />
+            <div key={i} className="boot-line">{line}</div>
           ))}
         </div>
 
