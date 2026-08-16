@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import OrientTerminalBoot from './OrientTerminalBoot';
 import OrientTerminalMemo from './OrientTerminalMemo';
+import OrientTerminalVista from './OrientTerminalVista';
 import OrientTerminalStation from './OrientTerminalStation';
 import OrientTerminalBreakRoom from './OrientTerminalBreakRoom';
 import OrientTerminalTask from './OrientTerminalTask';
@@ -124,7 +125,11 @@ export default function FirstShift() {
           )}
 
           {stage === 'memo' && (
-            <OrientTerminalMemo onComplete={() => transitionTo('station')} />
+            <OrientTerminalMemo onComplete={() => transitionTo('vista')} />
+          )}
+
+          {stage === 'vista' && (
+            <OrientTerminalVista onComplete={() => transitionTo('station')} />
           )}
 
           {stage === 'station' && (

@@ -71,6 +71,14 @@ async function runOrientation(answer: string) {
   await tick(400);
   await click('PROCEED TO STATION');
   await tick(400);
+  // The vista interlude — the neon skyline before the desk.
+  if (button('ACKNOWLEDGE — RETURN TO CONSOLE')) {
+    // The vista is the visual counterweight to the short/boring tasks: hoverlanes, cutters, drones.
+    expect(document.body.textContent).toContain('neon city skylines');
+    expect(document.body.textContent).toContain('hovercars');
+    await click('ACKNOWLEDGE — RETURN TO CONSOLE');
+    await tick(400);
+  }
   await click('CHECK THE BREAK ROOM');
   await tick(400);
   await click(answer);

@@ -135,6 +135,25 @@ const CORRUPT = [
   '▓▓ ATTENDANCE ██ 100% ██ it was 100% before you were hired ▓▓'
 ];
 
+/** What the window shows while you file — the city you never touch. Rotates with time and tasks so the outside feels alive while the queue feels identical. */
+const WINDOW_VISTAS = [
+  'Hoverlanes hum thirty stories up — six cars cut the limit at once, their taillights smearing amber across wet Sector 4. You initial a form.',
+  'A police cutter holds altitude over the annex, searchlight painting floor 11 amber, lingering on the blank where 12 should be. You verify a light.',
+  'Delivery drones stitch the dark between towers, quiet as paper. One manifest lists only STATIONERY in a hand that tried too hard.',
+  'Neon rain. The city throws itself back at its own windows until you can’t tell which lights are real. The log says CLEAR.',
+  'Through the glass: the rooftop array blinks once. The system says nominal. The blink says otherwise.',
+  'Far out over Sector 9, a single set of tail-lights holds at the map’s edge — VANTABLACK, waiting for a name you haven’t said yet.',
+  'The towers breathe. Thirty floors of wet glass inhaling amber, exhaling teal. On your screen: 0.00% variance.',
+  'A drone convoy threads the gap between the municipal spires at 180 kph, obedient and bright. Below, a streetlight you cleared flickers and holds.',
+  'Meridian at 02:47 — a cutter’s wail dopplers down the canyon between buildings and is answered by nothing. The coffee stays warm.',
+];
+
+/** Deterministic vista for a given shift moment — no extra state, just atmosphere that ticks forward. */
+function vistaForMoment({ day, tasksThisShift, minutes }) {
+  const idx = (tasksThisShift + day * 3 + Math.floor(minutes / 40)) % WINDOW_VISTAS.length;
+  return WINDOW_VISTAS[idx];
+}
+
 function formatTime(mins) {
   const hours = Math.floor(mins / 60) % 24;
   const minutes = mins % 60;
@@ -310,13 +329,17 @@ export default function Console() {
         ? 'QUOTA MET'
         : 'LINKED';
 
+  const windowVista = vistaForMoment({ day: state.day, tasksThisShift: state.tasksThisShift, minutes });
+
   return (
     <section className="section page active">
       <div className="wrap">
         <h2>OPERATOR CONSOLE</h2>
         <p className="section-lede">
-          The live queue begins where orientation ended. Read the work order, execute it,
-          then acknowledge the result before Dispatch releases the next task.
+          The live queue begins where orientation ended. Outside, the neon lanes keep moving. In here, you authorize them to have moved — one work order, one stamp, fifty times.
+        </p>
+        <p className="fine console-vista-lede">
+          The window is still there. Use it. The city you dispatch is not the list you file.
         </p>
 
         <div className="console" aria-busy={phase === 'processing'}>
@@ -350,6 +373,12 @@ export default function Console() {
                       : 'CLEAR UNTIL 06:00'}
               </span>
             </div>
+          </div>
+
+          <div className="console-vista" aria-live="polite" aria-label="Window view">
+            <span className="console-vista-kicker">WINDOW // EXTERNAL FEED — {formatTime(minutes)}</span>
+            <p className="console-vista-text">{windowVista}</p>
+            <span className="console-vista-rule">You are not outside. You are at the desk that says outside is CLEAR.</span>
           </div>
 
           {annexOrderPending && (
@@ -478,9 +507,10 @@ export default function Console() {
 
             {phase === 'ready' && shiftComplete && (
               <div className="task-card task-card-complete">
-                <div className="task-kicker">SHIFT RECORD CLOSED // 06:00</div>
+                <div className="task-kicker">SHIFT RECORD CLOSED // 06:00 — THE CITY EXHALES</div>
                 <div className="task-title">THE NIGHT IS SPENT</div>
-                <p>The city has accepted your work. The coffee in the break room is still warm.</p>
+                <p>Outside, the hoverlanes thin to a single amber thread. The cutters are gone. The drones have stopped stitching the dark. Meridian holds its breath for the hour nobody sees.</p>
+                <p className="dim">The city has accepted your work. The coffee in the break room is still warm. It was warm before the building — you know that now, but the log does not.</p>
               </div>
             )}
           </div>

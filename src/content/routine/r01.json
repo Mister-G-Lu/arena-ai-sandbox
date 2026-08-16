@@ -2,13 +2,13 @@
   "id": "routine-01",
   "zone": "routine",
   "title": "Building 7, basement light",
-  "body": "Work order, timestamp 02:14:07, coffee stain in the corner. Third report this week. There is no Building 7 on the map. The stain is still wet.",
+  "body": "Work order, timestamp 02:14:07, coffee stain in the corner. Third report this week. There is no Building 7 on the map, but the window shows its roof where no roof should be — a flat dark square catching neon that has no business reaching it. The stain is still wet.",
   "choices": [
     {
       "id": "file",
       "label": "File it. There is no Building 7.",
       "outcome": {
-        "text": "The system replies, instantly: the ticket does not exist. It is in your hand.",
+        "text": "The system replies, instantly: the ticket does not exist. It is in your hand. Outside, the dark square catches another slow sweep of amber and pretends it was never there.",
         "qualities": { "Routine": 1, "Salary": 2 }
       },
       "endZone": true
@@ -17,7 +17,7 @@
       "id": "cross",
       "label": "Cross-reference the address.",
       "outcome": {
-        "text": "The annex directory has a gap between 6 and 8. Someone has erased a line. The paper is thinner there.",
+        "text": "The annex directory has a gap between 6 and 8. Someone has erased a line. The paper is thinner there — the same thinness as the light on that roof when the cutter passes.",
         "qualities": { "Perception": 1, "Attention": 1 }
       },
       "endZone": true

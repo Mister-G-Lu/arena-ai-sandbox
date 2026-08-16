@@ -11,12 +11,14 @@ const BOARD_COPY = {
   notices: {
     title: 'NOTICES',
     lede: 'Work that Dispatch did not assign. Everything here is optional, which is how the system knows who is only pretending to be tired.',
+    vista: 'Through the office window, the hoverlanes keep their amber river whether you notice or not. The notices are what you notice instead of them.',
     empty: 'Nothing is posted tonight. Notices appear for operators who have started noticing. Keep working. Or do not — the difference is the point.',
     footer: '// NOTICES ARE NEVER REQUIRED. THE SYSTEM PREFERS OPERATORS WHO WORK.'
   },
   investigations: {
     title: 'INVESTIGATIONS',
     lede: 'Cases that exist because the official result did not. Clearance changes what the terminal admits; management would prefer that you call this coincidence.',
+    vista: 'The elevator still sits where you left it — Floor 11, display steady, one blank warmth where it shouldn’t be. The investigation is a door you have to keep choosing to open.',
     empty: 'No open cases. This is the expected result. M. would like you to stop checking.',
     footer: '// INVESTIGATION IS OUTSIDE YOUR JOB DESCRIPTION. THIS HAS NOT STOPPED YOU.'
   }
@@ -110,6 +112,12 @@ export default function Notices({ board = 'notices' }) {
       <div className="wrap">
         <h2>{copy.title}</h2>
         <p className="section-lede">{copy.lede}</p>
+        {copy.vista && (
+          <div className="board-vista">
+            <span className="board-vista-kicker">// VISUAL // {board === 'investigations' ? 'OUT-OF-RANGE' : 'DESK WINDOW'}</span>
+            <p>{copy.vista}</p>
+          </div>
+        )}
 
         {loadError && (
           <div className="console notice-error">
