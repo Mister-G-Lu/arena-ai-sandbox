@@ -1,8 +1,38 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
+import { taskPayout } from '../game/payouts';
+import { describeEffects } from '../game/qualities';
 
 const MAX_TASKS = 50;
-const TASK_REWARD = 10;
+
+/**
+ * Consequence table for filing a result. Data, not branches: every filing verb
+ * carries its own effects, payout rule and residue line, so adding a verb (or a
+ * third way to file, later) is an entry here.
+ */
+const FILINGS = {
+  clean: {
+    id: 'clean',
+    label: '✓ ACKNOWLEDGE RESULT',
+    effects: null,
+    logbook: null
+  },
+  'file-clean': {
+    id: 'file-clean',
+    label: '✓ FILE AS CLEAN',
+    hint: 'The system will correct the record and pay the reading it took. Nothing further is required of you.',
+    effects: { Routine: 1 },
+    logbook: null
+  },
+  discrepancy: {
+    id: 'discrepancy',
+    label: '⚠ LOG THE DISCREPANCY',
+    hint: 'The line stays in the log exactly as it arrived. Unreconciled work is unbilled work. The system will notice that you noticed.',
+    effects: { Doubt: 1, Attention: 1 },
+    logbook: (task) => `Day-log, ${task.timestamp} — ${task.code} returned: "${task.displayedResult}" ` +
+      'I did not correct it. Ink does not forget.'
+  }
+};
 
 const TASK_ORDERS = [
   {
@@ -136,7 +166,6 @@ export default function Console() {
   });
   const logRef = useRef(null);
   const processingTimer = useRef(null);
-  const correctionTimer = useRef(null);
 
   const tasksRemaining = Math.max(0, MAX_TASKS - state.tasksCompleted);
   const minutes = Math.min(60 + state.tasksCompleted * 6, 360);
@@ -149,10 +178,7 @@ export default function Console() {
     }
   }, [logs, phase]);
 
-  useEffect(() => () => {
-    window.clearTimeout(processingTimer.current);
-    window.clearTimeout(correctionTimer.current);
-  }, []);
+  useEffect(() => () => window.clearTimeout(processingTimer.current), []);
 
   function executeTask() {
     if (phase !== 'ready' || shiftComplete) return;
@@ -183,25 +209,51 @@ export default function Console() {
         text: task.displayedResult,
         type: task.isCorrupt ? 'corrupt' : ''
       }]);
-      actions.completeTask();
-      actions.addCredits(TASK_REWARD);
       setPhase('result');
-
-      if (task.isCorrupt) {
-        correctionTimer.current = window.setTimeout(() => {
-          setPendingTask(prev => prev?.logId === logId
-            ? { ...prev, displayedResult: prev.cleanResult, isCorrupt: false }
-            : prev);
-          setLogs(prev => prev.map(entry => entry.id === logId
-            ? { ...entry, text: task.cleanResult, type: '' }
-            : entry));
-        }, reducedMotion ? 0 : 950);
-      }
+      // A corrupted result is NOT silently smoothed over any more. The record
+      // stays wrong until the operator decides what to do with it — that
+      // decision is the game.
     }, reducedMotion ? 100 : 900);
   }
 
-  function acknowledgeResult() {
+  /**
+   * File the pending result. `verb` is a key of FILINGS; everything else is
+   * derived from data so the console never hardcodes a reward or a quality.
+   */
+  function fileResult(verb) {
     if (phase !== 'result' || !pendingTask) return;
+    const filing = FILINGS[verb] ?? FILINGS.clean;
+    const filedClean = verb !== 'discrepancy';
+
+    const payout = taskPayout({
+      tier: state.promotion.tier,
+      corrupted: pendingTask.isCorrupt,
+      filedClean,
+      resultText: pendingTask.displayedResult
+    });
+
+    actions.fileTaskResult({
+      effects: filing.effects,
+      payout: payout.amount,
+      discrepancy: verb === 'discrepancy',
+      logbookEntry: typeof filing.logbook === 'function' ? filing.logbook(pendingTask) : filing.logbook
+    });
+
+    if (pendingTask.isCorrupt && filedClean) {
+      // The system smooths its own error over — but only once you sign off.
+      setLogs(prev => prev.map(entry => entry.id === pendingTask.logId
+        ? { ...entry, text: pendingTask.cleanResult, type: 'corrected' }
+        : entry));
+    }
+
+    if (payout.anomalous) {
+      setLogs(prev => [...prev, {
+        id: `${pendingTask.logId}-payroll`,
+        timestamp: pendingTask.timestamp,
+        type: 'system',
+        text: `PAYROLL // +¤${payout.amount.toLocaleString()} — amount read from field. Field was damaged. Amount was paid.`
+      }]);
+    }
 
     if (pendingTask.taskNumber === MAX_TASKS) {
       setLogs(prev => [...prev, {
@@ -219,7 +271,6 @@ export default function Console() {
 
   function nextShift() {
     window.clearTimeout(processingTimer.current);
-    window.clearTimeout(correctionTimer.current);
     actions.incrementDay();
     setPendingTask(null);
     setPhase('ready');
@@ -227,7 +278,7 @@ export default function Console() {
       id: `day-${state.day + 1}-initialized`,
       timestamp: '01:00',
       type: 'system',
-      text: 'SHIFT INITIALIZED // COFFEE: WARM // QUOTA: 50 // LIVE QUEUE OPEN.'
+      text: `SHIFT INITIALIZED // COFFEE: WARM // QUOTA: ${MAX_TASKS} // LIVE QUEUE OPEN.`
     }]);
   }
 
@@ -311,16 +362,51 @@ export default function Console() {
 
             {phase === 'result' && pendingTask && (
               <div className="task-card task-card-result">
-                <div className="task-kicker">RESULT RECEIVED // ACKNOWLEDGMENT REQUIRED</div>
+                <div className="task-kicker">
+                  {pendingTask.isCorrupt
+                    ? 'RESULT RECEIVED // RECORD DOES NOT RECONCILE'
+                    : 'RESULT RECEIVED // ACKNOWLEDGMENT REQUIRED'}
+                </div>
                 <div className="task-title">{pendingTask.code} // {pendingTask.title}</div>
                 <p className={pendingTask.isCorrupt ? 'task-result corrupt' : 'task-result'}>
                   {pendingTask.displayedResult}
                 </p>
-                <div className="task-reward">
-                  <span>RECORD UPDATED</span>
-                  <span>+¤{TASK_REWARD} CREDITS</span>
-                  <span>{MAX_TASKS - pendingTask.taskNumber} REMAINING</span>
-                </div>
+                {pendingTask.isCorrupt ? (
+                  <div className="task-decision">
+                    <p className="task-decision-lede">
+                      The returned record does not match the work order. Dispatch is waiting for
+                      you to decide what happened.
+                    </p>
+                    {['file-clean', 'discrepancy'].map((verb) => {
+                      const filing = FILINGS[verb];
+                      const preview = taskPayout({
+                        tier: state.promotion.tier,
+                        corrupted: true,
+                        filedClean: verb !== 'discrepancy',
+                        resultText: pendingTask.displayedResult
+                      });
+                      const consequences = describeEffects(filing.effects);
+                      return (
+                        <div key={verb} className="task-decision-option">
+                          <span className="task-decision-label">{filing.label}</span>
+                          <span className="task-decision-hint">{filing.hint}</span>
+                          <span className="task-decision-cost">
+                            {preview.amount > 0 ? `+¤${preview.amount.toLocaleString()}` : 'NO PAYMENT'}
+                            {consequences ? ` · ${consequences}` : ''}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="task-reward">
+                    <span>RECORD UPDATED</span>
+                    <span>
+                      +¤{taskPayout({ tier: state.promotion.tier }).amount.toLocaleString()} CREDITS
+                    </span>
+                    <span>{MAX_TASKS - pendingTask.taskNumber} REMAINING</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -344,10 +430,30 @@ export default function Console() {
                 PROCESSING — QUEUE LOCKED
               </button>
             )}
-            {phase === 'result' && (
-              <button className="btn btn-primary acknowledge-button" onClick={acknowledgeResult} autoFocus>
-                ✓ ACKNOWLEDGE RESULT
+            {phase === 'result' && !pendingTask?.isCorrupt && (
+              <button
+                className="btn btn-primary acknowledge-button"
+                onClick={() => fileResult('clean')}
+                autoFocus
+              >
+                {FILINGS.clean.label}
               </button>
+            )}
+            {phase === 'result' && pendingTask?.isCorrupt && (
+              <>
+                <button
+                  className="btn btn-primary acknowledge-button"
+                  onClick={() => fileResult('file-clean')}
+                >
+                  {FILINGS['file-clean'].label}
+                </button>
+                <button
+                  className="btn btn-ghost acknowledge-button"
+                  onClick={() => fileResult('discrepancy')}
+                >
+                  {FILINGS.discrepancy.label}
+                </button>
+              </>
             )}
             {phase === 'ready' && shiftComplete && (
               <button className="btn btn-primary" onClick={nextShift}>
@@ -356,8 +462,14 @@ export default function Console() {
             )}
             <span className="console-action-note">
               {phase === 'result'
-                ? 'The next work order will remain sealed until you confirm this record.'
-                : `${state.tasksCompleted}/${MAX_TASKS} results logged this shift.`}
+                ? pendingTask?.isCorrupt
+                  ? 'Two ways to close this record. Only one of them is honest. Both are permitted.'
+                  : 'The next work order will remain sealed until you confirm this record.'
+                : `${state.tasksCompleted}/${MAX_TASKS} results logged this shift.${
+                    state.discrepanciesLogged > 0
+                      ? ` ${state.discrepanciesLogged} discrepancies on your record.`
+                      : ''
+                  }`}
             </span>
           </div>
         </div>
