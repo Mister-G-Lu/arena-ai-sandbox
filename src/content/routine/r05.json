@@ -1,0 +1,26 @@
+{
+  "id": "routine-05",
+  "zone": "routine",
+  "title": "VANTABLACK",
+  "body": "Roll call. VANTABLACK again — or is it VANTABLUE tonight? The letters on the sheet have been written over. The radio is waiting.",
+  "choices": [
+    {
+      "id": "copy",
+      "label": "Copy. Keep it moving.",
+      "outcome": {
+        "text": "\"Copy.\" He does not say all clear. He does not say anything else.",
+        "qualities": { "Routine": 1, "Salary": 1 }
+      },
+      "endZone": true
+    },
+    {
+      "id": "name",
+      "label": "Use the name on the sheet, whatever it is.",
+      "outcome": {
+        "text": "You say it. He laughs, once, like a man who has heard his own eulogy. \"Again, Operator?\"",
+        "qualities": { "Doubt": 1, "Perception": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

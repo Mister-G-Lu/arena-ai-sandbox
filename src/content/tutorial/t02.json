@@ -1,0 +1,26 @@
+{
+  "id": "tutorial-02",
+  "zone": "tutorial",
+  "title": "Nightly roll call",
+  "body": "The radio crackles on schedule. Drivers check in. Most of the names you expected. One you did not: VANTABLACK, Sector 9. There is no Sector 9 on the route sheet.",
+  "choices": [
+    {
+      "id": "copy",
+      "label": "Answer: copy, all clear.",
+      "outcome": {
+        "text": "\"Copy.\" Static. Then nothing. The sheet still has no Sector 9. You file it under flavor.",
+        "qualities": { "Routine": 1 }
+      },
+      "next": "tutorial-03"
+    },
+    {
+      "id": "ask",
+      "label": "Ask about Sector 9.",
+      "outcome": {
+        "text": "Eleven seconds of silence. Then: \"There is no Sector 9, Operator. We're in Sector 9.\" The radio courtesy-clicks off.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "next": "tutorial-03"
+    }
+  ]
+}

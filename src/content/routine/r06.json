@@ -1,0 +1,17 @@
+{
+  "id": "routine-06",
+  "zone": "routine",
+  "title": "File the backlog",
+  "body": "A stack of tickets that are all the same ticket. The system likes it when you file them. The system pays you when you file them. The coffee is still warm.",
+  "choices": [
+    {
+      "id": "file",
+      "label": "File the backlog. Get paid.",
+      "outcome": {
+        "text": "Salary posted. Attention cools a degree you cannot see. The stack is the same height as when you started.",
+        "qualities": { "Salary": 5, "Routine": 1, "Attention": -1 }
+      },
+      "endZone": true
+    }
+  ]
+}

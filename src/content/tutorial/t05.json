@@ -1,0 +1,26 @@
+{
+  "id": "tutorial-05",
+  "zone": "tutorial",
+  "title": "Day-crew note",
+  "body": "A sticky note on the monitor, in someone else's handwriting: \"The night operator seems... familiar.\" You have been here one shift.",
+  "choices": [
+    {
+      "id": "leave",
+      "label": "Leave it. Not your note.",
+      "outcome": {
+        "text": "You put a mug on it so it doesn't blow away. There is no draft.",
+        "qualities": { "Routine": 1 }
+      },
+      "next": "tutorial-06"
+    },
+    {
+      "id": "keep",
+      "label": "Peel it off. Keep it in the logbook.",
+      "outcome": {
+        "text": "The adhesive takes a little of the monitor with it. The logbook is heavier by one sentence.",
+        "qualities": { "Perception": 1 }
+      },
+      "next": "tutorial-06"
+    }
+  ]
+}
