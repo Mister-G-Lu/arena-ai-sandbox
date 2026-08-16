@@ -340,3 +340,21 @@ export function serializeSaveEnvelope(envelope: StoredSaveEnvelope): string {
 export function gameStateFingerprint(state: GameState | Record<string, unknown>): string {
   return JSON.stringify(encodeGameState(state));
 }
+
+/**
+ * Canonical comparison with the action tank's clock fields removed
+ * (`actions`, `actionsLastTick`; the `actionsUnbound` capability is kept).
+ *
+ * Those two fields move with the wall clock alone — offline regeneration
+ * changes them without anyone playing — so a byte-level fingerprint cannot
+ * tell "the clock ran" apart from "another device played". Every real
+ * play-through change also moves a non-clock field: a storylet spend marks
+ * the card seen, a filing moves the task counters, a purchase files a
+ * logbook line. Two files that differ only in the tank are therefore the
+ * same file read at different times, and sync should treat them as agreeing.
+ */
+export function clockIndependentFingerprint(state: GameState | Record<string, unknown>): string {
+  const stored = encodeGameState(state);
+  const { actions: _actions, actionsLastTick: _lastTick, ...rest } = stored;
+  return JSON.stringify(rest);
+}

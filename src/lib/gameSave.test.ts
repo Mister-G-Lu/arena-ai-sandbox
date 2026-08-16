@@ -8,6 +8,7 @@ import {
   GAME_SAVE_VERSION,
   MAX_SAVE_BYTES,
   SaveValidationError,
+  clockIndependentFingerprint,
   createInitialGameState,
   createStoredSaveEnvelope,
   encodeGameState,
@@ -233,5 +234,29 @@ describe('canonical game save', () => {
     };
     expect(gameStateFingerprint(state)).toBe(gameStateFingerprint(changedLabel));
     expect(ZONES.length).toBeGreaterThan(0);
+  });
+
+  it('clock-independent fingerprint: clock drift agrees, real play still differs', () => {
+    const saved = createInitialGameState();
+    saved.actions = 5;
+    saved.actionsLastTick = 1_700_000_000_000;
+
+    // The same file after a night of offline regen: identical in every
+    // meaningful field, moved only in the tank's clock arithmetic.
+    const nextMorning = {
+      ...saved,
+      actions: 50,
+      actionsLastTick: 1_700_000_600_000,
+    };
+    expect(gameStateFingerprint(saved)).not.toBe(gameStateFingerprint(nextMorning));
+    expect(clockIndependentFingerprint(saved)).toBe(clockIndependentFingerprint(nextMorning));
+
+    // The override flag is a capability, not a clock reading — it must differ.
+    const unbound = { ...nextMorning, actionsUnbound: true, devTouched: true };
+    expect(clockIndependentFingerprint(saved)).not.toBe(clockIndependentFingerprint(unbound));
+
+    // And a genuine play difference (one filed result) never hides in drift.
+    const played = { ...nextMorning, tasksCompleted: 1, actionsSpentThisShift: 1 };
+    expect(clockIndependentFingerprint(saved)).not.toBe(clockIndependentFingerprint(played));
   });
 });

@@ -144,6 +144,78 @@ describe('useCloudSave', () => {
     expect(client.__upsert).not.toHaveBeenCalled();
   });
 
+  it('treats offline regen at cold open as the same file, not a conflict', async () => {
+    // Records holds the file as of 23:00 with five actions in the tank...
+    const closedAtNight = createInitialGameState();
+    closedAtNight.actions = 5;
+    closedAtNight.actionsLastTick = Date.parse('2026-08-15T23:00:00Z');
+    closedAtNight.credits = 210;
+
+    // ...and this terminal reopens it in the morning, refilled by the clock.
+    // Only the tank's clock fields have moved; the play record is identical.
+    const reopened = {
+      ...closedAtNight,
+      actions: 50,
+      actionsLastTick: Date.parse('2026-08-16T07:00:00Z'),
+    };
+
+    const client = mockClient(
+      createStoredSaveEnvelope(closedAtNight, new Date('2026-08-15T23:00:00Z')),
+    );
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const { result } = renderHook(() =>
+      useCloudSave({ state: reopened, hadLocalSaveAtBoot: true, replaceState, debounceMs: 0 }),
+    );
+
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+    // No conflict, and the remote copy is never adopted over the local one.
+    expect(result.current.conflict).toBeNull();
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it('heals an in-session revision race caused only by another device\'s clock', async () => {
+    const initial = createInitialGameState();
+    initial.credits = 30;
+    const client = mockClient(createStoredSaveEnvelope(initial));
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useCloudSave({ state, hadLocalSaveAtBoot: true, replaceState, debounceMs: 0 }),
+      { initialProps: { state: initial } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+
+    // The other "device" is the same file, a few regen ticks later.
+    const drifted = {
+      ...initial,
+      actions: 40,
+      actionsLastTick: initial.actionsLastTick + 5 * 60 * 1000,
+    };
+    client.__setRemote(createStoredSaveEnvelope(drifted));
+    rerender({ state: { ...initial, credits: 31 } });
+
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+    expect(result.current.conflict).toBeNull();
+    // The clock-only race is abandoned, then the next write lands normally.
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it('still raises a conflict when non-clock fields genuinely diverge', async () => {
+    const initial = createInitialGameState();
+    const remote = { ...initial, credits: 999, day: 3 };
+    const client = mockClient(createStoredSaveEnvelope(remote));
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const local = { ...initial, actions: 20, actionsLastTick: initial.actionsLastTick + 10 };
+    const { result } = renderHook(() =>
+      useCloudSave({ state: local, hadLocalSaveAtBoot: true, replaceState }),
+    );
+    await waitFor(() => expect(result.current.status).toBe('conflict'));
+    expect(result.current.conflict?.game.credits).toBe(999);
+  });
+
   it('stops on a conflict and lets the player choose local or remote', async () => {
     const local = createInitialGameState();
     local.day = 2;
