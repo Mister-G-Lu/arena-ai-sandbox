@@ -615,6 +615,42 @@ describe('opening narrative', () => {
     expect(done.logbook.some((e: { text: string }) => e.text.includes('NULL KEY'))).toBe(true);
   }, 60000);
 
+  it('keeps M. checking in from Day 4 on, one ambient line per night', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 4;
+    state.zones = { 'annex-order': 'complete', 'handwritten-order': 'complete' };
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+    // Day 4 opens with the first ambient direct-channel line; the generic
+    // shift-open line rotates with the day rather than repeating verbatim.
+    expect(document.body.textContent).toContain('You are ahead of your paperwork');
+    expect(document.body.textContent).toContain('SHIFT INITIALIZED');
+  }, 60000);
+
+  it('keeps Days 1–3 free of the ambient M. lines their own asides replace', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 2;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+    // The Shift 2 annex aside is there; the Day 4+ rotation is not.
+    expect(document.body.textContent).toContain('OUT-OF-RANGE STOP: FLOOR 12');
+    expect(document.body.textContent).not.toContain('You are ahead of your paperwork');
+  }, 60000);
+
   it('guarantees a personal anomaly before task 10 from Shift 2 on', async () => {
     const state = createInitialGameState();
     state.orientation.completed = true;

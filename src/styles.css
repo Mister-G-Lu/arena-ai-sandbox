@@ -1035,6 +1035,18 @@ h2 {
 }
 .secondary-order .btn { flex: 0 0 auto; }
 
+/* M.'s nightly direct-channel check-in (Console, Day 4+) — the same voice
+   as the secondary-order asides, quieter, under the log. */
+.console-ambient {
+  margin: 12px 0 0;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 198, 107, 0.4);
+  color: var(--amber);
+  font-style: italic;
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
 .task-workflow {
   min-height: 198px;
   padding: 18px 20px;
