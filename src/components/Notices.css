@@ -142,12 +142,26 @@
 
 .storylet-choice-label { font-weight: 500; }
 
-.storylet-choice-effects {
+.storylet-choice-effects,
+.storylet-choice-danger {
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.12em;
+}
+
+.storylet-choice-effects {
   color: #57d6c3;
   opacity: 0.85;
+}
+
+.storylet-choice-death {
+  border-color: rgba(255, 91, 91, 0.7);
+  background: rgba(88, 10, 20, 0.2);
+}
+
+.storylet-choice-danger {
+  color: #ff7f86;
+  font-weight: 700;
 }
 
 .storylet-outcome-text {

@@ -86,7 +86,9 @@ Cloud sync is conservative:
 - malformed/obsolete remote file → stop and allow an explicit local overwrite.
 
 Every payload is validated again at the Supabase boundary. Do not upload raw
-React state directly.
+React state directly. `MAX_SAVE_BYTES` in `gameSave.ts` is the shared 1 MiB
+limit for imports, local/export serialization, cloud transport, and the
+`saves_payload_max_bytes` database constraint; change all of them together.
 
 ## Content and effects
 

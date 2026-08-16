@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { deposit, withdraw, formatCredits, wordPressure, CREDIT_LIMIT } from '../game/ledger';
-import { TASKS_PER_SHIFT } from '../game/dispatch';
+import { TASKS_PER_SHIFT, createPendingDispatch } from '../game/dispatch';
 import {
   ACTION_CAP,
   REGEN_INTERVAL_MS,
@@ -26,8 +26,10 @@ import {
 } from '../game/progression';
 import { SUPPLY_DEFS, supplyById, isPurchaseable } from '../game/shop';
 import {
+  GAME_SAVE_KEY,
   createInitialGameState,
   createStoredSaveEnvelope,
+  gameStateFingerprint,
   parseSaveJson,
   parseStoredSaveEnvelope,
   serializeSaveEnvelope
@@ -54,6 +56,16 @@ function commitTank(state, tank) {
     actionsLastTick: tank.lastTick,
     actionsUnbound: tank.unbound ?? state.actionsUnbound
   };
+}
+
+/**
+ * Bring a state loaded from any persistence boundary onto the local clock.
+ * `lastTick: 0` is the additive-schema sentinel for "not anchored yet", never
+ * permission to regenerate from the Unix epoch.
+ */
+function hydrateActionTank(state, now = Date.now()) {
+  const anchored = state.actionsLastTick > 0 ? state : { ...state, actionsLastTick: now };
+  return commitTank(anchored, accrue(tankOf(anchored), now));
 }
 
 /**
@@ -148,15 +160,7 @@ function commitLedger(prev, result) {
 
 export function GameStateProvider({ children }) {
   const [boot] = useState(() => loadLocalGameSave());
-  const [state, setState] = useState(() => {
-    // A save written before the tank existed (or a fresh file) has no anchor.
-    // Anchoring at boot rather than at the epoch stops the first read from
-    // accruing a full tank out of nothing.
-    const loaded = boot.state;
-    const now = Date.now();
-    const anchored = loaded.actionsLastTick > 0 ? loaded : { ...loaded, actionsLastTick: now };
-    return commitTank(anchored, accrue(tankOf(anchored), now));
-  });
+  const [state, setState] = useState(() => hydrateActionTank(boot.state));
   const [devMode] = useState(() => detectDevMode());
   // Re-renders the HUD countdown once a second. State itself accrues lazily on
   // read, so this timer is presentation only — nothing depends on it firing.
@@ -166,9 +170,14 @@ export function GameStateProvider({ children }) {
     error: null,
     recoveryError: boot.error,
     lastSavedAt: boot.envelope?.savedAt ?? null,
-    hadLocalSaveAtBoot: boot.hadLocalSave
+    hadLocalSaveAtBoot: boot.hadLocalSave,
+    tabConflict: null
   }));
   const firstPersistence = useRef(true);
+  const stateRef = useRef(state);
+  const localWritesBlocked = useRef(false);
+  const skipNextPersistence = useRef(false);
+  stateRef.current = state;
   /**
    * Bumped whenever a whole new operator file is loaded (file import). Cloud
    * sync re-runs its Records check with autosave disarmed first, so an import
@@ -178,12 +187,52 @@ export function GameStateProvider({ children }) {
   const [cloudRecheck, setCloudRecheck] = useState(0);
 
   useEffect(() => {
+    function onStorage(event) {
+      if (event.key !== GAME_SAVE_KEY || event.newValue == null) return;
+      try {
+        const incoming = parseSaveJson(event.newValue);
+        if (gameStateFingerprint(incoming.game) === gameStateFingerprint(stateRef.current)) {
+          setPersistence(prev => ({ ...prev, lastSavedAt: incoming.savedAt }));
+          return;
+        }
+        localWritesBlocked.current = true;
+        setPersistence(prev => ({
+          ...prev,
+          status: 'conflict',
+          error: 'Another tab changed this operator file. Choose a terminal before local saving continues.',
+          tabConflict: incoming
+        }));
+      } catch (error) {
+        // Invalid replacement bytes are just as dangerous to overwrite: hold
+        // this tab's valid state in memory and surface recovery rather than
+        // turning a malformed cross-tab write into silent data loss.
+        localWritesBlocked.current = true;
+        setPersistence(prev => ({
+          ...prev,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Another tab wrote an invalid operator file.'
+        }));
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  useEffect(() => {
     // A valid canonical file was already read; do not rewrite it just because
     // React mounted. Fresh and migrated files are committed immediately.
     if (firstPersistence.current) {
       firstPersistence.current = false;
       if (boot.envelope && !boot.migrated) return;
     }
+    if (skipNextPersistence.current) {
+      skipNextPersistence.current = false;
+      return;
+    }
+    // Another tab advanced the canonical key. Keep this tab's in-memory work,
+    // but do not silently write it over the newer bytes before the operator
+    // chooses which terminal wins.
+    if (localWritesBlocked.current) return;
     const result = writeLocalGameSave(state);
     if (result.ok) {
       setPersistence(prev => ({
@@ -218,12 +267,12 @@ export function GameStateProvider({ children }) {
 
   const replaceGameState = useCallback((nextState) => {
     const envelope = createStoredSaveEnvelope(nextState);
-    setState(parseStoredSaveEnvelope(envelope).game);
+    setState(hydrateActionTank(parseStoredSaveEnvelope(envelope).game));
   }, []);
 
   const importGameSave = useCallback((text) => {
     const loaded = parseSaveJson(text);
-    setState(loaded.game);
+    setState(hydrateActionTank(loaded.game));
     // A new operator file is now live; Records must be re-read, not overwritten.
     setCloudRecheck((n) => n + 1);
     return loaded.game;
@@ -231,6 +280,44 @@ export function GameStateProvider({ children }) {
 
   const exportGameSave = useCallback(() =>
     serializeSaveEnvelope(createStoredSaveEnvelope(state)), [state]);
+
+  const useOtherTabSave = useCallback(() => {
+    const incoming = persistence.tabConflict;
+    if (!incoming) return false;
+    localWritesBlocked.current = false;
+    skipNextPersistence.current = true;
+    setState(hydrateActionTank(incoming.game));
+    setPersistence(prev => ({
+      ...prev,
+      status: 'ready',
+      error: null,
+      lastSavedAt: incoming.savedAt,
+      tabConflict: null
+    }));
+    // This is a whole-file replacement, like import. Reconcile it with cloud
+    // before autosave is allowed to resume.
+    setCloudRecheck(value => value + 1);
+    return true;
+  }, [persistence.tabConflict]);
+
+  const keepThisTabSave = useCallback(() => {
+    if (!persistence.tabConflict) return false;
+    localWritesBlocked.current = false;
+    const result = writeLocalGameSave(stateRef.current);
+    if (!result.ok) {
+      localWritesBlocked.current = true;
+      setPersistence(prev => ({ ...prev, status: 'error', error: result.error }));
+      return false;
+    }
+    setPersistence(prev => ({
+      ...prev,
+      status: 'saved',
+      error: null,
+      lastSavedAt: result.envelope.savedAt,
+      tabConflict: null
+    }));
+    return true;
+  }, [persistence.tabConflict]);
 
   const cloud = useCloudSave({
     state,
@@ -367,6 +454,19 @@ export function GameStateProvider({ children }) {
    */
   const resolveStorylet = useCallback((storylet, choice) => {
     setState(prev => {
+      const pointer = prev.currentStorylet;
+      if (
+        !pointer ||
+        pointer.zone !== storylet?.zone ||
+        pointer.storyletId !== storylet?.id
+      ) {
+        // Reject stale closures, double clicks after a transition, and callers
+        // attempting to resolve a card other than the one actually open.
+        return prev;
+      }
+      const selectedChoice = storylet.choices?.find((candidate) => candidate.id === choice?.id);
+      if (!selectedChoice) return prev;
+
       // A re-read replays the fiction and files nothing, so it is free. Only a
       // first reading — the one that has consequences — costs an action.
       const alreadySeen = prev.seenStorylets.includes(storylet.id);
@@ -375,7 +475,28 @@ export function GameStateProvider({ children }) {
       return withSpentAction(prev, cost, (charged) => {
         let next = alreadySeen
           ? charged
-          : applyEffectsToState(charged, choice.outcome?.qualities);
+          : applyEffectsToState(charged, selectedChoice.outcome?.qualities);
+
+        if (selectedChoice.death && !alreadySeen) {
+          const deathNumber = next.deaths + 1;
+          next = withLog(
+            next,
+            `TERMINATION ${deathNumber} // You remember the interval the city removed. ` +
+              'The operator file remained open because you did.',
+            {
+              deaths: deathNumber,
+              // Death is a patch boundary, not an accidental chain-death loop.
+              // The lethal choice was explicit; the next investigation begins
+              // with the system watching from a clean baseline.
+              attention: 0,
+              discoveries: [...next.discoveries, {
+                day: next.day,
+                text: `THE INTERIM ${deathNumber}: the frame after termination and before shift start. The city forgot. You did not.`,
+                timestamp: Date.now()
+              }]
+            }
+          );
+        }
 
         const seenStorylets = charged.seenStorylets.includes(storylet.id)
           ? charged.seenStorylets
@@ -384,18 +505,18 @@ export function GameStateProvider({ children }) {
         const zones = { ...charged.zones };
         let currentStorylet = charged.currentStorylet;
 
-        if (choice.completeZone) {
+        if (selectedChoice.completeZone) {
           zones[storylet.zone] = 'complete';
           currentStorylet = null;
-        } else if (choice.endZone) {
+        } else if (selectedChoice.endZone) {
           currentStorylet = null;
-        } else if (choice.next) {
-          currentStorylet = { zone: storylet.zone, storyletId: choice.next };
+        } else if (selectedChoice.next) {
+          currentStorylet = { zone: storylet.zone, storyletId: selectedChoice.next };
         }
 
         next = { ...next, seenStorylets, zones, currentStorylet };
 
-        if (choice.completeZone) {
+        if (selectedChoice.completeZone) {
           const zone = zoneById(storylet.zone);
           if (zone?.component && !next.components[zone.component]) {
             next = withLog(
@@ -454,18 +575,51 @@ export function GameStateProvider({ children }) {
    * early to get fifty more actions would make the tank meaningless.
    */
   const incrementDay = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      day: prev.day + 1,
-      tasksThisShift: 0,
-      actionsSpentThisShift: 0,
-      anomaliesSeenThisShift: 0
-    }));
+    setState(prev => {
+      // An acknowledged result is the boundary of a work order. Never let a
+      // caller roll the date while a reserved result still needs a signature.
+      if (prev.pendingDispatch) return prev;
+      return {
+        ...prev,
+        day: prev.day + 1,
+        tasksThisShift: 0,
+        actionsSpentThisShift: 0,
+        anomaliesSeenThisShift: 0
+      };
+    });
   }, []);
 
   /**
-   * File a task result. `effects` and `payout` are computed by the caller
-   * (see src/game/payouts.ts) so the console holds no balance numbers.
+   * Reserve a console task and its action in one state transition. The pending
+   * result is canonical state, not component state, so route changes and
+   * reloads cannot reroll an anomaly or abandon an unpaid work order.
+   */
+  const startDispatchTask = useCallback(({ anomalyRoll, corruptionRoll }) => {
+    setState(prev => {
+      if (
+        prev.pendingDispatch ||
+        prev.tasksThisShift >= TASKS_PER_SHIFT ||
+        prev.actionsSpentThisShift >= ACTION_CAP
+      ) return prev;
+
+      return withSpentAction(prev, 1, (charged) => ({
+        ...charged,
+        pendingDispatch: createPendingDispatch({
+          day: charged.day,
+          tasksCompleted: charged.tasksCompleted,
+          tasksThisShift: charged.tasksThisShift,
+          actionsSpentThisShift: charged.actionsSpentThisShift,
+          anomaliesSeenThisShift: charged.anomaliesSeenThisShift,
+          anomalyRoll,
+          corruptionRoll
+        })
+      }));
+    });
+  }, []);
+
+  /**
+   * File the reserved task result. The action was charged when Dispatch
+   * released the work order, so acknowledgement only commits its consequences.
    */
   const fileTaskResult = useCallback(({
     effects,
@@ -474,13 +628,15 @@ export function GameStateProvider({ children }) {
     discrepancy = false,
     anomaly = false
   }) => {
-    setState(prev => withSpentAction(prev, 1, (charged) => {
-      let next = applyEffectsToState(charged, effects);
+    setState(prev => {
+      if (!prev.pendingDispatch) return prev;
+      let next = applyEffectsToState(prev, effects);
       if (payout) {
         next = commitLedger(next, deposit({ credits: next.credits, unbound: next.ledgerUnbound }, payout));
       }
       next = {
         ...next,
+        pendingDispatch: null,
         // Career total, uncapped — the operator file's lifetime stat.
         tasksCompleted: next.tasksCompleted + 1,
         tasksThisShift: Math.min(next.tasksThisShift + 1, TASKS_PER_SHIFT),
@@ -488,7 +644,7 @@ export function GameStateProvider({ children }) {
         discrepanciesLogged: next.discrepanciesLogged + (discrepancy ? 1 : 0)
       };
       return withLog(next, logbookEntry);
-    }));
+    });
   }, []);
 
   /* ---------------- residue ---------------- */
@@ -499,7 +655,7 @@ export function GameStateProvider({ children }) {
 
   const resetGame = useCallback(() => {
     clearLocalGameSave();
-    setState(createInitialGameState());
+    setState(hydrateActionTank(createInitialGameState()));
   }, []);
 
   /* ---------------- dev capability ---------------- */
@@ -598,10 +754,13 @@ export function GameStateProvider({ children }) {
       recordOrientationTask,
       completeOrientation,
       incrementDay,
+      startDispatchTask,
       fileTaskResult,
       addLogEntry,
       importGameSave,
       exportGameSave,
+      useOtherTabSave,
+      keepThisTabSave,
       resetGame,
       setActionsUnbound,
       grantActions

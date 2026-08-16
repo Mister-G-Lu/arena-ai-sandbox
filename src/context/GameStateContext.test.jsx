@@ -132,20 +132,60 @@ describe('effects pipeline', () => {
     expect(api.state.qualities).not.toHaveProperty('nonsense');
   });
 
-  it('files a resolved card\'s consequences once — replays do not farm qualities', async () => {
+  it('files consequences once and rejects a stale card after transition', async () => {
     mount();
-    const card = { id: 'floor12-01', zone: 'floor12' };
-    const press = { outcome: { qualities: { Doubt: 1, Attention: 1 } }, endZone: true };
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.currentStorylet = { zone: 'floor12', storyletId: 'floor12-01' };
+    saved.game.zones.floor12 = 'open';
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    const press = {
+      id: 'press',
+      outcome: { qualities: { Doubt: 1, Attention: 1 } },
+      next: 'floor12-02',
+    };
+    const card = { id: 'floor12-01', zone: 'floor12', choices: [press] };
 
     await act(async () => { api.actions.resolveStorylet(card, press); });
     expect(api.state.qualities.doubt).toBe(1);
     expect(api.state.attention).toBe(1);
-    expect(api.state.currentStorylet).toBeNull();
+    expect(api.state.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-02' });
+    const actionsAfterFirstChoice = api.state.actions;
 
+    // The old button closure cannot resolve the previous card again after the pointer moved.
     await act(async () => { api.actions.resolveStorylet(card, press); });
     expect(api.state.qualities.doubt).toBe(1);
     expect(api.state.attention).toBe(1);
+    expect(api.state.actions).toBe(actionsAfterFirstChoice);
+    expect(api.state.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-02' });
     expect(api.state.seenStorylets.filter((id) => id === 'floor12-01')).toHaveLength(1);
+  });
+
+  it('records an explicitly lethal choice once and enters its aftermath', async () => {
+    mount();
+    await act(async () => { api.actions.applyEffects({ Attention: 8 }); });
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.currentStorylet = { zone: 'floor12', storyletId: 'floor12-05' };
+    saved.game.zones.floor12 = 'open';
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    const forward = {
+      id: 'forward',
+      outcome: { qualities: { Attention: 3, Doubt: 1 } },
+      next: 'floor12-06',
+      death: true,
+    };
+    const card = { id: 'floor12-05', zone: 'floor12', choices: [forward] };
+    await act(async () => { api.actions.resolveStorylet(card, forward); });
+
+    expect(api.state.deaths).toBe(1);
+    expect(api.state.attention).toBe(0);
+    expect(api.state.currentStorylet).toEqual({ zone: 'floor12', storyletId: 'floor12-06' });
+    expect(api.state.discoveries.some((entry) => entry.text.includes('THE INTERIM 1'))).toBe(true);
+    expect(api.state.logbook.some((entry) => entry.text.includes('TERMINATION 1'))).toBe(true);
+
+    await act(async () => { api.actions.resolveStorylet(card, forward); });
+    expect(api.state.deaths).toBe(1);
   });
 
   it('promotes automatically — the player never asks for a promotion', async () => {
@@ -157,14 +197,67 @@ describe('effects pipeline', () => {
     expect(api.state.logbook.some((e) => e.text.includes('OPERATOR'))).toBe(true);
   });
 
+  it('reserves a pending task and its action before the result is filed', async () => {
+    mount();
+    await act(async () => {
+      api.actions.startDispatchTask({ anomalyRoll: 0.999, corruptionRoll: 0 });
+    });
+
+    expect(api.state.pendingDispatch).toMatchObject({
+      id: 'dispatch-1-1',
+      taskNumber: 1,
+      shiftAction: 1,
+      isCorrupt: false,
+    });
+    expect(api.state.actions).toBe(49);
+    expect(api.state.actionsSpentThisShift).toBe(1);
+    expect(JSON.parse(api.actions.exportGameSave()).game.pendingDispatch.id).toBe('dispatch-1-1');
+
+    await act(async () => { api.actions.fileTaskResult({ payout: 10 }); });
+    expect(api.state.pendingDispatch).toBeNull();
+    expect(api.state.tasksCompleted).toBe(1);
+    // Acknowledgement commits the result; it does not charge the reserved action twice.
+    expect(api.state.actions).toBe(49);
+  });
+
   it('tracks anomalies per shift and resets the guarantee counter tomorrow', async () => {
     mount();
     await act(async () => {
+      api.actions.startDispatchTask({ anomalyRoll: 0, corruptionRoll: 0 });
       api.actions.fileTaskResult({ anomaly: true, payout: 10 });
     });
     expect(api.state.anomaliesSeenThisShift).toBe(1);
     await act(async () => { api.actions.incrementDay(); });
     expect(api.state.anomaliesSeenThisShift).toBe(0);
+  });
+
+  it('pauses local writes when another tab advances the save', async () => {
+    mount();
+    await act(async () => { api.actions.addCredits(10); });
+
+    const incoming = JSON.parse(api.actions.exportGameSave());
+    incoming.savedAt = '2026-08-16T13:00:00.000Z';
+    incoming.game.credits = 75;
+    const incomingRaw = JSON.stringify(incoming);
+    localStorage.setItem(GAME_SAVE_KEY, incomingRaw);
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: GAME_SAVE_KEY,
+        newValue: incomingRaw,
+      }));
+    });
+
+    expect(api.persistence.status).toBe('conflict');
+    expect(api.persistence.tabConflict.game.credits).toBe(75);
+
+    // This tab may keep working in memory, but cannot silently clobber the key.
+    await act(async () => { api.actions.addCredits(1); });
+    expect(api.state.credits).toBe(11);
+    expect(JSON.parse(localStorage.getItem(GAME_SAVE_KEY)).game.credits).toBe(75);
+
+    await act(async () => { expect(api.actions.useOtherTabSave()).toBe(true); });
+    expect(api.state.credits).toBe(75);
+    expect(api.persistence.tabConflict).toBeNull();
   });
 
   it('exports and imports the same canonical envelope used by cloud sync', async () => {
@@ -177,6 +270,17 @@ describe('effects pipeline', () => {
     expect(api.state.credits).toBe(0);
     await act(async () => { api.actions.importGameSave(exported); });
     expect(api.state.credits).toBe(321);
+  });
+
+  it('anchors zero-timestamp imports instead of regenerating from the epoch', async () => {
+    mount();
+    const imported = JSON.parse(api.actions.exportGameSave());
+    imported.game.actions = 0;
+    imported.game.actionsLastTick = 0;
+
+    await act(async () => { api.actions.importGameSave(JSON.stringify(imported)); });
+    expect(api.state.actions).toBe(0);
+    expect(api.state.actionsLastTick).toBeGreaterThan(0);
   });
 
   it('refuses an invalid imported save without replacing live state', async () => {

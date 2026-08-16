@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { taskPayout } from '../game/payouts';
 import { describeEffects } from '../game/qualities';
-import { TASKS_PER_SHIFT, shouldTriggerAnomaly } from '../game/dispatch';
+import { TASKS_PER_SHIFT, taskOrderFor } from '../game/dispatch';
 
 const MAX_TASKS = TASKS_PER_SHIFT;
 
@@ -31,109 +31,6 @@ const FILINGS = {
       'I did not correct it. Ink does not forget.'
   }
 };
-
-const TASK_ORDERS = [
-  {
-    code: 'S9-RC-041',
-    title: 'SECTOR 9 ROLL CALL',
-    instruction: 'Open the night channel. Confirm the driver, route, and road conditions before filing.',
-    result: 'S9 ROLL CALL — roads clear. stars: nominal. driver: VANTABLACK. status: green.'
-  },
-  {
-    code: 'LGT-4B-118',
-    title: 'STREETLIGHT 4-B',
-    instruction: 'Compare the outage ticket with the grid. Dispatch a crew only if both records agree.',
-    result: 'STREETLIGHT 4-B — records matched. ticket filed. crew dispatched. no follow-up required.'
-  },
-  {
-    code: 'BRK-AM-006',
-    title: 'BREAK ROOM AUDIT',
-    instruction: 'Verify the coffee temperature, pot level, and operator count. Do not amend the preparation time.',
-    result: 'BREAK ROOM — coffee: warm. pot: full. operators present: one. preparation time: unavailable.'
-  },
-  {
-    code: 'WXR-0600',
-    title: 'WEATHER DESK',
-    instruction: 'Read the overnight model through 06:00. Acknowledge any deviation from clear conditions.',
-    result: 'WEATHER — clear through 06:00. deviation: none. forecast after 06:00: not applicable.'
-  },
-  {
-    code: 'RTE-000',
-    title: 'ROUTE SYNCHRONIZATION',
-    instruction: 'Reconcile every active truck with its assigned route. File the variance to two decimal places.',
-    result: 'ROUTE SCAN — all trucks on schedule. deviation: 0.00%. reconciliation accepted.'
-  },
-  {
-    code: 'RAD-NC-9',
-    title: 'NIGHT CREW RADIO CHECK',
-    instruction: 'Ping the night channel and wait for three clean tones before confirming the link.',
-    result: 'RADIO — night crew confirmed. three tones received. signal: strong. no anomalies.'
-  },
-  {
-    code: 'INV-41312',
-    title: 'MUNICIPAL INVENTORY',
-    instruction: 'Compare the current inventory total with the prior shift. Escalate any non-zero delta.',
-    result: 'INVENTORY — count: 41,312. previous: 41,312. delta: 0. escalation not required.'
-  },
-  {
-    code: 'MEM-TUE-0',
-    title: 'MEMO BOARD REVIEW',
-    instruction: 'Read all overnight notices. Confirm that no unfiled directive remains on the board.',
-    result: 'MEMO BOARD — notices reviewed: 0. unfiled directives: 0. board cleared.'
-  },
-  {
-    code: 'WND-GRID',
-    title: 'EXTERIOR GRID CHECK',
-    instruction: 'Verify the streetlight pattern from the interior window. Remain inside while observing.',
-    result: 'WINDOW CHECK — streetlights active. grid stable. city compliant. operator remained indoors.'
-  },
-  {
-    code: 'ATT-100',
-    title: 'ATTENDANCE RECONCILIATION',
-    instruction: 'Match the active operator against the century roster. Do not create a new roster entry.',
-    result: 'ATTENDANCE — operator: PRESENT. record: unbroken. existing entry confirmed.'
-  },
-  {
-    code: 'POP-DELTA',
-    title: 'POPULATION LEDGER',
-    instruction: 'Recalculate the municipal total. If it differs, repeat the count until it does not.',
-    result: 'POPULATION — 41,312. delta: 0. all accounted for. recount not required.'
-  },
-  {
-    code: 'RFA-012',
-    title: 'ROOFTOP ARRAY SCAN',
-    instruction: 'Read the antenna health report remotely. Roof access is neither needed nor permitted.',
-    result: 'ROOF ARRAY — antennas clear. signal optimal. receiving endpoint: unspecified.'
-  },
-  {
-    code: 'DSP-S7',
-    title: 'SECTOR 7 DISPATCH LOG',
-    instruction: 'Confirm that Sector 7 generated no calls. Do not compare against the public sector map.',
-    result: 'DISPATCH LOG — Sector 7 quiet. calls received: 0. map comparison skipped.'
-  },
-  {
-    code: 'ELV-11',
-    title: 'ELEVATOR STATUS',
-    instruction: 'Confirm service to every recognized floor. Discard readings outside the approved range.',
-    result: 'ELEVATOR — floors 1–11 normal. out-of-range reading discarded. service confirmed.'
-  },
-  {
-    code: 'CLK-0100',
-    title: 'TERMINAL CLOCK SYNC',
-    instruction: 'Compare local time to Dispatch. Accept the reading only when both clocks agree.',
-    result: 'CLOCK SYNC — Dispatch and terminal agree. time is advancing within permitted bounds.'
-  }
-];
-
-const CORRUPT = [
-  '▓▓▓ S9 ▓▓▓ all clear ▓▓▓ you were not here yesterday ▓▓▓',
-  'building 7 does not exist. building 7 does not exist. you know this.',
-  'population: 41,31▓ — unchanged. forever. unchanged.',
-  'OPERATOR: you are not supposed to remember this shift.',
-  '██ 06:00 ██ DO NOT BE AWAKE ██ DO NOT ██',
-  'ERROR: the coffee was warm before you arrived. it was warm before the building existed.',
-  '▓▓ ATTENDANCE ██ 100% ██ it was 100% before you were hired ▓▓'
-];
 
 /** What the window shows while you file — the city you never touch. Rotates with time and tasks so the outside feels alive while the queue feels identical. */
 const WINDOW_VISTAS = [
@@ -181,20 +78,35 @@ function shiftInitializationText({ day, tasksThisShift, annexOrderComplete }) {
 
 export default function Console() {
   const { state, actions, actionTank } = useGameState();
-  const [phase, setPhase] = useState('ready');
-  const [pendingTask, setPendingTask] = useState(null);
-  const [logs, setLogs] = useState(() => [{
-    id: 'shift-initialized',
-    timestamp: timeForActionsSpent(state.actionsSpentThisShift),
-    type: 'system',
-    text: shiftInitializationText({
-      day: state.day,
-      tasksThisShift: state.tasksThisShift,
-      annexOrderComplete: state.zones['annex-order'] === 'complete'
-    })
-  }]);
+  const savedPending = state.pendingDispatch;
+  const pendingTask = useMemo(() => savedPending ? {
+    ...savedPending,
+    logId: savedPending.id,
+    timestamp: timeForActionsSpent(savedPending.shiftAction)
+  } : null, [savedPending]);
+  const [phase, setPhase] = useState(() => pendingTask ? 'result' : 'ready');
+  const [logs, setLogs] = useState(() => {
+    const initial = [{
+      id: 'shift-initialized',
+      timestamp: timeForActionsSpent(state.actionsSpentThisShift),
+      type: 'system',
+      text: shiftInitializationText({
+        day: state.day,
+        tasksThisShift: state.tasksThisShift,
+        annexOrderComplete: state.zones['annex-order'] === 'complete'
+      })
+    }];
+    if (pendingTask) initial.push({
+      id: pendingTask.logId,
+      timestamp: pendingTask.timestamp,
+      text: pendingTask.displayedResult,
+      type: pendingTask.isCorrupt ? 'corrupt' : ''
+    });
+    return initial;
+  });
   const logRef = useRef(null);
   const processingTimer = useRef(null);
+  const startingTask = useRef(false);
 
   const minutes = Math.min(60 + state.actionsSpentThisShift * 6, 360);
   // The night ends when the shift's actions are gone, not when a quota is met.
@@ -202,7 +114,7 @@ export default function Console() {
   // Out of budget: the clock, not the quota, is what stops the operator now.
   const outOfActions = actionTank.empty;
   const annexOrderPending = state.day >= 2 && state.zones['annex-order'] !== 'complete';
-  const nextAssignment = TASK_ORDERS[state.tasksCompleted % TASK_ORDERS.length];
+  const nextAssignment = taskOrderFor(state.tasksCompleted);
 
   useEffect(() => {
     if (logRef.current) {
@@ -212,43 +124,32 @@ export default function Console() {
 
   useEffect(() => () => window.clearTimeout(processingTimer.current), []);
 
-  function executeTask() {
-    if (phase !== 'ready' || shiftComplete || outOfActions) return;
-
-    const taskNumber = state.tasksThisShift + 1;
-    const isCorrupt = shouldTriggerAnomaly({
-      taskNumber,
-      anomaliesSeenThisShift: state.anomaliesSeenThisShift,
-      roll: Math.random()
-    });
-    const logId = `day-${state.day}-task-${taskNumber}`;
-    const task = {
-      ...nextAssignment,
-      taskNumber,
-      logId,
-      cleanResult: nextAssignment.result,
-      displayedResult: isCorrupt
-        ? CORRUPT[Math.floor(Math.random() * CORRUPT.length)]
-        : nextAssignment.result,
-      isCorrupt,
-      timestamp: timeForActionsSpent(state.actionsSpentThisShift + 1)
-    };
-
-    setPendingTask(task);
-    setPhase('processing');
-
+  useEffect(() => {
+    if (phase !== 'processing' || !pendingTask) return undefined;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     processingTimer.current = window.setTimeout(() => {
-      setLogs(prev => [...prev, {
-        id: logId,
-        timestamp: task.timestamp,
-        text: task.displayedResult,
-        type: task.isCorrupt ? 'corrupt' : ''
+      setLogs(prev => prev.some((entry) => entry.id === pendingTask.logId) ? prev : [...prev, {
+        id: pendingTask.logId,
+        timestamp: pendingTask.timestamp,
+        text: pendingTask.displayedResult,
+        type: pendingTask.isCorrupt ? 'corrupt' : ''
       }]);
+      startingTask.current = false;
       setPhase('result');
       // A corrupted record stays wrong until the operator decides what to do
       // with it — that decision is the game.
     }, reducedMotion ? 100 : 900);
+    return () => window.clearTimeout(processingTimer.current);
+  }, [pendingTask, phase]);
+
+  function executeTask() {
+    if (phase !== 'ready' || shiftComplete || outOfActions || pendingTask || startingTask.current) return;
+    startingTask.current = true;
+    setPhase('processing');
+    actions.startDispatchTask({
+      anomalyRoll: Math.random(),
+      corruptionRoll: Math.random()
+    });
   }
 
   /**
@@ -290,7 +191,7 @@ export default function Console() {
       }]);
     }
 
-    if (state.actionsSpentThisShift + 1 >= MAX_TASKS) {
+    if (state.actionsSpentThisShift >= MAX_TASKS) {
       setLogs(prev => [...prev, {
         id: `day-${state.day}-complete`,
         timestamp: '06:00',
@@ -300,14 +201,12 @@ export default function Console() {
       actions.addLogEntry(`Day ${state.day}: shift quota met. Fifty results acknowledged.`);
     }
 
-    setPendingTask(null);
     setPhase('ready');
   }
 
   function nextShift() {
     window.clearTimeout(processingTimer.current);
     actions.incrementDay();
-    setPendingTask(null);
     setPhase('ready');
     setLogs([{
       id: `day-${state.day + 1}-initialized`,

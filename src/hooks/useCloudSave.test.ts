@@ -9,10 +9,57 @@ const session = {
   access_token: 'token',
 };
 
+const otherSession = {
+  user: { id: 'op-2', email: 'other@meridian.city' },
+  access_token: 'other-token',
+};
+
+function mutationQuery(run: () => Promise<{ data: unknown; error: unknown }>) {
+  const query: Record<string, unknown> = {};
+  query.eq = vi.fn(() => query);
+  query.select = () => query;
+  query.single = run;
+  query.maybeSingle = run;
+  return query;
+}
+
 function mockClient(remote: ReturnType<typeof createStoredSaveEnvelope> | null = null) {
-  const upsert = vi.fn().mockResolvedValue({ error: null });
   const listeners: Array<(event: string, next: unknown) => void> = [];
   let pulls = 0;
+  let writes = 0;
+  let remoteEnvelope = remote;
+  let updatedAt = remote?.savedAt ?? null;
+  const nextRevision = () => `server-revision-${++writes}`;
+
+  const upsert = vi.fn().mockImplementation((row) => mutationQuery(async () => {
+    remoteEnvelope = row.payload;
+    updatedAt = nextRevision();
+    return { data: { updated_at: updatedAt }, error: null };
+  }));
+  const insert = vi.fn().mockImplementation((row) => mutationQuery(async () => {
+    if (remoteEnvelope) {
+      return { data: null, error: { code: '23505', message: 'duplicate' } };
+    }
+    remoteEnvelope = row.payload;
+    updatedAt = nextRevision();
+    return { data: { updated_at: updatedAt }, error: null };
+  }));
+  const update = vi.fn().mockImplementation((row) => {
+    const filters: unknown[][] = [];
+    const query = mutationQuery(async () => {
+      const expected = filters.find(([column]) => column === 'updated_at')?.[1];
+      if (!remoteEnvelope || expected !== updatedAt) return { data: null, error: null };
+      remoteEnvelope = row.payload;
+      updatedAt = nextRevision();
+      return { data: { updated_at: updatedAt }, error: null };
+    });
+    query.eq = vi.fn((...args: unknown[]) => {
+      filters.push(args);
+      return query;
+    });
+    return query;
+  });
+
   const client = {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
@@ -29,17 +76,25 @@ function mockClient(remote: ReturnType<typeof createStoredSaveEnvelope> | null =
           maybeSingle: async () => {
             pulls += 1;
             return {
-              data: remote ? { payload: remote, updated_at: remote.savedAt } : null,
+              data: remoteEnvelope ? { payload: remoteEnvelope, updated_at: updatedAt } : null,
               error: null,
             };
           },
         }),
       }),
       upsert,
+      insert,
+      update,
     })),
     __upsert: upsert,
+    __insert: insert,
+    __update: update,
     __pulls: () => pulls,
     __listeners: listeners,
+    __setRemote: (next: ReturnType<typeof createStoredSaveEnvelope>) => {
+      remoteEnvelope = next;
+      updatedAt = nextRevision();
+    },
   };
   return client;
 }
@@ -68,8 +123,8 @@ describe('useCloudSave', () => {
       useCloudSave({ state, hadLocalSaveAtBoot: true, replaceState, debounceMs: 0 }),
     );
     await waitFor(() => expect(result.current.status).toBe('synced'));
-    expect(client.__upsert).toHaveBeenCalledTimes(1);
-    expect(client.__upsert.mock.calls[0]?.[0].payload.version).toBe(2);
+    expect(client.__insert).toHaveBeenCalledTimes(1);
+    expect(client.__insert.mock.calls[0]?.[0].payload.version).toBe(2);
   });
 
   it('restores remote state only when the local terminal is genuinely fresh', async () => {
@@ -146,8 +201,68 @@ describe('useCloudSave', () => {
 
     const changed = { ...initial, credits: 99 };
     rerender({ state: changed });
-    await waitFor(() => expect(client.__upsert).toHaveBeenCalledTimes(1));
-    expect(client.__upsert.mock.calls[0]?.[0].payload.game.credits).toBe(99);
+    await waitFor(() => expect(client.__update).toHaveBeenCalledTimes(1));
+    expect(client.__update.mock.calls[0]?.[0].payload.game.credits).toBe(99);
+  });
+
+  it('turns an in-session cross-device race into a visible conflict', async () => {
+    const initial = createInitialGameState();
+    const client = mockClient(createStoredSaveEnvelope(initial));
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useCloudSave({ state, hadLocalSaveAtBoot: true, replaceState, debounceMs: 0 }),
+      { initialProps: { state: initial } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+
+    const otherDevice = { ...initial, credits: 400 };
+    client.__setRemote(createStoredSaveEnvelope(otherDevice));
+    rerender({ state: { ...initial, credits: 99 } });
+
+    await waitFor(() => expect(result.current.status).toBe('conflict'));
+    expect(result.current.conflict?.game.credits).toBe(400);
+    expect(client.__update).toHaveBeenCalledTimes(1);
+  });
+
+  it('never drains operator A\'s queued save into operator B\'s session', async () => {
+    const initial = createInitialGameState();
+    const client = mockClient(createStoredSaveEnvelope(initial));
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useCloudSave({ state, hadLocalSaveAtBoot: true, replaceState, debounceMs: 0 }),
+      { initialProps: { state: initial } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+
+    let finishFirst!: (value: { data: { updated_at: string }; error: null }) => void;
+    const firstPush = new Promise<{ data: { updated_at: string }; error: null }>((resolve) => {
+      finishFirst = resolve;
+    });
+    client.__update.mockImplementationOnce(() => mutationQuery(() => firstPush));
+
+    vi.useFakeTimers();
+    try {
+      rerender({ state: { ...initial, credits: 1 } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      await act(async () => { await Promise.resolve(); });
+      expect(client.__update).toHaveBeenCalledTimes(1);
+
+      // Queue a newer A save behind the in-flight request, then change the
+      // authenticated operator before that second queue entry can execute.
+      rerender({ state: { ...initial, credits: 2 } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      act(() => { client.__listeners[0]?.('SIGNED_IN', otherSession); });
+
+      finishFirst({ data: { updated_at: 'server-revision-finished' }, error: null });
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(client.__update).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('retries a failed autosave instead of dropping the operator file', async () => {
@@ -162,23 +277,23 @@ describe('useCloudSave', () => {
     );
     // Local and Records agree; nothing is pushed.
     await waitFor(() => expect(result.current.status).toBe('synced'));
-    expect(client.__upsert).toHaveBeenCalledTimes(0);
+    expect(client.__update).toHaveBeenCalledTimes(0);
 
     vi.useFakeTimers();
     try {
-      client.__upsert.mockRejectedValueOnce(new Error('Records unreachable'));
+      client.__update.mockImplementationOnce(() => mutationQuery(async () => { throw new Error('Records unreachable'); }));
       const changed = { ...initial, credits: 99 };
       rerender({ state: changed });
 
       await act(async () => { await vi.advanceTimersByTimeAsync(0); }); // debounce fires
       await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-      expect(client.__upsert).toHaveBeenCalledTimes(1);
+      expect(client.__update).toHaveBeenCalledTimes(1);
       expect(result.current.status).toBe('error');
 
       await act(async () => { await vi.advanceTimersByTimeAsync(1_100); }); // retry fires
       await act(async () => { await Promise.resolve(); await Promise.resolve(); });
-      expect(client.__upsert).toHaveBeenCalledTimes(2);
-      expect(client.__upsert.mock.calls[1]?.[0].payload.game.credits).toBe(99);
+      expect(client.__update).toHaveBeenCalledTimes(2);
+      expect(client.__update.mock.calls[1]?.[0].payload.game.credits).toBe(99);
       expect(result.current.status).toBe('synced');
     } finally {
       vi.useRealTimers();

@@ -11,7 +11,8 @@
         "text": "It turns the form around. The signature is yours. You have not signed it yet. The lights go.",
         "qualities": { "Attention": 3, "Doubt": 1 }
       },
-      "next": "floor12-06"
+      "next": "floor12-06",
+      "death": true
     },
     {
       "id": "back",

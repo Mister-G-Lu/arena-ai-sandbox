@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { CREDIT_LIMIT } from '../game/ledger';
 import { COMPONENT_DEFS, PROMOTIONS, ZONES } from '../game/progression';
 import { QUALITY_DEFS } from '../game/qualities';
 import { SUPPLY_DEFS } from '../game/shop';
 import {
   CREDIT_INFINITY,
   GAME_SAVE_VERSION,
+  MAX_SAVE_BYTES,
   SaveValidationError,
   createInitialGameState,
   createStoredSaveEnvelope,
@@ -113,6 +115,26 @@ describe('canonical game save', () => {
     ).toThrow(/supplies.*bogus/);
   });
 
+  it('rejects forged unbound capabilities and balances beyond the ledger word', () => {
+    const envelope = createStoredSaveEnvelope(createInitialGameState());
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, credits: CREDIT_LIMIT + 1 },
+    })).toThrow(/credits/);
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, ledgerUnbound: true },
+    })).toThrow(/ledgerUnbound/);
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, credits: CREDIT_INFINITY },
+    })).toThrow(/ledgerUnbound/);
+    expect(() => parseStoredSaveEnvelope({
+      ...envelope,
+      game: { ...envelope.game, actionsUnbound: true, devTouched: false },
+    })).toThrow(/actionsUnbound.*devTouched/);
+  });
+
   it('rejects unknown zones, glitches, malformed pointers, and oversized text', () => {
     const envelope = createStoredSaveEnvelope(createInitialGameState());
     expect(() =>
@@ -142,6 +164,18 @@ describe('canonical game save', () => {
         },
       }),
     ).toThrow(/logbook.*0.*text/);
+  });
+
+  it('enforces the same one-megabyte contract locally and in Records', () => {
+    expect(() => parseSaveJson(' '.repeat(MAX_SAVE_BYTES + 1))).toThrow(/operator-file limit/);
+
+    const state = createInitialGameState();
+    state.logbook = Array.from({ length: 60 }, (_, index) => ({
+      day: 1,
+      text: `${index}:${'x'.repeat(19_990)}`,
+      timestamp: index,
+    }));
+    expect(() => createStoredSaveEnvelope(state)).toThrow(/operator-file limit/);
   });
 
   it('requires a supported version and a valid timestamp', () => {
@@ -177,7 +211,7 @@ describe('canonical game save', () => {
       new Date('2026-08-16T12:00:00Z'),
     );
     const loaded = parseStoredSaveEnvelope(migrated).game;
-    expect(loaded.credits).toBe(9000);
+    expect(loaded.credits).toBe(Infinity);
     expect(loaded.ledgerUnbound).toBe(true);
     expect(loaded.orientation.completed).toBe(true);
     expect(loaded.orientation.skipped).toBe(true);

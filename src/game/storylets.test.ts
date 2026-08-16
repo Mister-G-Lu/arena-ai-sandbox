@@ -87,6 +87,9 @@ describe('validateStorylet', () => {
     expect(() =>
       validateChoice({ id: 'a', label: 'A', outcome: { text: 't' }, completeZone: 1 }),
     ).toThrow(/completeZone/);
+    expect(() =>
+      validateChoice({ id: 'a', label: 'A', outcome: { text: 't' }, death: 'maybe' }),
+    ).toThrow(/death/);
     expect(() => validateOutcome({ text: 't', qualities: 4 })).toThrow(/qualities/);
     expect(() => validateOutcome({ text: 't', qualities: { X: 'no' } })).toThrow(/finite/);
   });
@@ -142,6 +145,18 @@ describe('validateStoryGraph', () => {
         },
       ]),
     ).toThrow(/exactly one/);
+    expect(() =>
+      validateStoryGraph([{
+        ...second,
+        choices: [{
+          id: 'dead-end',
+          label: 'Proceed.',
+          outcome: { text: 'Black.' },
+          endZone: true,
+          death: true,
+        }],
+      }]),
+    ).toThrow(/aftermath/);
   });
 
   it('rejects unknown effects and invalid zone entries', () => {

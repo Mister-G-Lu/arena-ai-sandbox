@@ -2,6 +2,7 @@ import { z, ZodError } from 'zod';
 import { ACTION_CAP } from '../game/actions';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
 import { GLITCH_DEFS } from '../game/glitches';
+import { CREDIT_LIMIT } from '../game/ledger';
 import {
   COMPONENT_DEFS,
   PROMOTIONS,
@@ -17,6 +18,8 @@ export const GAME_SAVE_KEY = 'fr:game-save:v2';
 export const GAME_SAVE_BACKUP_KEY = 'fr:game-save:backup:v2';
 export const GAME_SAVE_RECOVERY_KEY = 'fr:game-save:recovery';
 export const LEGACY_GAME_SAVE_KEY = 'fr:player-progress:v1';
+/** Matches `saves_payload_max_bytes` in supabase/0003_canonical_saves.sql. */
+export const MAX_SAVE_BYTES = 1024 * 1024;
 
 const shortText = z.string().max(500);
 const storyText = z.string().max(20_000);
@@ -78,6 +81,19 @@ const ContactSchema = z.strictObject({
   interactions: safeInt.min(1),
 });
 
+const PendingDispatchSchema = z.strictObject({
+  id: shortText.min(1),
+  day: dayNumber,
+  taskNumber: safeInt.min(1).max(TASKS_PER_SHIFT),
+  shiftAction: safeInt.min(1).max(ACTION_CAP),
+  code: shortText.min(1),
+  title: shortText.min(1),
+  instruction: storyText.min(1),
+  cleanResult: storyText.min(1),
+  displayedResult: storyText.min(1),
+  isCorrupt: z.boolean(),
+});
+
 const glitchIds = Object.keys(GLITCH_DEFS) as [string, ...string[]];
 const GlitchIdSchema = z.enum(glitchIds);
 
@@ -87,7 +103,10 @@ const GlitchIdSchema = z.enum(glitchIds);
  * Promotion title/unlocks are derived from PROMOTIONS and are never persisted.
  */
 export const StoredGameStateSchema = z.strictObject({
-  credits: z.union([z.number().finite().min(0), z.literal(CREDIT_INFINITY)]).default(0),
+  credits: z.union([
+    z.number().finite().min(0).max(CREDIT_LIMIT),
+    z.literal(CREDIT_INFINITY),
+  ]).default(0),
   ledgerUnbound: z.boolean().default(false),
   components: ComponentsSchema,
   supplies: SuppliesSchema,
@@ -116,6 +135,8 @@ export const StoredGameStateSchema = z.strictObject({
   /** Actions spent since the last rollover. Drives the 01:00–06:00 clock. */
   actionsSpentThisShift: safeInt.max(ACTION_CAP).default(0),
   anomaliesSeenThisShift: safeInt.max(TASKS_PER_SHIFT).default(0),
+  /** A reserved console result survives navigation, reloads, and deploys. */
+  pendingDispatch: PendingDispatchSchema.nullable().default(null),
   discrepanciesLogged: safeInt.default(0),
   deaths: safeInt.default(0),
   orientation: OrientationSchema,
@@ -132,6 +153,22 @@ export const StoredGameStateSchema = z.strictObject({
   logbook: z.array(JournalEntrySchema).max(5_000).default([]),
   discoveries: z.array(JournalEntrySchema).max(5_000).default([]),
   contacts: z.array(ContactSchema).max(1_000).default([]),
+}).superRefine((state, ctx) => {
+  const infiniteCredits = state.credits === CREDIT_INFINITY;
+  if (state.ledgerUnbound !== infiniteCredits) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ledgerUnbound'],
+      message: 'must match the canonical infinite-credit sentinel',
+    });
+  }
+  if (state.actionsUnbound && !state.devTouched) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['actionsUnbound'],
+      message: 'requires the permanent devTouched audit flag',
+    });
+  }
 });
 
 export const StoredSaveEnvelopeSchema = z.strictObject({
@@ -159,6 +196,20 @@ export class SaveValidationError extends Error {
     super(message);
     this.name = 'SaveValidationError';
     this.issues = issues;
+  }
+}
+
+export function saveByteLength(text: string): number {
+  return new TextEncoder().encode(text).byteLength;
+}
+
+function assertSaveSize(text: string): void {
+  const bytes = saveByteLength(text);
+  if (bytes > MAX_SAVE_BYTES) {
+    throw new SaveValidationError(
+      `Save is ${(bytes / 1024 / 1024).toFixed(2)} MB; the operator-file limit is ` +
+      `${MAX_SAVE_BYTES / 1024 / 1024} MB.`,
+    );
   }
 }
 
@@ -212,15 +263,19 @@ export function createStoredSaveEnvelope(
   state: GameState | Record<string, unknown>,
   now = new Date(),
 ): StoredSaveEnvelope {
-  return {
+  const envelope: StoredSaveEnvelope = {
     version: GAME_SAVE_VERSION,
     savedAt: now.toISOString(),
     game: encodeGameState(state),
   };
+  assertSaveSize(JSON.stringify(envelope));
+  return envelope;
 }
 
 export function parseStoredSaveEnvelope(raw: unknown): LoadedSaveEnvelope {
   try {
+    const serialized = JSON.stringify(raw);
+    if (typeof serialized === 'string') assertSaveSize(serialized);
     const stored = StoredSaveEnvelopeSchema.parse(raw);
     return { ...stored, game: decodeGameState(stored.game) };
   } catch (error) {
@@ -237,6 +292,9 @@ export function migrateLegacyGameState(raw: unknown, now = new Date()): StoredSa
   const legacy = raw as Record<string, unknown>;
   const { maxCredits: _retiredCap, ...candidate } = legacy;
   const legacyCredits = legacy.credits === Infinity || legacy.credits === CREDIT_INFINITY;
+  const legacyUnbound = Boolean(
+    legacy.ledgerUnbound || legacyCredits || legacy.maxCredits === Infinity || legacy.maxCredits === CREDIT_INFINITY,
+  );
   const legacyPromotion =
     legacy.promotion && typeof legacy.promotion === 'object' && !Array.isArray(legacy.promotion)
       ? { tier: (legacy.promotion as Record<string, unknown>).tier }
@@ -250,8 +308,8 @@ export function migrateLegacyGameState(raw: unknown, now = new Date()): StoredSa
   return createStoredSaveEnvelope(
     {
       ...candidate,
-      credits: legacyCredits ? Infinity : legacy.credits,
-      ledgerUnbound: Boolean(legacy.ledgerUnbound || legacyCredits || legacy.maxCredits === Infinity),
+      credits: legacyUnbound ? Infinity : legacy.credits,
+      ledgerUnbound: legacyUnbound,
       orientation: legacyOrientation,
       promotion: legacyPromotion,
     },
@@ -260,6 +318,7 @@ export function migrateLegacyGameState(raw: unknown, now = new Date()): StoredSa
 }
 
 export function parseSaveJson(text: string): LoadedSaveEnvelope {
+  assertSaveSize(text);
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -270,7 +329,12 @@ export function parseSaveJson(text: string): LoadedSaveEnvelope {
 }
 
 export function serializeSaveEnvelope(envelope: StoredSaveEnvelope): string {
-  return `${JSON.stringify(envelope, null, 2)}\n`;
+  // Compact JSON keeps the exported file and the JSON payload sent to Records
+  // under the same byte contract. Pretty-print whitespace must not be the
+  // difference between a save that works locally and one the database rejects.
+  const serialized = `${JSON.stringify(envelope)}\n`;
+  assertSaveSize(serialized);
+  return serialized;
 }
 
 export function gameStateFingerprint(state: GameState | Record<string, unknown>): string {

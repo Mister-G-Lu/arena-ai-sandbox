@@ -81,7 +81,12 @@ export function accrue(tank: ActionTank, now: number): AccrualResult {
     return { ...tank, actions: ACTION_CAP, lastTick: now, gained: 0 };
   }
   if (actions >= ACTION_CAP) {
-    return { ...tank, actions: ACTION_CAP, lastTick: now, gained: 0 };
+    // A full tank has no active regeneration interval. Keep its existing
+    // anchor stable: rewriting it to `now` on every read makes presentation
+    // ticks look like gameplay changes, which in turn causes local and cloud
+    // autosave to write once per second forever. spend() explicitly anchors
+    // the first spend from full, so no stale time can be banked here.
+    return { ...tank, actions: ACTION_CAP, lastTick, gained: 0 };
   }
 
   const elapsed = now - lastTick;

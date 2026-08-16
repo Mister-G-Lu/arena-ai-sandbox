@@ -5,10 +5,32 @@ import {
   HOOK_DEADLINE,
   TASKS_PER_SHIFT,
   anomalyChance,
+  createPendingDispatch,
   shouldTriggerAnomaly,
 } from './dispatch';
 
 describe('dispatch anomaly schedule', () => {
+  it('materializes an immutable pending result for the canonical save', () => {
+    const pending = createPendingDispatch({
+      day: 3,
+      tasksCompleted: 15,
+      tasksThisShift: 2,
+      actionsSpentThisShift: 7,
+      anomaliesSeenThisShift: 0,
+      anomalyRoll: 0,
+      corruptionRoll: 0.5,
+    });
+    expect(pending).toMatchObject({
+      id: 'dispatch-3-16',
+      day: 3,
+      taskNumber: 3,
+      shiftAction: 8,
+      code: 'S9-RC-041',
+      isCorrupt: true,
+    });
+    expect(pending.displayedResult).not.toBe(pending.cleanResult);
+  });
+
   it('uses at least the authored chance on the first task', () => {
     expect(
       shouldTriggerAnomaly({ taskNumber: 1, anomaliesSeenThisShift: 0, roll: ANOMALY_CHANCE - 0.001 }),

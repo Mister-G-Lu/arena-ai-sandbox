@@ -1,9 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { TASKS_PER_SHIFT } from '../game/dispatch';
-
-/** Hard ceiling for an imported operator file, checked before any parsing. */
-const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+import { MAX_SAVE_BYTES } from '../lib/gameSave';
 
 function FileSummary({ label, game, savedAt }) {
   return (
@@ -47,10 +45,10 @@ export default function SaveManagement() {
       // A real operator file is a few hundred KB; anything near the browser
       // string limit is a hostile payload. Refuse it before JSON.parse freezes
       // the terminal.
-      if (file.size > MAX_IMPORT_BYTES) {
+      if (file.size > MAX_SAVE_BYTES) {
         throw new Error(
           `Import refused: file is ${(file.size / 1024 / 1024).toFixed(1)} MB; ` +
-          `operator files are capped at ${MAX_IMPORT_BYTES / 1024 / 1024} MB.`,
+          `operator files are capped at ${MAX_SAVE_BYTES / 1024 / 1024} MB.`,
         );
       }
       actions.importGameSave(await file.text());
@@ -69,7 +67,13 @@ export default function SaveManagement() {
       <div className="save-status-grid">
         <div className="save-status-card">
           <span className="info-label">Local terminal</span>
-          <strong>{persistence.status === 'error' ? 'SAVE ERROR' : 'SAVED LOCALLY'}</strong>
+          <strong>
+            {persistence.status === 'error'
+              ? 'SAVE ERROR'
+              : persistence.status === 'conflict'
+                ? 'TAB CONFLICT'
+                : 'SAVED LOCALLY'}
+          </strong>
           <span className="dim">
             {persistence.error ??
               (persistence.lastSavedAt
@@ -89,6 +93,39 @@ export default function SaveManagement() {
           The previous local file failed validation and was preserved under the recovery key.
           A clean file is active. Details: {persistence.recoveryError}
         </p>
+      )}
+
+      {persistence.tabConflict && (
+        <div className="save-conflict" role="alert">
+          <p>
+            <strong>Another browser tab changed this operator file.</strong> Local saving is paused
+            here so neither tab can silently erase the other.
+          </p>
+          <div className="save-summary-grid">
+            <FileSummary label="THIS TAB" game={state} savedAt={persistence.lastSavedAt} />
+            <FileSummary
+              label="OTHER TAB"
+              game={persistence.tabConflict.game}
+              savedAt={persistence.tabConflict.savedAt}
+            />
+          </div>
+          <div className="save-action-row">
+            <button
+              className="btn btn-primary btn-compact"
+              type="button"
+              onClick={actions.keepThisTabSave}
+            >
+              KEEP THIS TAB
+            </button>
+            <button
+              className="btn btn-ghost btn-compact"
+              type="button"
+              onClick={actions.useOtherTabSave}
+            >
+              USE OTHER TAB
+            </button>
+          </div>
+        </div>
       )}
 
       {!cloud.configured && (

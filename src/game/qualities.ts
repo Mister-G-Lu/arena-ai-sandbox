@@ -48,7 +48,7 @@ export const QUALITY_DEFS: Record<string, QualityDef> = {
     kind: 'attention',
     max: 10,
     hidden: true,
-    description: 'How much the system notices you (death at 10)',
+    description: 'How closely the system is watching. Lethal choices are always explicit.',
   },
   salary: {
     key: 'salary',
