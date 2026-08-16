@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const TASK_INTRO = `Your first task is waiting in the queue.
 
@@ -22,18 +22,28 @@ const TASK_RESULT = `<span class="warn">01:06</span> — ORIENTATION TASK: Verif
 
 Task logged. Record updated. Quota: 49 remaining.`;
 
-export default function OrientTerminalTask({ onComplete }) {
+export default function OrientTerminalTask({ onTaskLogged, onComplete }) {
   const [phase, setPhase] = useState('intro'); // intro, executing, result, confirming
+  const executeTimer = useRef(null);
+  const confirmTimer = useRef(null);
+
+  useEffect(() => () => {
+    window.clearTimeout(executeTimer.current);
+    window.clearTimeout(confirmTimer.current);
+  }, []);
 
   const handleExecute = () => {
     setPhase('executing');
-    // Simulate processing time to sell the monotony
-    setTimeout(() => setPhase('result'), 1200);
+    // The first result is committed before the operator is allowed into the live queue.
+    executeTimer.current = window.setTimeout(() => {
+      onTaskLogged();
+      setPhase('result');
+    }, 1200);
   };
 
   const handleConfirm = () => {
     setPhase('confirming');
-    setTimeout(() => onComplete(), 600);
+    confirmTimer.current = window.setTimeout(() => onComplete(), 600);
   };
 
   return (

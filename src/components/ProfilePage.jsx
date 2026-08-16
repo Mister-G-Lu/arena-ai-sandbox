@@ -3,13 +3,14 @@ import { useGameState } from '../context/GameStateContext';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
-  const { state, actions, PROMOTIONS } = useGameState();
+  const { state, PROMOTIONS } = useGameState();
   const {
     credits,
     maxCredits,
     components,
     qualities,
     day,
+    tasksCompleted,
     deaths,
     logbook,
     discoveries,
@@ -42,12 +43,16 @@ export default function ProfilePage() {
                 <span className="info-value">{day}</span>
               </div>
               <div className="info-item">
+                <span className="info-label">Tasks This Shift:</span>
+                <span className="info-value">{tasksCompleted} / 50</span>
+              </div>
+              <div className="info-item">
                 <span className="info-label">Deaths:</span>
                 <span className="info-value">{deaths}</span>
               </div>
               <div className="info-item">
                 <span className="info-label">Status:</span>
-                <span className="info-value">ACTIVE</span>
+                <span className="info-value">ACTIVE // FILE SYNCED</span>
               </div>
             </div>
           </div>

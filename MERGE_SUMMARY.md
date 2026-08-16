@@ -77,7 +77,7 @@ http://localhost:3000
 - `README.md` — Updated with new project info
 - `design/tutorial-first-shift.md` — Full tutorial design doc
 - `TUTORIAL_SUMMARY.md` — Implementation summary
-- `docs/ROUTER_IMPLEMENTATION.md` — Router technical docs
+- `ROUTER_IMPLEMENTATION.md` — Router technical docs
 - `design/core-design.md` — Core game design bible
 
 ### Design Docs (4 files)

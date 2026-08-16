@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const GameStateContext = createContext();
+const STORAGE_KEY = 'fr:player-progress:v1';
 
 // Initial state
 const INITIAL_STATE = {
@@ -45,8 +46,43 @@ const INITIAL_STATE = {
   contacts: []
 };
 
+function loadSavedState() {
+  if (typeof window === 'undefined') return INITIAL_STATE;
+
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (!saved) return INITIAL_STATE;
+
+    const parsed = JSON.parse(saved, (_key, value) => value === '__INFINITY__' ? Infinity : value);
+    return {
+      ...INITIAL_STATE,
+      ...parsed,
+      components: { ...INITIAL_STATE.components, ...parsed.components },
+      qualities: { ...INITIAL_STATE.qualities, ...parsed.qualities },
+      promotion: { ...INITIAL_STATE.promotion, ...parsed.promotion },
+      logbook: Array.isArray(parsed.logbook) ? parsed.logbook : [],
+      discoveries: Array.isArray(parsed.discoveries) ? parsed.discoveries : [],
+      contacts: Array.isArray(parsed.contacts) ? parsed.contacts : []
+    };
+  } catch {
+    return INITIAL_STATE;
+  }
+}
+
 export function GameStateProvider({ children }) {
-  const [state, setState] = useState(INITIAL_STATE);
+  const [state, setState] = useState(loadSavedState);
+
+  useEffect(() => {
+    try {
+      const serialized = JSON.stringify(
+        state,
+        (_key, value) => value === Infinity ? '__INFINITY__' : value
+      );
+      window.localStorage.setItem(STORAGE_KEY, serialized);
+    } catch {
+      // Storage can be unavailable in private browsing. The in-memory file remains valid.
+    }
+  }, [state]);
 
   // Credit management
   const addCredits = useCallback((amount) => {
@@ -185,7 +221,7 @@ export function GameStateProvider({ children }) {
   const completeTask = useCallback(() => {
     setState(prev => ({
       ...prev,
-      tasksCompleted: prev.tasksCompleted + 1
+      tasksCompleted: Math.min(prev.tasksCompleted + 1, 50)
     }));
   }, []);
 

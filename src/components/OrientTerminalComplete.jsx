@@ -11,7 +11,7 @@ You have been oriented, Operator.
 The city is counting on you.
 <span class="warn">The city has always been counting on you.</span>
 
-Fifty tasks await in the Operator Console below.
+Your first result is in the record. Forty-nine work orders remain in the live queue.
 <span class="dim">They have always been waiting.</span>`;
 
 export default function OrientTerminalComplete({ onReplay }) {
@@ -27,7 +27,7 @@ export default function OrientTerminalComplete({ onReplay }) {
           <div className="orient-content" dangerouslySetInnerHTML={{ __html: ORIENTATION_COMPLETE }} />
           <div className="orient-complete">
             <span className="orient-arrow">↓</span>
-            <a href="#console" className="btn btn-primary">▸ BEGIN YOUR SHIFT</a>
+            <a href="#console" className="btn btn-primary">▸ ENTER THE LIVE QUEUE</a>
           </div>
           <button className="btn btn-ghost" onClick={onReplay}>
             ▸ REPLAY ORIENTATION

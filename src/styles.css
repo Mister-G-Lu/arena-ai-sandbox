@@ -21,6 +21,12 @@
   --font-mono: 'Share Tech Mono', ui-monospace, 'SF Mono', monospace;
   --radius: 14px;
   --sidebar-w: 220px;
+  /* Shared aliases used by the operator stats/profile components. */
+  --terminal-border: var(--line);
+  --terminal-accent: var(--teal);
+  --terminal-glow: var(--teal);
+  --terminal-text: var(--text);
+  --terminal-text-dim: var(--muted);
 }
 
 * { box-sizing: border-box; }
@@ -552,6 +558,144 @@ h2 {
 
 .console-note { margin-top: 14px; }
 
+/* The live console is intentionally scoped: later orientation helpers reuse
+   readout/log class names, but must not break the operator queue layout. */
+.console > .readouts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-top: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.console > .readouts .readout {
+  padding: 14px 16px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--line-soft);
+}
+.console > .readouts .readout:last-child { border-right: 0; }
+.console > .readouts .readout span {
+  color: var(--text);
+  font-size: 1.02rem;
+  font-weight: 400;
+}
+
+.console > .log {
+  min-height: 170px;
+  max-height: 260px;
+  margin-top: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.task-workflow {
+  min-height: 198px;
+  padding: 18px 20px;
+  background:
+    linear-gradient(90deg, rgba(87, 214, 195, 0.035), transparent 45%),
+    rgba(255, 255, 255, 0.012);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.task-card {
+  min-height: 160px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  background: rgba(3, 8, 16, 0.68);
+  animation: task-card-enter 0.28s ease both;
+}
+
+.task-kicker {
+  margin-bottom: 7px;
+  color: var(--faint);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+}
+
+.task-title {
+  color: var(--amber);
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+}
+
+.task-card p {
+  max-width: 75ch;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.task-rule {
+  display: block;
+  margin-top: 16px;
+  color: var(--faint);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.task-card-processing { border-left-color: var(--amber); }
+.task-card-processing .processing-fill { animation-duration: 0.9s; }
+
+.task-card-result {
+  border-left-color: var(--amber);
+  box-shadow: inset 0 0 34px rgba(255, 198, 107, 0.025);
+}
+
+.task-card .task-result {
+  padding: 13px 14px;
+  color: var(--text);
+  border: 1px solid rgba(255, 198, 107, 0.18);
+  background: rgba(255, 198, 107, 0.045);
+}
+.task-card .task-result.corrupt {
+  color: var(--red);
+  border-color: rgba(255, 111, 111, 0.35);
+  text-shadow: 0 0 8px rgba(255, 111, 111, 0.35);
+}
+
+.task-reward {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+  color: var(--teal);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+}
+
+.task-card-complete {
+  border-left-color: var(--teal);
+  background: rgba(87, 214, 195, 0.045);
+}
+
+.console .console-actions {
+  align-items: center;
+  min-height: 72px;
+  margin-top: 0;
+}
+
+.console-action-note {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.acknowledge-button {
+  box-shadow: 0 0 0 1px rgba(255, 198, 107, 0.15), 0 6px 24px rgba(255, 198, 107, 0.2);
+}
+
+@keyframes task-card-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ====================================================================
    FIRST SHIFT (orientation / tutorial)
    ==================================================================== */
@@ -825,6 +969,7 @@ h2 {
    ==================================================================== */
 
 .site-footer {
+  margin-left: var(--sidebar-w);
   border-top: 1px solid var(--line-soft);
   padding: 28px 0 40px;
   color: var(--faint);
@@ -860,8 +1005,12 @@ h2 {
 
   .hero { padding: 80px 0 64px; }
   .hero-grid { grid-template-columns: 1fr; gap: 36px; }
-  .readouts { grid-template-columns: repeat(2, 1fr); }
-  .readout:nth-child(2) { border-right: none; }
+  .readouts,
+  .console > .readouts { grid-template-columns: repeat(2, 1fr); }
+  .readout:nth-child(2),
+  .console > .readouts .readout:nth-child(2) { border-right: none; }
+  .console-action-note { width: 100%; margin-left: 0; text-align: left; }
+  .console .console-actions { flex-wrap: wrap; }
 
   /* overlay when sidebar open on mobile */
   .sidebar-overlay {

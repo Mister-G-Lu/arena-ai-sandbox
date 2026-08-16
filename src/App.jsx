@@ -20,7 +20,7 @@ function App() {
       <ResourceBar />
       <NavBar currentPage={page} onNavigate={navigate} />
 
-      <main style={{ paddingTop: '60px' }}>
+      <main>
         {page === 'home' && <Hero />}
         {page === 'directive' && <Directive />}
         {page === 'grid' && <Grid />}

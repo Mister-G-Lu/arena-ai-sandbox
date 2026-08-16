@@ -5,11 +5,10 @@ import OrientTerminalStation from './OrientTerminalStation';
 import OrientTerminalBreakRoom from './OrientTerminalBreakRoom';
 import OrientTerminalTask from './OrientTerminalTask';
 import OrientTerminalComplete from './OrientTerminalComplete';
-
-// Stage sequence: boot -> memo -> station -> breakroom -> task -> complete
-const STAGES = ['idle', 'boot', 'memo', 'station', 'breakroom', 'task', 'complete'];
+import { useGameState } from '../context/GameStateContext';
 
 export default function FirstShift() {
+  const { state, actions } = useGameState();
   const [stage, setStage] = useState('idle');
   const [transitioning, setTransitioning] = useState(false);
 
@@ -28,6 +27,15 @@ export default function FirstShift() {
       setStage('idle');
       setTransitioning(false);
     }, 300);
+  }
+
+  function recordOrientationTask() {
+    const alreadyRecorded = state.logbook.some(entry => entry.text.includes('Orientation link verified'));
+    if (state.day !== 1 || state.tasksCompleted !== 0 || alreadyRecorded) return;
+
+    actions.completeTask();
+    actions.addCredits(10);
+    actions.addLogEntry('Orientation link verified. The live queue opened with forty-nine tasks remaining.');
   }
 
   return (
@@ -71,7 +79,11 @@ export default function FirstShift() {
           )}
 
           {stage === 'station' && (
-            <OrientTerminalStation onComplete={() => transitionTo('breakroom')} />
+            <OrientTerminalStation
+              day={state.day}
+              tasksRemaining={Math.max(0, 50 - state.tasksCompleted)}
+              onComplete={() => transitionTo('breakroom')}
+            />
           )}
 
           {stage === 'breakroom' && (
@@ -79,7 +91,10 @@ export default function FirstShift() {
           )}
 
           {stage === 'task' && (
-            <OrientTerminalTask onComplete={() => transitionTo('complete')} />
+            <OrientTerminalTask
+              onTaskLogged={recordOrientationTask}
+              onComplete={() => transitionTo('complete')}
+            />
           )}
 
           {stage === 'complete' && (

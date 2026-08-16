@@ -1,10 +1,9 @@
 .resource-bar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(15, 20, 30, 0.95);
+  z-index: 90;
+  margin-left: var(--sidebar-w);
+  background: rgba(15, 20, 30, 0.97);
   border-bottom: 1px solid var(--terminal-border);
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
@@ -154,19 +153,29 @@
   }
 }
 
+@media (max-width: 860px) {
+  .resource-bar {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 768px) {
   .resource-bar-inner {
-    flex-wrap: wrap;
-    gap: 1rem;
+    flex-wrap: nowrap;
+    gap: 1.25rem;
+    overflow-x: auto;
+    padding: 0.65rem 1rem 0.65rem 4.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--terminal-border) transparent;
   }
 
   .resource-item {
-    flex: 1 1 calc(50% - 0.5rem);
+    flex: 0 0 auto;
   }
 
   .profile-button {
     margin-left: 0;
-    width: 100%;
+    width: auto;
     justify-content: center;
   }
 }

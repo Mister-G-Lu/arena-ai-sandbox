@@ -4,8 +4,8 @@ A slow-burn action/storylet game in the Fallen London tradition, built in small 
 
 You are the night operator at Meridian Central Dispatch. Fifty tasks a shift. Attendance is mandatory. The coffee is always warm. And the city forgets, sometimes. You don't.
 
-- **Live site:** https://mister-g-lu.github.io/arena-ai-sandbox/ *(GitHub Pages, built from `dist/` on `main`)*
-- **Tech stack:** React 18 + Vite + vanilla CSS (migrated from static HTML)
+- **Live site:** https://mister-g-lu.github.io/arena-ai-sandbox/ *(GitHub Pages, built from `docs/` on `main`)*
+- **Tech stack:** React 19 + Vite + vanilla CSS (migrated from static HTML)
 - **Design docs:** [`design/`](design/) — core design bible and drafts (⚠ full spoilers)
 - **Narration system:** [`NARRATION_SETS.md`](NARRATION_SETS.md) — all story text with critical lines marked for polish
 
