@@ -44,6 +44,18 @@ describe('action tank', () => {
     expect(msUntilFull(result, t)).toBeNull();
   });
 
+  it('keeps a full tank stable across presentation reads', () => {
+    const full = tank(ACTION_CAP, 123_456);
+    expect(accrue(full, 5_000_000)).toEqual({
+      ...full,
+      gained: 0,
+    });
+    expect(accrue(full, 5_001_000)).toEqual({
+      ...full,
+      gained: 0,
+    });
+  });
+
   it('restarts the clock only when spending from a full tank', () => {
     const t = 5_000_000;
     const full = spend(tank(ACTION_CAP, 0), 1, t);
