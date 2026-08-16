@@ -1,0 +1,26 @@
+{
+  "id": "sticky-03",
+  "zone": "day-crew-notes",
+  "title": "BEFORE I WAS BORN.",
+  "body": "The last note is in a different hand — older, formal, the pen pressed hard: my father trained under the night operator. my father is sixty-two. the night operator looks thirty. ask him what he eats. — P. Someone has written underneath, in the first hand, smaller: don't. i already asked. The note is not dated. The paper has the soft, worn feel of a page that has been folded for decades and only now left out where a night operator could find it.",
+  "choices": [
+    {
+      "id": "copy",
+      "label": "Copy both notes into your logbook.",
+      "outcome": {
+        "text": "You copy them word for word, including the correction. The logbook is the only record the city cannot revise. When you look up, the board is clean — the notes are gone, and you do not remember them being taken, and the coffee is warm, and the clock says 01:00, and the logbook does not forget.",
+        "qualities": { "Doubt": 1, "Perception": 1, "Attention": 1 }
+      },
+      "completeZone": true
+    },
+    {
+      "id": "tear",
+      "label": "Tear them down. They are wrong about you.",
+      "outcome": {
+        "text": "You tear them down. The shreds go in the bin; the bin is empty by morning. They are wrong about you — you are thirty, you are not thirty, you do not remember being hired. The day crew will write new notes about the night operator who reads the board.",
+        "qualities": { "Routine": 1, "Attention": 1 }
+      },
+      "completeZone": true
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "sticky-02",
+  "zone": "day-crew-notes",
+  "title": "IT'S THE HANDWRITING.",
+  "body": "A new note, added since the last time you looked. Same hand, faster now: it's the handwriting. i matched it against the old operator files. his signature is all over the 2019 forms. ask him who trained him. — D. There is no old operator in the roster. There is no 2019. The handwriting is the same as yours — right down to the way you cross your sevens.",
+  "choices": [
+    {
+      "id": "take",
+      "label": "Take the note. Keep it.",
+      "outcome": {
+        "text": "It comes away clean, like a page that has been waiting to be removed. You fold it into your logbook. The board looks wrong without it — a gap where something alive used to be. The day crew will write another. They have been writing them for years.",
+        "qualities": { "Doubt": 1, "Perception": 1 }
+      },
+      "next": "sticky-03"
+    },
+    {
+      "id": "leave",
+      "label": "Leave it. The day crew watches the building, not you.",
+      "outcome": {
+        "text": "You leave it. The note is about the building's memory, not about you — which is worse. Someone in the day crew has been reading old operator files, and the old operator signs the way you do.",
+        "qualities": { "Routine": 1, "Attention": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}

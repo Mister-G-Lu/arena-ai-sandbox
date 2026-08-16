@@ -1,0 +1,26 @@
+{
+  "id": "handwritten-01",
+  "zone": "handwritten-order",
+  "title": "FILED FROM THE NIGHT DESK",
+  "body": "A work order, timestamped 03:12, filed from your terminal. REPLACE STREETLIGHT 4-B, SECTOR 9. SIGNED: [your name], NIGHT OPERATOR. The signature is yours — the same tilt, the same crossing, the same habit of underlining the first letter. You were at the terminal at 03:12. The queue has no memory of this order. The queue is certain it has no memory. It is still in the tray, warm, like the coffee, like the key in your pocket.",
+  "choices": [
+    {
+      "id": "compare",
+      "label": "Hold it. Compare the signature.",
+      "outcome": {
+        "text": "You hold your logbook beside it. The match is exact — including the correction you made to your own signature yesterday, after M. complained it was illegible. Whoever wrote this saw the corrected page. Nobody sees the corrected page. The corrected page is between your hands, and the copy is already filed.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "next": "handwritten-02"
+    },
+    {
+      "id": "file",
+      "label": "File it with the night backlog. Say nothing.",
+      "outcome": {
+        "text": "You file it. It counts. The system pays for work you did not do, filed under your own hand, and the credits land like a coin in a pocket that was already warm. Somewhere in the ledger, a row with your name on it balances itself a little better.",
+        "qualities": { "Routine": 1, "Salary": 3 }
+      },
+      "completeZone": true
+    }
+  ]
+}

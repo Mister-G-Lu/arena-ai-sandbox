@@ -1101,6 +1101,11 @@ h2 {
   border-color: rgba(255, 111, 111, 0.35);
   text-shadow: 0 0 8px rgba(255, 111, 111, 0.35);
 }
+.task-card .task-result.corrupt.personal {
+  color: #ffc66b;
+  border-color: rgba(255, 198, 107, 0.5);
+  text-shadow: 0 0 10px rgba(255, 198, 107, 0.45);
+}
 
 .task-reward {
   display: flex;
@@ -1498,6 +1503,13 @@ h2 {
 .log-line.corrupt {
   color: var(--red);
   text-shadow: 0 0 10px rgba(255, 111, 111, 0.45);
+}
+
+/* A corruption that is addressed to the operator personally: not red noise,
+   but amber attention — the system's own highlight colour for your file. */
+.log-line.corrupt.personal {
+  color: #ffc66b;
+  text-shadow: 0 0 12px rgba(255, 198, 107, 0.55);
 }
 
 .fx-flicker { animation: fx-flicker 150ms steps(2) 2; }

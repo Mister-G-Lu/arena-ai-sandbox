@@ -584,4 +584,130 @@ describe('opening narrative', () => {
     expect(resource('Components')).toBe('1/6');
     expect(done.logbook.some((e: { text: string }) => e.text.includes('NULL KEY'))).toBe(true);
   }, 60000);
+
+  it('guarantees a personal anomaly before task 10 from Shift 2 on', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 2;
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    // Every roll misses, so only the guarantee can produce an anomaly — and
+    // the guarantee must be personal: the city's error has the operator's
+    // handwriting in it, not a random corruption line.
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    render(<App />);
+
+    let sawPersonal = false;
+    for (let i = 0; i < 10 && !sawPersonal; i++) {
+      await click('EXECUTE TASK');
+      await tick(1200);
+      if (button('LOG THE DISCREPANCY')) {
+        sawPersonal = true;
+        // The console names the wrongness instead of filing it as noise.
+        expect(document.body.textContent).toContain('RESULT RECEIVED // IT IS YOUR HANDWRITING');
+        expect(document.querySelector('.task-result.corrupt.personal')).not.toBeNull();
+        expect(document.querySelector('.log-line.corrupt.personal')).not.toBeNull();
+        expect(document.body.textContent).toContain(
+          'the same hand that signs your logbook',
+        );
+        // The line itself is one of the authored personal results.
+        const lines = Array.from(document.querySelectorAll('.log-line.corrupt.personal'));
+        const text = lines.map((l) => l.textContent ?? '').join(' ');
+        const personal = [
+          'a work order in your handwriting was filed from the night desk',
+          'the night operator seems familiar',
+          'message from your next shift',
+          'your signature appears on the sheet for a shift you have not worked yet',
+          'you are on the roster twice tonight',
+        ];
+        expect(personal.some((p) => text.includes(p))).toBe(true);
+
+        await click('FILE AS CLEAN');
+        await tick(300);
+      } else {
+        await click('ACKNOWLEDGE RESULT');
+        await tick(150);
+      }
+    }
+
+    expect(sawPersonal).toBe(true);
+    expect(save().anomaliesSeenThisShift).toBe(1);
+    expect(save().tasksCompleted).toBeLessThanOrEqual(10);
+    random.mockRestore();
+  }, 60000);
+
+  it('posts the Day 3 coincidences: the night desk files your handwriting, the day crew writes about you', async () => {
+    const state = createInitialGameState();
+    state.orientation.completed = true;
+    state.day = 3;
+    state.qualities.doubt = 1;
+    state.qualities.perception = 1;
+    state.promotion = { ...state.promotion, tier: 1 };
+    localStorage.setItem(
+      GAME_SAVE_KEY,
+      serializeSaveEnvelope(createStoredSaveEnvelope(state)),
+    );
+    window.location.hash = '#console';
+
+    render(<App />);
+    await tick(100);
+
+    // The shift opens with the order already waiting at the desk. (The annex
+    // init line still outranks it on the log; the night-desk aside carries
+    // the Day 3 beat — M. has not authorised it either.)
+    expect(document.body.textContent).toContain('NIGHT DESK // FILED 03:12 // IN YOUR HAND');
+    expect(document.body.textContent).toContain('WORK ORDER // STREETLIGHT 4-B, SECTOR 9');
+    expect(document.body.textContent).toContain('I did not authorise this');
+
+    // Investigations carries the case; Notices carries the day crew.
+    await go('investigations');
+    await tick(100);
+    const caseCard = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('The order in your handwriting')) as HTMLElement;
+    expect(caseCard).toBeDefined();
+    expect((caseCard.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => { (caseCard.querySelector('button') as HTMLButtonElement).click(); });
+    await tick(100);
+
+    expect(document.body.textContent).toContain('FILED FROM THE NIGHT DESK');
+    await click('Hold it. Compare the signature.');
+    await tick(200);
+    expect(document.body.textContent).toContain('THE SAME HAND');
+    // The tell: the forger saw the corrected page.
+    expect(document.body.textContent).toContain('saw the corrected page');
+    await click('Keep it. It is evidence.');
+    await tick(200);
+    expect(save().zones['handwritten-order']).toBe('complete');
+    expect(save().qualities.perception).toBeGreaterThanOrEqual(2);
+
+    await go('notices');
+    await tick(100);
+    const notesCard = Array.from(document.querySelectorAll('.zone-card'))
+      .find((z) => z.textContent?.includes('The day crew\u2019s notes')) as HTMLElement;
+    expect(notesCard).toBeDefined();
+    await act(async () => { (notesCard.querySelector('button') as HTMLButtonElement).click(); });
+    await tick(100);
+
+    // The notes chain: familiar → handwriting → before I was born.
+    expect(document.body.textContent).toContain('familiar');
+    expect(document.body.textContent).toContain("i can't place him");
+    await click('Read it twice.');
+    await tick(200);
+    expect(document.body.textContent).toContain("IT'S THE HANDWRITING.");
+    await click('Take the note. Keep it.');
+    await tick(200);
+    expect(document.body.textContent).toContain('BEFORE I WAS BORN.');
+    expect(document.body.textContent).toContain('sixty-two');
+    await click('Copy both notes into your logbook.');
+    await tick(200);
+
+    const after = save();
+    expect(after.zones['day-crew-notes']).toBe('complete');
+    expect(after.qualities.doubt).toBeGreaterThanOrEqual(2);
+    expect(after.seenStorylets).toEqual(expect.arrayContaining(['sticky-01', 'sticky-02', 'sticky-03']));
+  }, 60000);
 });

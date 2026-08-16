@@ -71,6 +71,39 @@ describe('canonical game save', () => {
     expect(loaded.game.logbook[0]?.text).toBe('Ink does not forget.');
   });
 
+  it('round-trips a reserved personal anomaly and defaults old reservations to generic', () => {
+    const state = createInitialGameState();
+    state.pendingDispatch = {
+      id: 'dispatch-2-1',
+      day: 2,
+      taskNumber: 1,
+      shiftAction: 1,
+      code: 'S9-RC-041',
+      title: 'SECTOR 9 ROLL CALL',
+      instruction: 'Open the night channel.',
+      cleanResult: 'all clear',
+      displayedResult: 'a work order in your handwriting was filed from the night desk',
+      isCorrupt: true,
+      isPersonal: true,
+    };
+
+    const stored = createStoredSaveEnvelope(state, new Date('2026-08-16T12:00:00Z'));
+    const loaded = parseSaveJson(serializeSaveEnvelope(stored));
+    expect(loaded.game.pendingDispatch?.isPersonal).toBe(true);
+
+    // A reservation written before the flag existed must still parse, with the
+    // safe default: the reservation stays corrupt but reads as generic.
+    const legacy = createStoredSaveEnvelope(state, new Date('2026-08-16T12:00:00Z'));
+    const { isPersonal: _flag, ...withoutFlag } = legacy.game.pendingDispatch ?? {};
+    const legacyEnvelope = {
+      ...legacy,
+      game: { ...legacy.game, pendingDispatch: withoutFlag },
+    };
+    const migrated = parseStoredSaveEnvelope(legacyEnvelope);
+    expect(migrated.game.pendingDispatch?.isPersonal).toBe(false);
+    expect(migrated.game.pendingDispatch?.isCorrupt).toBe(true);
+  });
+
   it('rejects unknown top-level and nested keys', () => {
     const envelope = createStoredSaveEnvelope(createInitialGameState());
     expect(() => parseStoredSaveEnvelope({ ...envelope, debug: true })).toThrow(SaveValidationError);

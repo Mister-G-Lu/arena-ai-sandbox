@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   ANOMALY_CHANCE,
+  CORRUPT_RESULTS,
   GUARANTEED_ANOMALIES_PER_SHIFT,
   HOOK_DEADLINE,
+  PERSONAL_RESULTS,
   TASKS_PER_SHIFT,
   anomalyChance,
   createPendingDispatch,
   shouldTriggerAnomaly,
+  shouldUsePersonalAnomaly,
 } from './dispatch';
 
 describe('dispatch anomaly schedule', () => {
@@ -29,6 +32,9 @@ describe('dispatch anomaly schedule', () => {
       isCorrupt: true,
     });
     expect(pending.displayedResult).not.toBe(pending.cleanResult);
+    // Day 3, first anomaly of the shift: the corruption is personal.
+    expect(pending.isPersonal).toBe(true);
+    expect(PERSONAL_RESULTS).toContain(pending.displayedResult);
   });
 
   it('uses at least the authored chance on the first task', () => {
@@ -102,5 +108,114 @@ describe('dispatch anomaly schedule', () => {
       }
     }
     expect(anomalies).toBe(GUARANTEED_ANOMALIES_PER_SHIFT);
+  });
+});
+
+describe('personal anomaly schedule (arcs §2.3 — the wrongness turns personal)', () => {
+  it('keeps Shift 1 corruption generic — the first shift is a glitch', () => {
+    const pending = createPendingDispatch({
+      day: 1,
+      tasksCompleted: 3,
+      tasksThisShift: 3,
+      actionsSpentThisShift: 3,
+      anomaliesSeenThisShift: 0,
+      anomalyRoll: 0,
+      corruptionRoll: 0.5,
+    });
+    expect(pending.isCorrupt).toBe(true);
+    expect(pending.isPersonal).toBe(false);
+    expect(CORRUPT_RESULTS).toContain(pending.displayedResult);
+    expect(PERSONAL_RESULTS).not.toContain(pending.displayedResult);
+  });
+
+  it('makes the first anomaly of every shift from Day 2 on personal', () => {
+    expect(shouldUsePersonalAnomaly(1, 0)).toBe(false);
+    expect(shouldUsePersonalAnomaly(2, 0)).toBe(true);
+    expect(shouldUsePersonalAnomaly(9, 0)).toBe(true);
+    // Once the shift has paid its personal debt, corruption goes generic again.
+    expect(shouldUsePersonalAnomaly(9, 1)).toBe(false);
+    expect(shouldUsePersonalAnomaly(2, 3)).toBe(false);
+  });
+
+  it('draws the personal line from the personal pool, deterministically by roll', () => {
+    const first = createPendingDispatch({
+      day: 2,
+      tasksCompleted: 10,
+      tasksThisShift: 1,
+      actionsSpentThisShift: 1,
+      anomaliesSeenThisShift: 0,
+      anomalyRoll: 0,
+      corruptionRoll: 0,
+    });
+    const last = createPendingDispatch({
+      day: 2,
+      tasksCompleted: 10,
+      tasksThisShift: 1,
+      actionsSpentThisShift: 1,
+      anomaliesSeenThisShift: 0,
+      anomalyRoll: 0,
+      corruptionRoll: 0.999999,
+    });
+    expect(PERSONAL_RESULTS).toContain(first.displayedResult);
+    expect(PERSONAL_RESULTS).toContain(last.displayedResult);
+    expect(first.displayedResult).not.toBe(last.displayedResult);
+    expect(first.displayedResult).toBe(PERSONAL_RESULTS[0]);
+    expect(last.displayedResult).toBe(PERSONAL_RESULTS[PERSONAL_RESULTS.length - 1]);
+  });
+
+  it('flags clean results as never personal', () => {
+    const pending = createPendingDispatch({
+      day: 2,
+      tasksCompleted: 10,
+      tasksThisShift: 1,
+      actionsSpentThisShift: 1,
+      anomaliesSeenThisShift: 0,
+      anomalyRoll: 0.999999,
+      corruptionRoll: 0.5,
+    });
+    expect(pending.isCorrupt).toBe(false);
+    expect(pending.isPersonal).toBe(false);
+    expect(pending.displayedResult).toBe(pending.cleanResult);
+  });
+
+  it('guarantees one personal anomaly before task 10 from Shift 2 on', () => {
+    // Worst case: every roll misses. The forced anomaly must be personal and
+    // must land inside the hook window whatever the RNG does.
+    const anomalies = [];
+    for (let taskNumber = 1; taskNumber <= HOOK_DEADLINE; taskNumber += 1) {
+      const pending = createPendingDispatch({
+        day: 2,
+        tasksCompleted: taskNumber - 1,
+        tasksThisShift: taskNumber - 1,
+        actionsSpentThisShift: taskNumber - 1,
+        anomaliesSeenThisShift: anomalies.length,
+        anomalyRoll: 0.999999,
+        corruptionRoll: 0.5,
+      });
+      if (pending.isCorrupt) anomalies.push(pending);
+    }
+    expect(anomalies.length).toBeGreaterThanOrEqual(1);
+    expect(anomalies[0]?.isPersonal).toBe(true);
+  });
+
+  it('keeps the second owed anomaly generic — one personal line per shift', () => {
+    const second = createPendingDispatch({
+      day: 2,
+      tasksCompleted: 40,
+      tasksThisShift: 40,
+      actionsSpentThisShift: 40,
+      anomaliesSeenThisShift: 1,
+      anomalyRoll: 0,
+      corruptionRoll: 0.5,
+    });
+    expect(second.isCorrupt).toBe(true);
+    expect(second.isPersonal).toBe(false);
+    expect(CORRUPT_RESULTS).toContain(second.displayedResult);
+  });
+
+  it('keeps personal lines free of digits so filing them clean cannot pay a field', () => {
+    for (const line of PERSONAL_RESULTS) {
+      expect(line).not.toMatch(/\d/);
+    }
   });
 });

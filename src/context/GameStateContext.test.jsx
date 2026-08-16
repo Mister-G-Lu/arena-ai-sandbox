@@ -237,6 +237,74 @@ describe('effects pipeline', () => {
     expect(api.state.anomaliesSeenThisShift).toBe(0);
   });
 
+  it('reserves the shift\'s first Day-2 anomaly as personal and files it like any other', async () => {
+    mount();
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.day = 2;
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    await act(async () => {
+      api.actions.startDispatchTask({ anomalyRoll: 0, corruptionRoll: 0.2 });
+    });
+    expect(api.state.pendingDispatch.isCorrupt).toBe(true);
+    expect(api.state.pendingDispatch.isPersonal).toBe(true);
+
+    // Filing follows the same pipeline: the personal line is a corrupt result.
+    await act(async () => {
+      api.actions.fileTaskResult({
+        effects: { Doubt: 1, Attention: 1 },
+        anomaly: true,
+        discrepancy: true,
+      });
+    });
+    expect(api.state.pendingDispatch).toBeNull();
+    expect(api.state.anomaliesSeenThisShift).toBe(1);
+    expect(api.state.discrepanciesLogged).toBe(1);
+  });
+
+  it('keeps the Day-3 coincidences out of reach without Perception and awards no component', async () => {
+    mount();
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.day = 3;
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    // Perception 0: the zones are listed but sealed — entering is refused.
+    await act(async () => { api.actions.enterZone('handwritten-order', 'handwritten-01'); });
+    await act(async () => { api.actions.enterZone('day-crew-notes', 'sticky-01'); });
+    expect(api.state.currentStorylet).toBeNull();
+
+    // With the eye for it, the case opens and completes without a Component —
+    // these are coincidences, not expeditions.
+    saved.game.qualities.perception = 1;
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+    await act(async () => { api.actions.enterZone('handwritten-order', 'handwritten-01'); });
+    expect(api.state.currentStorylet).toEqual({ zone: 'handwritten-order', storyletId: 'handwritten-01' });
+
+    const compare = {
+      id: 'compare',
+      outcome: { qualities: { Perception: 1, Attention: 1 } },
+      next: 'handwritten-02',
+    };
+    const keep = {
+      id: 'keep',
+      outcome: { qualities: { Doubt: 1, Perception: 1 } },
+      completeZone: true,
+    };
+    await act(async () => {
+      api.actions.resolveStorylet({ id: 'handwritten-01', zone: 'handwritten-order', choices: [compare] }, compare);
+    });
+    expect(api.state.currentStorylet).toEqual({ zone: 'handwritten-order', storyletId: 'handwritten-02' });
+    await act(async () => {
+      api.actions.resolveStorylet({ id: 'handwritten-02', zone: 'handwritten-order', choices: [keep] }, keep);
+    });
+    expect(api.state.zones['handwritten-order']).toBe('complete');
+    expect(api.state.qualities.doubt).toBe(1);
+    // compare (+1 Perception) then keep (+1 Perception) on top of the 1 in the file.
+    expect(api.state.qualities.perception).toBe(3);
+    expect(Object.values(api.state.components).filter(Boolean)).toHaveLength(0);
+    expect(api.state.seenStorylets).toContain('handwritten-02');
+  });
+
   it('pauses local writes when another tab advances the save', async () => {
     mount();
     await act(async () => { api.actions.addCredits(10); });

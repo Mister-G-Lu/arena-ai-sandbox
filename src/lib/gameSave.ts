@@ -92,6 +92,12 @@ const PendingDispatchSchema = z.strictObject({
   cleanResult: storyText.min(1),
   displayedResult: storyText.min(1),
   isCorrupt: z.boolean(),
+  /**
+   * The corruption is addressed to the operator personally (their own
+   * handwriting, a message from their next shift). Additive with a safe
+   * default, so a save reserved before this field existed still parses.
+   */
+  isPersonal: z.boolean().default(false),
 });
 
 const glitchIds = Object.keys(GLITCH_DEFS) as [string, ...string[]];

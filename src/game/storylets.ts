@@ -4,7 +4,9 @@ import { qualityDef } from './qualities';
  *  validates every configured zone's entries against this list. */
 export const ZONE_IDS = [
   'annex-order',
+  'handwritten-order',
   'routine',
+  'day-crew-notes',
   'floor12',
   'restricted-files',
   'breakroom',

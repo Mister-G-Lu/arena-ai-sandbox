@@ -1,0 +1,26 @@
+{
+  "id": "sticky-01",
+  "zone": "day-crew-notes",
+  "title": "THE NIGHT OPERATOR SEEMS… FAMILIAR.",
+  "body": "A yellow note on the memo board, between a reminder about the fourth-floor printer and a lunch rotation nobody has filled in. Day-crew handwriting, unhurried, lowercase: the night operator seems... familiar. i can't place him. — D. The note is dated today. You are the night operator. There is no photograph of you on any wall. The day crew left this at 16:00, while you were somewhere the log says you were not.",
+  "choices": [
+    {
+      "id": "read",
+      "label": "Read it twice.",
+      "outcome": {
+        "text": "The second reading is worse. The note is dated today, in a hand that predates the building's coffee — and under the first line, fainter, almost erased: do not ask him how long he has worked here. Someone in the day crew already knows the answer and does not want it said out loud.",
+        "qualities": { "Perception": 1, "Attention": 1 }
+      },
+      "next": "sticky-02"
+    },
+    {
+      "id": "leave",
+      "label": "Leave it for them.",
+      "outcome": {
+        "text": "You leave it. It is about you, and you are not ready to be a topic. The yellow square glows in the dark of the office like a small, patient sun. Tomorrow it will say something else.",
+        "qualities": { "Routine": 1, "Salary": 1 }
+      },
+      "endZone": true
+    }
+  ]
+}
