@@ -92,13 +92,31 @@ function withSpentAction(prev, cost, mutate, now = Date.now()) {
   };
 }
 
+/**
+ * Residue is forever — but the file that holds it is not infinite. The save
+ * schema caps logbook, discoveries and seen-storylets (see gameSave.ts), and
+ * before this cap the reducers appended without limit: a file that played its
+ * way across the ceiling became a file the schema rejected, and from that
+ * append onward every local write, cloud sync and export failed validation.
+ * These live caps sit safely below the schema ceilings, so an in-game-grown
+ * file can never reach the wall — the app prunes its oldest residue instead.
+ */
+export const LOGBOOK_CAP = 1000;
+export const DISCOVERIES_CAP = 500;
+export const SEEN_STORYLETS_CAP = 9500;
+
+function appendResidue(list, entry, cap) {
+  const next = [...list, entry];
+  return next.length > cap ? next.slice(next.length - cap) : next;
+}
+
 /** Append a logbook entry inside a reducer without duplicating the shape. */
 function withLog(prev, text, extra = {}) {
   if (!text) return { ...prev, ...extra };
   return {
     ...prev,
     ...extra,
-    logbook: [...prev.logbook, { day: prev.day, text, timestamp: Date.now() }]
+    logbook: appendResidue(prev.logbook, { day: prev.day, text, timestamp: Date.now() }, LOGBOOK_CAP)
   };
 }
 
@@ -149,11 +167,11 @@ function commitLedger(prev, result) {
         ...prev.qualities,
         doubt: clampQuality('doubt', (prev.qualities.doubt ?? 0) + 1)
       },
-      discoveries: [...prev.discoveries, {
+      discoveries: appendResidue(prev.discoveries, {
         day: prev.day,
         text: `THE WORD: the municipal ledger is ${CREDIT_LIMIT.toLocaleString()} wide. Nothing in a city needs to be exactly that wide.`,
         timestamp: Date.now()
-      }]
+      }, DISCOVERIES_CAP)
     }
   );
 }
@@ -527,18 +545,18 @@ export function GameStateProvider({ children }) {
               // The lethal choice was explicit; the next investigation begins
               // with the system watching from a clean baseline.
               attention: 0,
-              discoveries: [...next.discoveries, {
+              discoveries: appendResidue(next.discoveries, {
                 day: next.day,
                 text: `THE INTERIM ${deathNumber}: the frame after termination and before shift start. The city forgot. You did not.`,
                 timestamp: Date.now()
-              }]
+              }, DISCOVERIES_CAP)
             }
           );
         }
 
         const seenStorylets = charged.seenStorylets.includes(storylet.id)
           ? charged.seenStorylets
-          : [...charged.seenStorylets, storylet.id];
+          : appendResidue(charged.seenStorylets, storylet.id, SEEN_STORYLETS_CAP);
 
         const zones = { ...charged.zones };
         let currentStorylet = charged.currentStorylet;
