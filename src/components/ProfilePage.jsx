@@ -1,8 +1,9 @@
 import React from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { QUALITY_DEFS, visibleQualityDefs, attentionTone } from '../game/qualities';
-import { requirementLabel, missingRequirements } from '../game/progression';
+import { requirementBadges, missingRequirements } from '../game/progression';
 import { GLITCH_DEFS } from '../game/glitches';
+import RequirementBadges from './RequirementBadges';
 import SaveManagement from './SaveManagement';
 import './ProfilePage.css';
 
@@ -266,7 +267,7 @@ export default function ProfilePage() {
                 <div className="next-tier">TIER {nextPromotion.tier}</div>
                 <div className="next-title">{nextPromotion.title}</div>
                 <div className="next-requirements">
-                  <span>{requirementLabel(nextPromotion.requires)}</span>
+                  <RequirementBadges badges={requirementBadges(nextPromotion.requires, requirementCtx)} />
                   {missingRequirements(nextPromotion.requires, requirementCtx).length > 0 && (
                     <span className="dim">
                       {' '}— currently {missingRequirements(nextPromotion.requires, requirementCtx).join(', ')}

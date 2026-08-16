@@ -2,8 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { loadAllStorylets, findCard, cardsInZone } from '../content/load';
 import { describeEffects } from '../game/qualities';
-import { clearanceLabel, requirementLabel, missingRequirements } from '../game/progression';
+import { clearanceLabel, requirementBadges } from '../game/progression';
 import { supplyById } from '../game/shop';
+import RequirementBadges from './RequirementBadges';
 import HorizonPanel from './HorizonPanel';
 import './Notices.css';
 
@@ -33,6 +34,7 @@ export default function Notices({ board = 'notices' }) {
   const { state, actions, availableZones, requirementCtx, actionTank } = useGameState();
   const [lastOutcome, setLastOutcome] = useState(null);
   const [refusal, setRefusal] = useState(null);
+  const [checkResult, setCheckResult] = useState(null);
   const copy = BOARD_COPY[board] ?? BOARD_COPY.notices;
   const boardZones = availableZones.filter((zone) => zone.board === board);
 
@@ -68,9 +70,27 @@ export default function Notices({ board = 'notices' }) {
   function openZone(zone) {
     setLastOutcome(null);
     setRefusal(null);
+    setCheckResult(null);
     // Opening a board and reading a card are free. Only committing to a choice
     // spends from the tank, so nobody pays to find out what a notice says.
     actions.enterZone(zone.id, nextCardId(zone));
+  }
+
+  /** Roll a challengeable zone's skill checks. Failure spends an action. */
+  function attemptZone(zone) {
+    setLastOutcome(null);
+    setRefusal(null);
+    setCheckResult(null);
+    if (actionTank.empty) {
+      setRefusal(
+        `NO ACTIONS REMAINING. THE CHECK STAYS OPEN. NEXT ACTION IN ${actionTank.countdown}.`
+      );
+      return;
+    }
+    const result = actions.attemptSkillCheck(zone.id, nextCardId(zone));
+    if (result?.ok && !result.passed) {
+      setCheckResult({ zoneId: zone.id, results: result.results });
+    }
   }
 
   function choose(choice) {
@@ -168,10 +188,13 @@ export default function Notices({ board = 'notices' }) {
             const remaining = remainingIn(zone);
             const exhausted = zone.onceEach && remaining === 0;
             const status = exhausted && zone.status !== 'complete' ? 'complete' : zone.status;
-            const blockers = missingRequirements(zone.requires, requirementCtx);
+            const badges = requirementBadges(zone.requires, requirementCtx, { skillChecks: true });
             const clearanceHeld = !zone.requiresUnlock || state.promotion.unlocks.includes(zone.requiresUnlock);
             const needsSupplies = Object.keys(zone.requires ?? {})
               .some((key) => supplyById(key) && !state.supplies[key]);
+            const challengeable = status === 'challengeable';
+            const actionable = status === 'open' || challengeable;
+            const failedCheck = checkResult?.zoneId === zone.id ? checkResult : null;
 
             return (
               <article key={zone.id} className={`zone-card zone-${status}`}>
@@ -191,6 +214,11 @@ export default function Notices({ board = 'notices' }) {
                   )}
                 </div>
 
+                {/* Requirements as compact glyph badges; hover for the full bar. */}
+                {(status === 'locked' || status === 'challengeable') && (
+                  <RequirementBadges badges={badges} skillChecks />
+                )}
+
                 {status === 'locked' && (
                   <div className="zone-requirement-stack">
                     {!clearanceHeld && (
@@ -201,16 +229,25 @@ export default function Notices({ board = 'notices' }) {
                     {zone.lockedNote && (
                       <p className="fine zone-requirement">{zone.lockedNote}</p>
                     )}
-                    <p className="fine zone-requirement">
-                      REQUIRES: {requirementLabel(zone.requires)}
-                      {blockers.length > 0 ? ` — you have ${blockers.join(', ')}` : ''}
-                    </p>
                     {needsSupplies && (
                       <a className="zone-supply-link" href="#shop">
                         ▸ ORDER FROM SUPPLY
                       </a>
                     )}
                   </div>
+                )}
+
+                {challengeable && (
+                  <p className="fine zone-requirement zone-challenge-hint">
+                    ENTRY IS A CHECK — HOVER A MARK TO READ THE ODDS. A FAILED ATTEMPT SPENDS 1 ACTION.
+                  </p>
+                )}
+
+                {failedCheck && !failedCheck.passed && (
+                  <p className="fine zone-check-failed" role="status">
+                    CHECK FAILED // {failedCheck.results.filter((r) => !r.pass)
+                      .map((r) => `${r.name.toUpperCase()} ${r.chance}%`).join(' · ')} — 1 ACTION SPENT.
+                  </p>
                 )}
 
                 {status === 'complete' && zone.closedNote && (
@@ -220,11 +257,11 @@ export default function Notices({ board = 'notices' }) {
                 <button
                   className="btn btn-primary btn-compact"
                   type="button"
-                  aria-label={`Open ${zone.title}`}
-                  disabled={status !== 'open' || Boolean(current)}
-                  onClick={() => openZone(zone)}
+                  aria-label={challengeable ? `Attempt ${zone.title}` : `Open ${zone.title}`}
+                  disabled={!actionable || Boolean(current)}
+                  onClick={() => (challengeable ? attemptZone(zone) : openZone(zone))}
                 >
-                  {current ? 'ORDER IN PROGRESS' : '▸ OPEN'}
+                  {current ? 'ORDER IN PROGRESS' : challengeable ? '▸ ATTEMPT' : '▸ OPEN'}
                 </button>
               </article>
             );

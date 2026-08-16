@@ -59,6 +59,7 @@
 .zone-status-open { color: #57d6c3; }
 .zone-status-locked { color: #6b7899; }
 .zone-status-complete { color: #ffc66b; }
+.zone-status-challengeable { color: #ffc66b; }
 
 .zone-prize { color: #ffc66b; }
 .zone-remaining { color: #8fa3cc; }
@@ -97,6 +98,18 @@
 
 .zone-card.zone-locked { opacity: 0.72; }
 .zone-card.zone-complete { border-color: rgba(255, 198, 107, 0.3); }
+.zone-card.zone-challengeable { border-color: rgba(255, 198, 107, 0.35); }
+
+/* Requirement badges sit between the meta row and the action button. */
+.zone-card .req-badges { margin-top: 2px; }
+
+.zone-challenge-hint {
+  color: #ffc66b;
+}
+
+.zone-check-failed {
+  color: #ff9c9c;
+}
 
 /* ---------- storylet ---------- */
 

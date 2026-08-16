@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { render, act } from '@testing-library/react';
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import {
   GameStateProvider,
   useGameState,
@@ -262,23 +262,33 @@ describe('effects pipeline', () => {
     expect(api.state.discrepanciesLogged).toBe(1);
   });
 
-  it('keeps the Day-3 coincidences out of reach without Perception and awards no component', async () => {
+  it('keeps the Day-3 coincidences behind a Perception check and awards no component', async () => {
     mount();
     const saved = JSON.parse(api.actions.exportGameSave());
     saved.game.day = 3;
     await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
 
-    // Perception 0: the zones are listed but sealed — entering is refused.
+    // Perception 0: the zones are listed but sealed — opening directly is
+    // refused, because the door is a check, not a key.
     await act(async () => { api.actions.enterZone('handwritten-order', 'handwritten-01'); });
     await act(async () => { api.actions.enterZone('day-crew-notes', 'sticky-01'); });
     expect(api.state.currentStorylet).toBeNull();
 
-    // With the eye for it, the case opens and completes without a Component —
-    // these are coincidences, not expeditions.
+    // A failed roll spends an action and leaves the zone sealed.
+    const miss = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    await act(async () => { api.actions.attemptSkillCheck('handwritten-order', 'handwritten-01'); });
+    expect(api.state.currentStorylet).toBeNull();
+    expect(api.state.actions).toBe(49);
+    miss.mockRestore();
+
+    // With the eye for it, a passing roll opens the case. It completes without
+    // a Component — these are coincidences, not expeditions.
     saved.game.qualities.perception = 1;
     await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
-    await act(async () => { api.actions.enterZone('handwritten-order', 'handwritten-01'); });
+    const hit = vi.spyOn(Math, 'random').mockReturnValue(0);
+    await act(async () => { api.actions.attemptSkillCheck('handwritten-order', 'handwritten-01'); });
     expect(api.state.currentStorylet).toEqual({ zone: 'handwritten-order', storyletId: 'handwritten-01' });
+    hit.mockRestore();
 
     const compare = {
       id: 'compare',
@@ -303,6 +313,34 @@ describe('effects pipeline', () => {
     expect(api.state.qualities.perception).toBe(3);
     expect(Object.values(api.state.components).filter(Boolean)).toHaveLength(0);
     expect(api.state.seenStorylets).toContain('handwritten-02');
+  });
+
+  it('rolls a challengeable zone: success opens free, failure spends one action', async () => {
+    mount();
+    const saved = JSON.parse(api.actions.exportGameSave());
+    saved.game.day = 3;
+    saved.game.qualities.perception = 1;
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+
+    // A passing roll opens the zone and is free — opening never costs.
+    let pass;
+    const hit = vi.spyOn(Math, 'random').mockReturnValue(0);
+    await act(async () => { pass = api.actions.attemptSkillCheck('handwritten-order', 'handwritten-01'); });
+    expect(pass).toMatchObject({ ok: true, passed: true });
+    expect(api.state.actions).toBe(50);
+    expect(api.state.zones['handwritten-order']).toBe('open');
+    hit.mockRestore();
+
+    // Reset to a challengeable state, then fail: the zone stays sealed and the
+    // attempt costs one action.
+    await act(async () => { api.actions.importGameSave(JSON.stringify(saved)); });
+    let fail;
+    const miss = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    await act(async () => { fail = api.actions.attemptSkillCheck('handwritten-order', 'handwritten-01'); });
+    expect(fail).toMatchObject({ ok: true, passed: false });
+    expect(api.state.currentStorylet).toBeNull();
+    expect(api.state.actions).toBe(49);
+    miss.mockRestore();
   });
 
   it('pauses local writes when another tab advances the save', async () => {

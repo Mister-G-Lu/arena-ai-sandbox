@@ -109,6 +109,15 @@ as gates rather than told as promises.
   the live gap, what it adds, and every locked zone on file. Hints are derived
   from the same `PROMOTIONS`/`ZONES` tables the checker enforces, so they
   cannot drift from the rules.
+- **Skill checks** — the skill qualities (`Doubt`, `Perception`, `Routine`)
+  gate *zones* as a roll, not a bar. Requirements split into hard gates (Day,
+  Components, supplies, clearance — always fixed) and skill checks. A zone
+  whose hard gates are met but whose skill checks remain is **challengeable**:
+  entry is a Fallen London-style roll (`60%` at the bar, `±10%` per point,
+  clamped `5–95%`). A pass opens the zone for free; a failure spends one
+  action. Promotions stay deterministic — the system files your rank, it does
+  not gamble on it. Requirements render as compact glyph badges with the full
+  bar on hover (`src/components/RequirementBadges.jsx`).
 - *Origin:* user direction — "give player hints of future and things to look
   forward to; hint with a locked story segment requiring promotion... a shop
   that we can use the credits on for basic resources... simple storylets we can

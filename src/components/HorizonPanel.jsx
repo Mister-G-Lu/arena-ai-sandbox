@@ -4,9 +4,10 @@ import {
   PROMOTIONS,
   clearanceLabel,
   missingRequirements,
-  requirementLabel,
+  requirementBadges,
   unlockLabel,
 } from '../game/progression';
+import RequirementBadges from './RequirementBadges';
 
 /**
  * The clearance forecast — the game's own "what's next". Next promotion with
@@ -17,7 +18,11 @@ import {
 export default function HorizonPanel() {
   const { state, requirementCtx, availableZones } = useGameState();
   const next = PROMOTIONS[state.promotion.tier + 1];
-  const locked = availableZones.filter((zone) => zone.status === 'locked');
+  // Sealed content includes both hard-locked zones and challengeable ones —
+  // a zone waiting on a roll is still not open yet.
+  const locked = availableZones.filter(
+    (zone) => zone.status === 'locked' || zone.status === 'challengeable',
+  );
 
   if (!next && locked.length === 0) return null;
 
@@ -40,7 +45,7 @@ export default function HorizonPanel() {
           <div className="horizon-cell">
             <span className="horizon-label">REQUIRES</span>
             <span className="horizon-value">
-              {requirementLabel(next.requires)}
+              <RequirementBadges badges={requirementBadges(next.requires, requirementCtx)} />
               {missing.length > 0 && (
                 <span className="horizon-missing">{` — ${missing.join(' · ')}`}</span>
               )}
@@ -72,10 +77,13 @@ export default function HorizonPanel() {
               {locked.map((zone) => (
                 <span key={zone.id} className="horizon-locked-item">
                   <span className="horizon-locked-title">{zone.title.toUpperCase()}</span>
-                  <span className="horizon-locked-req">
-                    {requirementLabel(zone.requires)}
-                    {zone.requiresUnlock ? ` · ${clearanceLabel(zone.requiresUnlock)}` : ''}
-                  </span>
+                  <RequirementBadges
+                    badges={requirementBadges(zone.requires, requirementCtx, { skillChecks: true })}
+                    skillChecks
+                  />
+                  {zone.requiresUnlock && (
+                    <span className="horizon-locked-req">{clearanceLabel(zone.requiresUnlock)}</span>
+                  )}
                 </span>
               ))}
             </span>

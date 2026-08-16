@@ -564,8 +564,12 @@ describe('opening narrative', () => {
     const floor12 = zoneButtons.find((z) => z.textContent?.includes('Floor 12'))!;
     const openFloor12 = floor12.querySelector('button') as HTMLButtonElement;
     expect(openFloor12.disabled).toBe(false);
+    // Floor 12 is challengeable — entering is a Doubt + Perception check. Force
+    // the roll to pass so the expedition under test is the walk itself.
+    const expeditionRoll = vi.spyOn(Math, 'random').mockReturnValue(0);
     await act(async () => { openFloor12.click(); });
     await tick(100);
+    expeditionRoll.mockRestore();
 
     for (let i = 0; i < 8; i++) {
       const choices = Array.from(document.querySelectorAll('.storylet-choice')) as HTMLButtonElement[];
@@ -653,6 +657,9 @@ describe('opening narrative', () => {
     );
     window.location.hash = '#console';
 
+    // Both coincidences sit behind a Perception check; force every roll to pass
+    // so the click-through under test is the content, not the dice.
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
     render(<App />);
     await tick(100);
 
@@ -709,5 +716,7 @@ describe('opening narrative', () => {
     expect(after.zones['day-crew-notes']).toBe('complete');
     expect(after.qualities.doubt).toBeGreaterThanOrEqual(2);
     expect(after.seenStorylets).toEqual(expect.arrayContaining(['sticky-01', 'sticky-02', 'sticky-03']));
+
+    random.mockRestore();
   }, 60000);
 });

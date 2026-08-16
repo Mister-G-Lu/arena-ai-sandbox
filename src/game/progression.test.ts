@@ -3,10 +3,14 @@ import {
   PROMOTIONS,
   ZONES,
   clearanceLabel,
+  hasSkillRequirements,
   meetsRequirements,
   missingRequirements,
   nextPromotion,
+  requirementBadges,
   requirementLabel,
+  skillCheckPercent,
+  skillChecksFor,
   unlockLabel,
   unlocksThrough,
   visibleZones,
@@ -79,6 +83,29 @@ describe('promotions', () => {
       .toEqual(['Day 1/2']);
   });
 
+  it('computes Fallen London-style skill check odds, clamped to 5–95', () => {
+    expect(skillCheckPercent(1, 1)).toBe(60); // at the bar
+    expect(skillCheckPercent(0, 1)).toBe(50); // one below the bar
+    expect(skillCheckPercent(2, 1)).toBe(70); // one above
+    expect(skillCheckPercent(20, 1)).toBe(95); // ceiling
+    expect(skillCheckPercent(0, 20)).toBe(5); // floor
+  });
+
+  it('builds render-ready badges, with skill checks only on demand', () => {
+    const c = ctx({ day: 2, qualities: { doubt: 2, perception: 1, routine: 0 } });
+    const gate = requirementBadges({ day: 2, perception: 1 }, c);
+    expect(gate.find((b) => b.name === 'Day')!.met).toBe(true);
+    // A promotion reads skills as hard bars — no chance attached.
+    expect(gate.find((b) => b.name === 'Perception')!.chance).toBeNull();
+    expect(gate.find((b) => b.name === 'Perception')!.met).toBe(true);
+
+    const checks = requirementBadges({ day: 2, perception: 1 }, c, { skillChecks: true });
+    expect(checks.find((b) => b.name === 'Perception')!.chance).toBe(60);
+    expect(skillChecksFor({ day: 2, perception: 1 }, c).map((b) => b.name)).toEqual(['Perception']);
+    expect(hasSkillRequirements({ day: 2, perception: 1 })).toBe(true);
+    expect(hasSkillRequirements({ day: 2 })).toBe(false);
+  });
+
   it('labels clearance flags by the promotion that grants them', () => {
     expect(clearanceLabel('restricted-areas')).toBe('SENIOR OPERATOR CLEARANCE');
     expect(clearanceLabel('notice-storylets')).toBe('OPERATOR CLEARANCE');
@@ -106,23 +133,32 @@ describe('zones', () => {
     });
   });
 
-  it('lists the Day 3 coincidences once the shift arrives, gated on Perception', () => {
+  it('lists the Day 3 coincidences once the shift arrives, gated on a Perception check', () => {
     // Day 2: not yet — the Annex lead is the only case that shift.
     expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).not.toContain('handwritten-order');
     expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).not.toContain('day-crew-notes');
 
-    // Day 3: both are listed for everyone, sealed until the operator has the
-    // eye for their own name — the lock itself is the hint.
+    // Day 3: both are listed for everyone, sealed behind a Perception check —
+    // the lock itself is the hint. Meeting the bar does not open the door; it
+    // only moves the odds.
     const day3 = ctx({ day: 3 });
     const ids = visibleZones(day3).map((z) => z.id);
     expect(ids).toContain('handwritten-order');
     expect(ids).toContain('day-crew-notes');
-    expect(zoneState(zoneById('handwritten-order')!, day3)).toBe('locked');
-    expect(zoneState(zoneById('day-crew-notes')!, day3)).toBe('locked');
+    expect(zoneState(zoneById('handwritten-order')!, day3)).toBe('challengeable');
+    expect(zoneState(zoneById('day-crew-notes')!, day3)).toBe('challengeable');
 
     const noticing = ctx({ day: 3, qualities: { doubt: 0, perception: 1, routine: 0 } });
-    expect(zoneState(zoneById('handwritten-order')!, noticing)).toBe('open');
-    expect(zoneState(zoneById('day-crew-notes')!, noticing)).toBe('open');
+    expect(zoneState(zoneById('handwritten-order')!, noticing)).toBe('challengeable');
+    expect(zoneState(zoneById('day-crew-notes')!, noticing)).toBe('challengeable');
+
+    // A passed check is recorded in the zones map; that is what flips to open.
+    const opened = ctx({
+      day: 3,
+      qualities: { doubt: 0, perception: 1, routine: 0 },
+      zones: { 'handwritten-order': 'open' },
+    });
+    expect(zoneState(zoneById('handwritten-order')!, opened)).toBe('open');
   });
 
   it('reveals the universal Annex order on Shift 2 while promotion controls the rest', () => {
@@ -154,8 +190,16 @@ describe('zones', () => {
     const floor12 = ZONES.find((z) => z.id === 'floor12')!;
     const clearance = ['notice-storylets', 'restricted-areas'];
     const curious = { doubt: 2, perception: 1, routine: 0 };
+    // Shift 1 keeps the expedition sealed outright; Shift 2 with clearance and
+    // curiosity leaves it challengeable — the door is a roll, not a key.
     expect(zoneState(floor12, ctx({ unlocks: clearance, qualities: curious }))).toBe('locked');
-    expect(zoneState(floor12, ctx({ day: 2, unlocks: clearance, qualities: curious }))).toBe('open');
+    expect(zoneState(floor12, ctx({ day: 2, unlocks: clearance, qualities: curious }))).toBe('challengeable');
+    expect(zoneState(floor12, ctx({
+      day: 2,
+      unlocks: clearance,
+      qualities: curious,
+      zones: { floor12: 'open' },
+    }))).toBe('open');
   });
 
   it('opens a supply zone when the good is owned', () => {
