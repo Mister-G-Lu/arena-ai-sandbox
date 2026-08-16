@@ -20,6 +20,24 @@ describe('qualities', () => {
     expect(normalizeEffects(['Doubt'])).toEqual({});
   });
 
+  it('never answers a lookup from the prototype chain', () => {
+    // A plain-object table answers inherited members truthy: every caller
+    // reads that as "the table knows this quality".
+    expect(qualityDef('__proto__')).toBeUndefined();
+    expect(qualityDef('constructor')).toBeUndefined();
+    expect(qualityDef('toString')).toBeUndefined();
+    expect(qualityDef('Doubt')).toBeDefined();
+  });
+
+  it('drops prototype-named forged effects instead of minting a junk bucket', () => {
+    // JSON.parse is the realistic entry point: it gives __proto__ as an own
+    // key, where an object literal would shadow the prototype instead.
+    const forged = JSON.parse('{"__proto__": 5, "constructor": 3, "Doubt": 2}');
+    const normalized = normalizeEffects(forged);
+    expect(normalized).toEqual({ doubt: 2 });
+    expect(Object.keys(normalized)).not.toContain('undefined');
+  });
+
   it('clamps to each quality\u2019s own maximum', () => {
     expect(clampQuality('doubt', 9)).toBe(5);
     expect(clampQuality('attention', 99)).toBe(10);
