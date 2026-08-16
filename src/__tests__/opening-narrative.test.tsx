@@ -156,6 +156,10 @@ describe('opening narrative', () => {
     await tick(100);
     expect(save().orientation).toEqual({ completed: true, skipped: true, taskRecorded: false });
     expect(document.body.textContent).toContain('OPERATOR CONSOLE');
+    // The waiver pays in Routine, not curiosity: prior knowledge is filed as
+    // compliance, so skipping is not strictly worse than sitting through it.
+    expect(save().qualities.routine).toBe(2);
+    expect(save().qualities.doubt).toBe(0);
   });
 
   it('files the break-room answer as a real consequence', async () => {
