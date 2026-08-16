@@ -215,28 +215,58 @@ describe('opening narrative', () => {
     random.mockRestore();
   });
 
-  it('guarantees an anomaly by the final task when random rolls never produce one', async () => {
+  it('hooks the operator with an anomaly inside the first ten tasks', async () => {
+    // Every roll misses, so only the guarantee can produce an anomaly.
     const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
     render(<App />);
     await runOrientation("IT'S FINE");
 
-    // Orientation records task 1. File clean results through task 49.
-    for (let i = 0; i < 48; i++) {
+    // Orientation records task 1. The hook is owed by task 10, so it must land
+    // within the next nine executions.
+    let sawAnomaly = false;
+    for (let i = 0; i < 9 && !sawAnomaly; i++) {
       await click('EXECUTE TASK');
       await tick(1200);
-      expect(button('LOG THE DISCREPANCY')).toBeUndefined();
-      await click('ACKNOWLEDGE RESULT');
+      if (button('LOG THE DISCREPANCY')) {
+        sawAnomaly = true;
+        await click('FILE AS CLEAN');
+      } else {
+        await click('ACKNOWLEDGE RESULT');
+      }
       await tick(100);
     }
 
-    expect(save().tasksCompleted).toBe(49);
-    expect(save().anomaliesSeenThisShift).toBe(0);
-    await click('EXECUTE TASK');
-    await tick(1200);
-    expect(button('LOG THE DISCREPANCY')).toBeDefined();
-    await click('FILE AS CLEAN');
-    await tick(100);
+    expect(sawAnomaly).toBe(true);
+    expect(save().tasksCompleted).toBeLessThanOrEqual(10);
     expect(save().anomaliesSeenThisShift).toBe(1);
+
+    random.mockRestore();
+  }, 60000);
+
+  it('owes a second anomaly by the end of the shift when rolls never produce one', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    render(<App />);
+    await runOrientation("IT'S FINE");
+
+    // Orientation records task 1; run the remaining 49 of the shift.
+    let anomalies = 0;
+    for (let i = 0; i < 49; i++) {
+      if (!button('EXECUTE TASK')) break;
+      await click('EXECUTE TASK');
+      await tick(1200);
+      if (button('LOG THE DISCREPANCY')) {
+        anomalies += 1;
+        await click('FILE AS CLEAN');
+      } else {
+        await click('ACKNOWLEDGE RESULT');
+      }
+      await tick(100);
+    }
+
+    expect(save().tasksCompleted).toBe(50);
+    // One to hook them, one more before the shift is over.
+    expect(anomalies).toBe(2);
+    expect(save().anomaliesSeenThisShift).toBe(2);
 
     random.mockRestore();
   }, 60000);
