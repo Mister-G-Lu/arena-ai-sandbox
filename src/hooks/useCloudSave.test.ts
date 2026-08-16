@@ -9,6 +9,11 @@ const session = {
   access_token: 'token',
 };
 
+const otherSession = {
+  user: { id: 'op-2', email: 'other@meridian.city' },
+  access_token: 'other-token',
+};
+
 function mockClient(remote: ReturnType<typeof createStoredSaveEnvelope> | null = null) {
   const upsert = vi.fn().mockResolvedValue({ error: null });
   const listeners: Array<(event: string, next: unknown) => void> = [];
@@ -148,6 +153,45 @@ describe('useCloudSave', () => {
     rerender({ state: changed });
     await waitFor(() => expect(client.__upsert).toHaveBeenCalledTimes(1));
     expect(client.__upsert.mock.calls[0]?.[0].payload.game.credits).toBe(99);
+  });
+
+  it('never drains operator A\'s queued save into operator B\'s session', async () => {
+    const initial = createInitialGameState();
+    const client = mockClient(createStoredSaveEnvelope(initial));
+    __setSupabaseForTests(client as never);
+    const replaceState = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useCloudSave({ state, hadLocalSaveAtBoot: true, replaceState, debounceMs: 0 }),
+      { initialProps: { state: initial } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('synced'));
+
+    let finishFirst!: (value: { error: null }) => void;
+    const firstPush = new Promise<{ error: null }>((resolve) => { finishFirst = resolve; });
+    client.__upsert.mockImplementationOnce(() => firstPush);
+
+    vi.useFakeTimers();
+    try {
+      rerender({ state: { ...initial, credits: 1 } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      await act(async () => { await Promise.resolve(); });
+      expect(client.__upsert).toHaveBeenCalledTimes(1);
+      expect(client.__upsert.mock.calls[0]?.[0].user_id).toBe('op-1');
+
+      // Queue a newer A save behind the in-flight request, then change the
+      // authenticated operator before that second queue entry can execute.
+      rerender({ state: { ...initial, credits: 2 } });
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      act(() => { client.__listeners[0]?.('SIGNED_IN', otherSession); });
+
+      finishFirst({ error: null });
+      await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+      expect(client.__upsert).toHaveBeenCalledTimes(1);
+      expect(client.__upsert.mock.calls.some((call) => call[0].user_id === 'op-2')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('retries a failed autosave instead of dropping the operator file', async () => {

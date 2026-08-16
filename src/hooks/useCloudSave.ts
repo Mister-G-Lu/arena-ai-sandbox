@@ -134,13 +134,23 @@ export function useCloudSave({
     if (fingerprint === remoteFingerprint.current) return;
 
     const attempt = () => {
-      if (!authRef.current.session) return; // signed out while queued
+      const queuedSession = authRef.current.session;
+      const queuedUserId = queuedSession?.user.id;
+      if (!queuedSession || !queuedUserId || queuedUserId !== userId) return;
       const envelope = createStoredSaveEnvelope(state);
       setStatus('saving');
       setMessage('Filing operator record…');
       saveQueue.current = saveQueue.current
-        .then(() => pushSave(getSupabase(), authRef.current.session!, envelope))
-        .then(() => {
+        .then(async () => {
+          // The promise queue can outlive an auth transition. Never take an
+          // envelope captured for operator A and execute it with operator B's
+          // newly-current session.
+          if (authRef.current.session?.user.id !== queuedUserId) return false;
+          await pushSave(getSupabase(), queuedSession, envelope);
+          return true;
+        })
+        .then((pushed) => {
+          if (!pushed || authRef.current.session?.user.id !== queuedUserId) return;
           // Superseded by a newer change; the newer attempt owns the queue.
           if (gameStateFingerprint(stateRef.current) !== fingerprint) return;
           remoteFingerprint.current = fingerprint;
@@ -149,7 +159,7 @@ export function useCloudSave({
         })
         .catch((error) => {
           if (gameStateFingerprint(stateRef.current) !== fingerprint) return;
-          if (!authRef.current.session) return; // signed out while in flight
+          if (authRef.current.session?.user.id !== queuedUserId) return;
           setStatus('error');
           setMessage(error instanceof Error ? error.message : 'Records could not save the file.');
           // A dropped record is a lost night. Keep trying until the state
