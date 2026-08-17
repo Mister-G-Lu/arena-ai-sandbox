@@ -75,10 +75,7 @@ export function useAuth(): AuthState {
     return true;
   }, []);
 
-  const identity = useMemo(
-    () => identityFrom(session),
-    [session?.user.id, session?.user.email],
-  );
+  const identity = useMemo(() => identityFrom(session), [session]);
 
   return {
     session,

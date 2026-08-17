@@ -1,0 +1,158 @@
+/* ====================================================================
+   CITY VISTA LAYERS — neon contrast for boring desk work
+   ==================================================================== */
+
+.hero-vista {
+  max-width: 52ch;
+  margin: 0 0 22px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(87, 214, 195, 0.35);
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.feed-vista {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 198, 107, 0.18);
+  border-left: 3px solid var(--amber);
+  background:
+    linear-gradient(90deg, rgba(255, 198, 107, 0.08), transparent 65%),
+    rgba(0, 0, 0, 0.22);
+  position: relative;
+}
+
+.feed-vista p {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.65;
+  max-width: 82ch;
+}
+
+.feed-vista p strong {
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  margin-right: 6px;
+}
+
+.feed-vista span {
+  display: block;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
+.console-vista-lede {
+  margin: -28px 0 18px;
+  color: var(--faint);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.console-vista {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  border-left: 3px solid var(--teal);
+  background:
+    linear-gradient(90deg, rgba(87, 214, 195, 0.07), transparent 70%),
+    rgba(0, 0, 0, 0.18);
+  display: grid;
+  gap: 5px;
+}
+
+.console-vista-kicker {
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+}
+
+.console-vista-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  max-width: 82ch;
+}
+
+.console-vista-rule {
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+/* Orientation vista — full cinematic stage */
+.orient-terminal-vista .vista-screen {
+  min-height: 420px;
+}
+
+.vista-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.vista-copy p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.vista-lead {
+  color: var(--teal) !important;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.vista-pivot {
+  padding-left: 12px;
+  border-left: 2px solid var(--amber);
+  margin: 6px 0 !important;
+}
+
+.vista-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.vista-hint {
+  color: var(--faint);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.board-vista {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--teal);
+  background: linear-gradient(90deg, rgba(87, 214, 195, 0.06), transparent 70%);
+}
+
+.board-vista-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+}
+
+.board-vista p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  max-width: 70ch;
+}

@@ -29,7 +29,7 @@ is the current queue and supersedes their old “still open” lists.
   cross-tab protection, optional Supabase sync, and cross-device conflict
   resolution.
 - Route-split production assets with a 250 KiB per-JavaScript-chunk budget;
-  `npm run check` is the source of truth for types, lint, coverage, tests, and build.
+  `npm run check` is the source of truth for types, lint, file length, coverage, tests, and build.
 
 ### Full-campaign coverage
 
@@ -95,10 +95,31 @@ Consequences, requirements, and content are all data:
 
 ```bash
 npm install
-npm run dev      # local dev at http://localhost:3000
-npm run check    # TypeScript + ESLint + tests (coverage enforced) + production build
-npm run build    # writes the GitHub Pages site to docs/
+npm run dev             # local dev at http://localhost:3000
+npm run quality         # TypeScript + ESLint + 500-line budget + coverage
+npm run check           # quality gates plus the production build
+npm run check:file-length # report the 500-line source budget directly
+npm run build           # writes the GitHub Pages site to docs/
 ```
+
+## Automated quality gates
+
+The repository uses the flat ESLint configuration in [`eslint.config.js`](eslint.config.js)
+for JavaScript, JSX, TypeScript, and TSX. It applies React and TypeScript-aware
+rules, a 500-line maximum to every linted code file, and focused SonarJS checks
+for cognitive complexity, duplicated branches/functions, duplicate literals, and
+unsafe `any` values. CSS and SQL are covered by
+[`scripts/check-file-length.mjs`](scripts/check-file-length.mjs), so the same 500-line
+budget applies to the rest of the source tree. `npm run quality` runs these gates
+with zero ESLint warnings; `npm run check` adds coverage and the production build.
+
+[`sonar-project.properties`](sonar-project.properties) configures the deeper
+SonarQube/SonarCloud analysis: TypeScript code smells, duplication, coverage, and
+the hosted quality gate. The CI template under
+[`ops/github-workflows/ci.yml`](ops/github-workflows/ci.yml) runs it when the
+repository has a `SONAR_HOST_URL` variable and `SONAR_TOKEN` secret. SonarQube is
+complementary to ESLint: ESLint blocks fast local regressions, while the hosted
+analysis can track maintainability and duplication trends across pull requests.
 
 ## License
 

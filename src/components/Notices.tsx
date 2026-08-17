@@ -4,6 +4,8 @@ import { loadAllStorylets, findCard, cardsInZone } from '../content/load';
 import { describeEffects } from '../game/qualities';
 import { clearanceLabel, requirementLabel, missingRequirements } from '../game/progression';
 import { supplyById } from '../game/shop';
+import type { Choice, ZoneId } from '../game/storylets';
+import type { ZoneDef, ZoneState } from '../game/progression';
 import HorizonPanel from './HorizonPanel';
 import './Notices.css';
 
@@ -32,6 +34,8 @@ const BOARD_COPY: Record<string, BoardCopy> = {
   },
 };
 
+type AvailableZone = ZoneDef & { status: ZoneState };
+
 interface NoticesProps {
   board?: 'notices' | 'investigations';
 }
@@ -51,7 +55,7 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
   } | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
   const copy = BOARD_COPY[board] ?? BOARD_COPY.notices;
-  const boardZones = availableZones.filter((zone: any) => zone.board === board);
+  const boardZones = availableZones.filter((zone: AvailableZone) => zone.board === board);
 
   // Content is schema-validated at load; a bad card fails loudly, never by
   // setting state during render.
@@ -66,30 +70,30 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
   const current = state.currentStorylet;
   const savedCard = current ? findCard(cards, current.storyletId) : undefined;
   const currentBelongsHere = Boolean(
-    current && boardZones.some((zone: any) => zone.id === current.zone),
+    current && boardZones.some((zone: AvailableZone) => zone.id === current.zone),
   );
   const card = currentBelongsHere ? savedCard : undefined;
   const otherBoard =
     current && savedCard && !currentBelongsHere
-      ? availableZones.find((zone: any) => zone.id === current.zone)?.board
+      ? availableZones.find((zone: AvailableZone) => zone.id === current.zone)?.board
       : null;
   // A first read of a card charges; a reread never does.
   const cardCosts = Boolean(card) && !state.seenStorylets.includes(card!.id);
 
   /** Serve the first card in the zone the operator has not already resolved. */
-  function nextCardId(zone: any) {
-    const zoneCards = cardsInZone(cards, zone.id);
-    const unread = zoneCards.find((c: any) => !state.seenStorylets.includes(c.id));
+  function nextCardId(zone: AvailableZone) {
+    const zoneCards = cardsInZone(cards, zone.id as ZoneId);
+    const unread = zoneCards.find((c) => !state.seenStorylets.includes(c.id));
     return (zone.onceEach ? unread?.id : undefined) ?? zone.entry;
   }
 
-  function openZone(zone: any) {
+  function openZone(zone: AvailableZone) {
     setLastOutcome(null);
     setRefusal(null);
     actions.enterZone(zone.id, nextCardId(zone));
   }
 
-  function choose(choice: { id: string; outcome?: { text?: string; qualities?: Record<string, number> }; death?: boolean }) {
+  function choose(choice: Choice) {
     if (!card) return;
     const revisit = state.seenStorylets.includes(card.id);
     if (!revisit && actionTank.empty) {
@@ -120,10 +124,10 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
   }
 
   /** Cards in a zone the operator has already resolved (a notice is read once). */
-  function remainingIn(zone: any) {
-    const zoneCards = cardsInZone(cards, zone.id);
+  function remainingIn(zone: AvailableZone) {
+    const zoneCards = cardsInZone(cards, zone.id as ZoneId);
     if (!zone.onceEach) return zoneCards.length;
-    return zoneCards.filter((c: any) => !state.seenStorylets.includes(c.id)).length;
+    return zoneCards.filter((c) => !state.seenStorylets.includes(c.id)).length;
   }
 
   return (
@@ -186,7 +190,7 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
         )}
 
         <div className="zone-board">
-          {boardZones.map((zone: any) => {
+          {boardZones.map((zone: AvailableZone) => {
             const remaining = remainingIn(zone);
             const exhausted = zone.onceEach && remaining === 0;
             const status = exhausted && zone.status !== 'complete' ? 'complete' : zone.status;
@@ -194,7 +198,7 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
             const clearanceHeld =
               !zone.requiresUnlock || state.promotion.unlocks.includes(zone.requiresUnlock);
             const needsSupplies = Object.keys(zone.requires ?? {}).some(
-              (key: any) => supplyById(key) && !state.supplies[key],
+              (key: string) => supplyById(key) && !state.supplies[key],
             );
 
             return (
@@ -221,7 +225,7 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
                   <div className="zone-requirement-stack">
                     {!clearanceHeld && (
                       <p className="fine zone-requirement">
-                        CLEARANCE REQUIRED: {clearanceLabel(zone.requiresUnlock)}
+                        CLEARANCE REQUIRED: {zone.requiresUnlock ? clearanceLabel(zone.requiresUnlock) : 'UNKNOWN CLEARANCE'}
                       </p>
                     )}
                     {zone.lockedNote && (

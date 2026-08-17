@@ -1,0 +1,149 @@
+.section { padding: 72px 0; }
+
+.section-alt {
+  background: rgba(14, 22, 40, 0.55);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0 0 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section-lede { color: var(--muted); max-width: 60ch; margin: 0 0 36px; }
+
+/* ---------- cards ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+  margin-bottom: 40px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 22px;
+  position: relative;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), transparent);
+  opacity: 0.4;
+}
+.card h3 {
+  font-family: var(--font-mono);
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+}
+.card h3::before { content: "▸ "; color: var(--teal); }
+.card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+/* ---------- sticky notes ---------- */
+
+.notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.note {
+  background: var(--paper);
+  color: var(--paper-ink);
+  padding: 14px 16px;
+  border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+.note small {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  opacity: 0.55;
+  text-align: right;
+  font-style: normal;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+.note:nth-child(1) { transform: rotate(-1.4deg); }
+.note:nth-child(2) { transform: rotate(1.1deg); }
+.note:nth-child(3) { transform: rotate(-0.6deg); }
+
+.fine-rule {
+  border-left: 2px solid var(--amber-deep);
+  padding-left: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* ---------- city stats ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 22px;
+  text-align: center;
+  position: relative;
+}
+.stat::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: var(--teal);
+  opacity: 0.15;
+}
+.stat .num {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+.stat .lbl {
+  font-family: var(--font-mono);
+  color: var(--faint);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.city-weather {
+  text-align: center;
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+

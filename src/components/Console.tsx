@@ -1,160 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { taskPayout } from '../game/payouts';
-import { describeEffects } from '../game/qualities';
-import { ACTION_CAP } from '../game/actions';
 import { taskOrderFor } from '../game/dispatch';
 
-const SHIFT_ACTIONS = ACTION_CAP;
-
-interface FilingDef {
-  id: string;
-  label: string;
-  hint?: string;
-  effects: Record<string, number> | null;
-  logbook: ((task: PendingTaskDisplay) => string) | string | null;
-}
-
-/** Consequence table for filing a result: every verb carries its own effects,
- *  payout rule and residue line, so adding a filing verb is one entry here. */
-const FILINGS: Record<string, FilingDef> = {
-  clean: {
-    id: 'clean',
-    label: '✓ ACKNOWLEDGE RESULT',
-    effects: null,
-    logbook: null,
-  },
-  'file-clean': {
-    id: 'file-clean',
-    label: '✓ FILE AS CLEAN',
-    hint: 'The system will correct the record and pay the reading it took. Nothing further is required of you.',
-    effects: { Routine: 1 },
-    logbook: null,
-  },
-  discrepancy: {
-    id: 'discrepancy',
-    label: '⚠ LOG THE DISCREPANCY',
-    hint: 'The line stays in the log exactly as it arrived. Unreconciled work is unbilled work. The system will notice that you noticed.',
-    effects: { Doubt: 1, Attention: 1 },
-    logbook: (task: PendingTaskDisplay) =>
-      `Day-log, ${task.timestamp} — ${task.code} returned: "${task.displayedResult}" ` +
-      'I did not correct it. Ink does not forget.',
-  },
-};
-
-/** What the window shows while you file — the city you never touch. Rotates with time and tasks so the outside feels alive while the queue feels identical. */
-const WINDOW_VISTAS = [
-  'Hoverlanes hum thirty stories up — six cars cut the limit at once, their taillights smearing amber across wet Sector 4. You initial a form.',
-  'A police cutter holds altitude over the annex, searchlight painting floor 11 amber, lingering on the blank where 12 should be. You verify a light.',
-  'Delivery drones stitch the dark between towers, quiet as paper. One manifest lists only STATIONERY in a hand that tried too hard.',
-  'Neon rain. The city throws itself back at its own windows until you can’t tell which lights are real. The log says CLEAR.',
-  'Through the glass: the rooftop array blinks once. The system says nominal. The blink says otherwise.',
-  'Far out over Sector 9, a single set of tail-lights holds at the map’s edge — VANTABLACK, waiting for a name you haven’t said yet.',
-  'The towers breathe. Thirty floors of wet glass inhaling amber, exhaling teal. On your screen: 0.00% variance.',
-  'A drone convoy threads the gap between the municipal spires at 180 kph, obedient and bright. Below, a streetlight you cleared flickers and holds.',
-  'Meridian at 02:47 — a cutter’s wail dopplers down the canyon between buildings and is answered by nothing. The coffee stays warm.',
-  'A man in a gray coat watches the annex from the corner, patient as a filing. His ID badge reads a different name every time the light changes.',
-];
-
-/** Deterministic vista for a given shift moment — no extra state, just atmosphere that ticks forward. */
-function vistaForMoment({ day, tasksThisShift, minutes }: { day: number; tasksThisShift: number; minutes: number }) {
-  const idx = (tasksThisShift + day * 3 + Math.floor(minutes / 40)) % WINDOW_VISTAS.length;
-  return WINDOW_VISTAS[idx];
-}
-
-function formatTime(mins: number) {
-  const hours = Math.floor(mins / 60) % 24;
-  const minutes = mins % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-}
-
-/**
- * The in-fiction clock runs on actions spent this shift, not on the career
- * task total: the night is 01:00–06:00 however the operator chooses to spend
- * it, and it advances whether an action went to the queue or to a notice.
- */
-function timeForActionsSpent(actionsSpent: number) {
-  return formatTime(Math.min(60 + actionsSpent * 6, 360));
-}
-
-/**
- * The plain shift-open line, rotated by day so the later nights — after the
- * bespoke opens of Days 1–3 — do not all read byte-identical. The first entry
- * is the canonical line; the rest are variations on it.
- */
-const GENERIC_INIT = [
-  'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN.',
-  'SHIFT INITIALIZED // COFFEE: WARM // LIVE QUEUE OPEN. AGAIN.',
-  'SHIFT INITIALIZED // TUESDAY // POPULATION: 41,312 // LIVE QUEUE OPEN.',
-  'SHIFT INITIALIZED // THE QUEUE REMEMBERS YOU // LIVE QUEUE OPEN.',
-];
-
-/**
- * The one line a shift gets when the operator has never noticed anything.
- * A cautious roleplayer can file everything clean for a week and never earn
- * Doubt — the loop stays shut. M. is the game's pressure valve, and this is
- * the pressure: noticing is the on-ramp, and the button has been there the
- * whole time.
- */
-const M_PROD =
-  'M. // \u201cYou file everything clean. Admirable. Also suspicious. Noticing is permitted — the button has been on your screen all along.\u201d';
-
-/**
- * M.'s direct-channel check-in, one per night from Day 4 on. Days 1–3 carry
- * their own bespoke asides; after that the Manager goes quiet in the old
- * build, and P7 asks for roughly one or two memorable exchanges per shift.
- * Each line quietly keeps a thread warm without naming a reveal.
- */
-const M_AMBIENT = [
-  'M. // \u201cYou are ahead of your paperwork. That is not a compliment.\u201d',
-  'M. // \u201cThe doorman says he has seen you. The doorman is not on payroll. He has seen everyone.\u201d',
-  'M. // \u201cSector 9 called. There is no Sector 9 line. Do not ask me to reconcile that.\u201d',
-  'M. // \u201cThe roof is under maintenance. It has been under maintenance for forty-one weeks. Maintenance has never attended.\u201d',
-  'M. // \u201cA truck reports a street that is not on the map. I filed it under MAP ERRORS. The map does not make errors.\u201d',
-  'M. // \u201cSomeone left you a note. It was me. No — it was not me. — M.\u201d',
-  'M. // \u201c06:00 approaches. We do not discuss 06:00. You were not going to ask.\u201d',
-  'M. // \u201cYour file grows. Files do that. I would not read it if I were you.\u201d',
-];
-
-interface ShiftInitParams {
-  day: number;
-  tasksThisShift: number;
-  annexOrderComplete: boolean;
-  handwritingOrderComplete: boolean;
-}
-
-function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, handwritingOrderComplete }: ShiftInitParams) {
-  if (day === 1 && tasksThisShift > 0) {
-    return 'ORIENTATION RECORD RECEIVED // TASK VERIFIED // LIVE QUEUE OPEN.';
-  }
-  if (day >= 2 && !annexOrderComplete) {
-    return 'SHIFT INITIALIZED // SECONDARY ORDER POSTED: ANNEX ELEVATOR, OUT-OF-RANGE STOP 12.';
-  }
-  if (day >= 3 && !handwritingOrderComplete) {
-    return 'SHIFT INITIALIZED // NIGHT DESK: ONE NEW ORDER, FILED IN YOUR HANDWRITING.';
-  }
-  return GENERIC_INIT[day % GENERIC_INIT.length];
-}
-
-interface PendingTaskDisplay {
-  id: string;
-  logId: string;
-  timestamp: string;
-  code: string;
-  title: string;
-  displayedResult: string;
-  cleanResult?: string;
-  isCorrupt: boolean;
-  isPersonal: boolean;
-  shiftAction: number;
-}
-
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  type: string;
-  text: string;
-}
+import ConsoleWorkflow from './ConsoleWorkflow';
+import {
+  FILINGS,
+  M_AMBIENT,
+  M_PROD,
+  SHIFT_ACTIONS,
+  formatTime,
+  shiftInitializationText,
+  timeForActionsSpent,
+  vistaForMoment,
+  type LogEntry,
+  type PendingTaskDisplay,
+} from './consoleData';
 
 export default function Console() {
   const { state, actions, actionTank } = useGameState();
@@ -422,8 +283,8 @@ export default function Console() {
                   the system will admit exists.
                 </p>
                 <p className="manager-aside">
-                  M. // "Elevators occasionally become ambitious. We do not reward initiative
-                  here. File it and return to your actual job."
+                  M. // &quot;Elevators occasionally become ambitious. We do not reward initiative
+                  here. File it and return to your actual job.&quot;
                 </p>
               </div>
               <a className="btn btn-primary btn-compact" href="#investigations">
@@ -445,8 +306,8 @@ export default function Console() {
                   a very good memory.
                 </p>
                 <p className="manager-aside">
-                  M. // "I did not authorise this. Do not authorise it either. Return it to the
-                  desk it came from — the one that is not there."
+                  M. // &quot;I did not authorise this. Do not authorise it either. Return it to the
+                  desk it came from — the one that is not there.&quot;
                 </p>
               </div>
               <a className="btn btn-primary btn-compact" href="#investigations">
@@ -471,120 +332,15 @@ export default function Console() {
             </p>
           ) : null}
 
-          <div className={`task-workflow task-workflow-${phase}`} aria-live="polite">
-            {phase === 'ready' && !shiftComplete && !outOfActions && (
-              <div className="task-card task-card-ready">
-                <div className="task-kicker">NEXT WORK ORDER // ONE ACTION</div>
-                <div className="task-title">{nextAssignment.code} // {nextAssignment.title}</div>
-                <p>{nextAssignment.instruction}</p>
-                <span className="task-rule">Execution locks the queue until its result is acknowledged.</span>
-              </div>
-            )}
-
-            {phase === 'processing' && pendingTask && (
-              <div className="task-card task-card-processing">
-                <div className="task-kicker">EXECUTING // {pendingTask.code}</div>
-                <div className="task-title">{pendingTask.title}</div>
-                <div className="task-processing">
-                  <div className="processing-bar" aria-hidden="true">
-                    <div className="processing-fill"></div>
-                  </div>
-                  <div className="processing-lines">
-                    <div className="processing-line">→ validating work order...</div>
-                    <div className="processing-line">→ contacting dispatch network...</div>
-                    <div className="processing-line">→ committing result to the ledger...</div>
-                    <div className="processing-line">→ holding queue for operator review...</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {phase === 'result' && pendingTask && (
-              <div className="task-card task-card-result">
-                <div className="task-kicker">
-                  {pendingTask.isCorrupt
-                    ? pendingTask.isPersonal
-                      ? 'RESULT RECEIVED // IT IS YOUR HANDWRITING'
-                      : 'RESULT RECEIVED // RECORD DOES NOT RECONCILE'
-                    : 'RESULT RECEIVED // ACKNOWLEDGMENT REQUIRED'}
-                </div>
-                <div className="task-title">{pendingTask.code} // {pendingTask.title}</div>
-                <p
-                  className={
-                    pendingTask.isCorrupt
-                      ? `task-result corrupt${pendingTask.isPersonal ? ' personal' : ''}`
-                      : 'task-result'
-                  }
-                >
-                  {pendingTask.displayedResult}
-                </p>
-                {pendingTask.isCorrupt ? (
-                  <div className="task-decision">
-                    <p className="task-decision-lede">
-                      {pendingTask.isPersonal
-                        ? 'The returned record is written in a hand you know — the same hand that signs your logbook. Dispatch is waiting for you to decide what happened.'
-                        : 'The returned record does not match the work order. Dispatch is waiting for you to decide what happened.'}
-                    </p>
-                    {(['file-clean', 'discrepancy'] as const).map((verb) => {
-                      const filing = FILINGS[verb];
-                      const preview = taskPayout({
-                        tier: state.promotion.tier,
-                        corrupted: true,
-                        filedClean: verb !== 'discrepancy',
-                        resultText: pendingTask.displayedResult,
-                      });
-                      const consequences = describeEffects(filing.effects, {
-                        qualities: state.qualities,
-                        attention: state.attention,
-                      });
-                      return (
-                        <div key={verb} className="task-decision-option">
-                          <span className="task-decision-label">{filing.label}</span>
-                          <span className="task-decision-hint">{filing.hint}</span>
-                          <span className="task-decision-cost">
-                            {preview.amount > 0 ? `+¤${preview.amount.toLocaleString()}` : 'NO PAYMENT'}
-                            {consequences ? ` · ${consequences}` : ''}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="task-reward">
-                    <span>RECORD UPDATED</span>
-                    <span>
-                      +¤{taskPayout({ tier: state.promotion.tier }).amount.toLocaleString()} CREDITS
-                    </span>
-                    <span>{actionTank.display} ACTIONS</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {phase === 'ready' && !shiftComplete && outOfActions && (
-              <div className="task-card task-card-complete">
-                <div className="task-kicker">BUDGET EXHAUSTED // QUEUE HELD</div>
-                <div className="task-title">NO ACTIONS REMAINING</div>
-                <p>
-                  Dispatch has stopped releasing work orders. The queue is not closed — it is
-                  waiting. The next action clears in {actionTank.countdown}.
-                </p>
-                <p className="manager-aside">
-                  M. // "Rest is scheduled, the same as everything else. Come back when the
-                  building says you may."
-                </p>
-              </div>
-            )}
-
-            {phase === 'ready' && shiftComplete && (
-              <div className="task-card task-card-complete">
-                <div className="task-kicker">SHIFT RECORD CLOSED // 06:00 — THE CITY EXHALES</div>
-                <div className="task-title">THE NIGHT IS SPENT</div>
-                <p>Outside, the hoverlanes thin to a single amber thread. The cutters are gone. The drones have stopped stitching the dark. Meridian holds its breath for the hour nobody sees.</p>
-                <p className="dim">The city has accepted your work. The coffee in the break room is still warm. It was warm before the building — you know that now, but the log does not.</p>
-              </div>
-            )}
-          </div>
+          <ConsoleWorkflow
+            phase={phase}
+            state={state}
+            actionTank={actionTank}
+            pendingTask={pendingTask}
+            nextAssignment={nextAssignment}
+            shiftComplete={shiftComplete}
+            outOfActions={outOfActions}
+          />
 
           <div className="console-actions">
             {phase === 'ready' && !shiftComplete && !outOfActions && (

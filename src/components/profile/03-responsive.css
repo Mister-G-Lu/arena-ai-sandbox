@@ -1,0 +1,26 @@
+@media (max-width: 768px) {
+  .profile-section {
+    padding: 1.5rem;
+  }
+
+  .resource-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .resource-details {
+    text-align: left;
+  }
+
+  .component-list {
+    justify-content: flex-start;
+  }
+
+  .promotion-display {
+    flex-direction: column;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+  }
+}

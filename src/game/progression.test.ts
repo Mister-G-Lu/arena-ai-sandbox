@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+
+const NOTICE_UNLOCK = 'notice-storylets';
 import {
   PROMOTIONS,
   ZONES,
@@ -39,7 +41,7 @@ describe('promotions', () => {
     expect(nextPromotion(0, ctx())).toBeNull();
     const earned = nextPromotion(0, ctx({ qualities: { doubt: 1, perception: 0, routine: 0 } }));
     expect(earned?.title).toBe('Operator');
-    expect(earned?.unlocks).toContain('notice-storylets');
+    expect(earned?.unlocks).toContain(NOTICE_UNLOCK);
   });
 
   it('holds Senior clearance until the Shift 2 Floor 12 lead has arrived', () => {
@@ -50,7 +52,7 @@ describe('promotions', () => {
   });
 
   it('accumulates unlocks through the tiers', () => {
-    expect(unlocksThrough(1)).toEqual(expect.arrayContaining(['basic-tasks', 'notice-storylets']));
+    expect(unlocksThrough(1)).toEqual(expect.arrayContaining(['basic-tasks', NOTICE_UNLOCK]));
   });
 
   it('renders requirement labels from data', () => {
@@ -81,7 +83,7 @@ describe('promotions', () => {
 
   it('labels clearance flags by the promotion that grants them', () => {
     expect(clearanceLabel('restricted-areas')).toBe('SENIOR OPERATOR CLEARANCE');
-    expect(clearanceLabel('notice-storylets')).toBe('OPERATOR CLEARANCE');
+    expect(clearanceLabel(NOTICE_UNLOCK)).toBe('OPERATOR CLEARANCE');
     expect(clearanceLabel('never-granted')).toBe('NEVER GRANTED');
     expect(unlockLabel('operator5-log')).toBe('Operator 5\u2019s log');
     expect(unlockLabel('made-up-flag')).toBe('MADE UP FLAG');
@@ -135,14 +137,14 @@ describe('zones', () => {
     // On Shift 2 the Floor 12 expedition is *listed* for everyone — sealed,
     // with its clearance shown — so the hierarchy itself is the hint.
     expect(visibleZones(ctx({ day: 2 })).map((z) => z.id)).toEqual(['annex-order', 'floor12']);
-    const withNotices = visibleZones(ctx({ unlocks: ['notice-storylets'] }));
+    const withNotices = visibleZones(ctx({ unlocks: [NOTICE_UNLOCK] }));
     expect(withNotices.map((z) => z.id)).toEqual(['routine']);
   });
 
   it('lists promotion-gated content as a locked teaser before clearance', () => {
     const operator = ctx({
       tier: 1,
-      unlocks: ['basic-tasks', 'break-room', 'memos', 'notice-storylets'],
+      unlocks: ['basic-tasks', 'break-room', 'memos', NOTICE_UNLOCK],
     });
     const ids = visibleZones(operator).map((z) => z.id);
     expect(ids).toContain('restricted-files');
@@ -157,7 +159,7 @@ describe('zones', () => {
 
   it('opens Floor 12 only once the file holds §2.5 evidence and the shift is right', () => {
     const floor12 = ZONES.find((z) => z.id === 'floor12')!;
-    const clearance = ['notice-storylets', 'restricted-areas'];
+    const clearance = [NOTICE_UNLOCK, 'restricted-areas'];
     const curious = { doubt: 2, perception: 1, routine: 0 };
     // Day 2 with the annex lead's curiosity: still sealed — the breach is not
     // an annex-trace afterthought, it wants a file worth opening.
@@ -173,7 +175,7 @@ describe('zones', () => {
   it('opens a supply zone when the good is owned', () => {
     const operator = ctx({
       tier: 1,
-      unlocks: ['basic-tasks', 'break-room', 'memos', 'notice-storylets'],
+      unlocks: ['basic-tasks', 'break-room', 'memos', NOTICE_UNLOCK],
       supplies: { coffee: true },
     });
     expect(zoneState(zoneById('breakroom')!, operator)).toBe('open');
@@ -183,7 +185,7 @@ describe('zones', () => {
   it('schedules the supply zones one per night so the first week keeps paying out', () => {
     const operator = ctx({
       tier: 1,
-      unlocks: ['basic-tasks', 'break-room', 'memos', 'notice-storylets'],
+      unlocks: ['basic-tasks', 'break-room', 'memos', NOTICE_UNLOCK],
       supplies: {
         'radio-permit': true,
         torch: true,

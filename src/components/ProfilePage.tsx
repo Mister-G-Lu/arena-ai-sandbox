@@ -10,6 +10,19 @@ import './ProfilePage.css';
  * `requires` maps; a quality alone unlocks nothing. Rendered dimmed and
  * checkmark-free so the profile never advertises a ✓ the data didn't open.
  */
+interface JournalEntry {
+  day: number;
+  text: string;
+  timestamp: number;
+}
+
+interface ContactRecord {
+  name: string;
+  role: string;
+  firstMet: number;
+  interactions: number;
+}
+
 const QUALITY_UNLOCKS: Record<string, string[]> = {
   doubt: [
     'Notice storylets',
@@ -181,7 +194,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="quality-description">{def.description}</div>
                   <div className="quality-bar-container">
-                    {[...Array(Math.min(segments, 10))].map((_: any, i: number) => (
+                    {[...Array(Math.min(segments, 10))].map((_: unknown, i: number) => (
                       <div key={i} className={`quality-segment ${i < value ? 'filled' : ''}`} />
                     ))}
                   </div>
@@ -205,7 +218,7 @@ export default function ProfilePage() {
               </div>
               <div className="quality-description">{attentionDef.description}</div>
               <div className="quality-bar-container">
-                {[...Array(attentionDef.max)].map((_: any, i: number) => (
+                {[...Array(attentionDef.max)].map((_: unknown, i: number) => (
                   <div key={i} className="quality-segment hidden" />
                 ))}
               </div>
@@ -315,7 +328,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="logbook-entries">
-              {logbook.slice(-5).reverse().map((entry: any, i: number) => (
+              {logbook.slice(-5).reverse().map((entry: JournalEntry, i: number) => (
                 <div key={i} className="logbook-entry">
                   <div className="entry-day">Day {entry.day}</div>
                   <div className="entry-text">{entry.text}</div>
@@ -330,7 +343,7 @@ export default function ProfilePage() {
           <div className="profile-section">
             <h3>DISCOVERIES</h3>
             <div className="logbook-entries">
-              {discoveries.slice(-5).reverse().map((entry: any, i: number) => (
+              {discoveries.slice(-5).reverse().map((entry: JournalEntry, i: number) => (
                 <div key={i} className="logbook-entry">
                   <div className="entry-day">Day {entry.day}</div>
                   <div className="entry-text">{entry.text}</div>
@@ -352,7 +365,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="contacts-list">
-              {contacts.map((contact: any, i: number) => (
+              {contacts.map((contact: ContactRecord, i: number) => (
                 <div key={i} className="contact-item">
                   <div className="contact-name">{contact.name}</div>
                   <div className="contact-role">{contact.role}</div>

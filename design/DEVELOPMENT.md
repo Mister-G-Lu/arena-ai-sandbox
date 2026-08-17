@@ -12,11 +12,15 @@ npm ci
 npm run check
 ```
 
-`npm run check` runs TypeScript, ESLint, tests with enforced coverage, and the
-production build. The build route-splits the larger terminal pages and enforces a
-250 KiB maximum for every minified JavaScript chunk with
-`scripts/check-bundle-size.mjs`. The ready-to-install GitHub workflow template
-lives at `ops/github-workflows/ci.yml`.
+`npm run check` runs TypeScript, ESLint, the 500-line source budget, tests with
+enforced coverage, and the production build. The build route-splits the larger
+terminal pages and enforces a 250 KiB maximum for every minified JavaScript chunk
+with `scripts/check-bundle-size.mjs`. ESLint's flat config covers JS/JSX and
+TS/TSX with React, TypeScript, and focused SonarJS maintainability rules;
+`scripts/check-file-length.mjs` extends the same 500-line budget to CSS and SQL.
+The ready-to-install GitHub workflow template lives at `ops/github-workflows/ci.yml`.
+For hosted duplication and maintainability trends, configure `SONAR_HOST_URL` and
+`SONAR_TOKEN`; the same template then runs the `sonar-project.properties` quality gate.
 
 ## Canonical runtime and save
 

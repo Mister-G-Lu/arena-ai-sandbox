@@ -255,7 +255,7 @@ export function useCloudSave({
     const ok = await auth.requestToken(email);
     if (ok) setMessage('Sign-in link dispatched. Check your inbox.');
     return ok;
-  }, [auth.requestToken]);
+  }, [auth]);
 
   const signOut = useCallback(async () => {
     const ok = await auth.signOut();
@@ -266,7 +266,7 @@ export function useCloudSave({
       setMessage('Signed out. This terminal will continue saving locally.');
     }
     return ok;
-  }, [auth.signOut]);
+  }, [auth]);
 
   const keepLocal = useCallback(async () => {
     if (!auth.session) return false;

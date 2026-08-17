@@ -1,5 +1,6 @@
 import { useGameState } from '../context/GameStateContext';
 import { zoneById } from '../game/progression';
+import type { SupplyDef } from '../game/shop';
 import './Shop.css';
 
 /**
@@ -42,7 +43,7 @@ export default function Shop() {
         </div>
 
         <div className="supply-board">
-          {SUPPLY_DEFS.map((supply: any) => {
+          {SUPPLY_DEFS.map((supply: SupplyDef) => {
             const owned = Boolean(state.supplies[supply.id]);
             const canAfford = ledger.credits >= supply.price;
             const zone = supply.unlocksZone ? zoneById(supply.unlocksZone) : undefined;
