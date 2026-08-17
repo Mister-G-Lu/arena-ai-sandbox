@@ -52,6 +52,10 @@ overall percentage would hide that split.
 - [x] Production build, save validation, content-graph validation, and automated
   test/coverage gates pass locally.
 - [x] Import/reset require confirmation and re-check Records before cloud writes resume.
+- [ ] A repository owner installs the CI/Pages workflow templates from
+  `ops/github-workflows/` under `.github/workflows/`; then sets **Build and
+  deployment / Source** to **GitHub Actions**. Templates are ready; push requires
+  a token with `workflow` scope (GitHub Apps are blocked from writing workflow files).
 - [ ] Author and integration-playtest the Month-1 tracks (Shifts 8–30), Attention
   pressure/cooling, routine-pool refill, and the complete first Reinstatement.
 - [ ] Build and playtest Arcs II–III, the remaining zones, Seam Ripper, and endings.
