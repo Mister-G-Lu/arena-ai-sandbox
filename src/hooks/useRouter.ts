@@ -1,14 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const VALID_PAGES = ['home', 'first-shift', 'console', 'shop', 'notices', 'investigations', 'profile'];
+const VALID_PAGES = [
+  'home',
+  'first-shift',
+  'console',
+  'shop',
+  'notices',
+  'investigations',
+  'profile',
+] as const;
 
-function getPageFromHash() {
+type Page = (typeof VALID_PAGES)[number];
+
+function isPage(value: string): value is Page {
+  return (VALID_PAGES as readonly string[]).includes(value);
+}
+
+function getPageFromHash(): Page {
   const hash = window.location.hash.slice(1);
-  return VALID_PAGES.includes(hash) ? hash : 'home';
+  return isPage(hash) ? hash : 'home';
 }
 
 export function useRouter() {
-  const [page, setPage] = useState(getPageFromHash);
+  const [page, setPage] = useState<Page>(getPageFromHash);
 
   useEffect(() => {
     function onHashChange() {
@@ -24,7 +38,7 @@ export function useRouter() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  const navigate = useCallback((target) => {
+  const navigate = useCallback((target: Page | string) => {
     window.location.hash = target;
   }, []);
 

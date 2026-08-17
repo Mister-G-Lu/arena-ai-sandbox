@@ -1,7 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ACTION_CAP } from '../game/actions';
 
-function TaskIntro({ reviewMode }) {
+interface TaskIntroProps {
+  reviewMode: boolean;
+}
+
+function TaskIntro({ reviewMode }: TaskIntroProps) {
   return (
     <div className="orient-content">
       {reviewMode ? 'This is a training copy of your first task.' : 'Your first task is waiting in the queue.'}
@@ -20,7 +24,12 @@ function TaskIntro({ reviewMode }) {
   );
 }
 
-function TaskResult({ reviewMode, actionsRemaining }) {
+interface TaskResultProps {
+  reviewMode: boolean;
+  actionsRemaining: number;
+}
+
+function TaskResult({ reviewMode, actionsRemaining }: TaskResultProps) {
   return (
     <div className="orient-content">
       <span className="warn">{reviewMode ? 'TRAINING COPY' : '01:06'}</span>
@@ -40,19 +49,26 @@ function TaskResult({ reviewMode, actionsRemaining }) {
   );
 }
 
+interface OrientTerminalTaskProps {
+  reviewMode?: boolean;
+  actionsRemaining?: number;
+  onTaskLogged: () => void;
+  onComplete: () => void;
+}
+
 export default function OrientTerminalTask({
   reviewMode = false,
   actionsRemaining = ACTION_CAP,
   onTaskLogged,
-  onComplete
-}) {
-  const [phase, setPhase] = useState('intro'); // intro, executing, result, confirming
-  const executeTimer = useRef(null);
-  const confirmTimer = useRef(null);
+  onComplete,
+}: OrientTerminalTaskProps) {
+  const [phase, setPhase] = useState<'intro' | 'executing' | 'result' | 'confirming'>('intro');
+  const executeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
-    window.clearTimeout(executeTimer.current);
-    window.clearTimeout(confirmTimer.current);
+    if (executeTimer.current) window.clearTimeout(executeTimer.current);
+    if (confirmTimer.current) window.clearTimeout(confirmTimer.current);
   }, []);
 
   const handleExecute = () => {

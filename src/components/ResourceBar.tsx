@@ -1,4 +1,3 @@
-import React from 'react';
 import { useGameState } from '../context/GameStateContext';
 import './ResourceBar.css';
 
@@ -96,7 +95,7 @@ export default function ResourceBar() {
                 style={{
                   width: `${actionTank.unbound
                     ? 100
-                    : (actionTank.actions / actionTank.cap) * 100}%`
+                    : (actionTank.actions / actionTank.cap) * 100}%`,
                 }}
               />
             </div>
@@ -127,7 +126,7 @@ export default function ResourceBar() {
         {/* Profile Button */}
         <button
           className="resource-item profile-button"
-          onClick={() => window.location.hash = '#profile'}
+          onClick={() => { window.location.hash = '#profile'; }}
           title="View Operator Profile"
         >
           <span className="resource-icon">◉</span>

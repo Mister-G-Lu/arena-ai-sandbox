@@ -1,13 +1,17 @@
-import React from 'react';
 
-function StationCheck({ day, actionsRemaining }) {
+interface StationCheckProps {
+  day: number;
+  actionsRemaining: number;
+}
+
+function StationCheck({ day, actionsRemaining }: StationCheckProps) {
   return (
     <div className="orient-content">
       {'The window is still there. You are still at the desk.\nThe feed is not the city — it is the city after it has been made listable.\n\n'}
       <span className="warn">YOUR ROLE: DISPATCHER — NOT DRIVER, NOT PATROL</span>
       {'\n  '}
       <span className="dim">
-        {'You do not carry. You clear. You verify. You file.\n  Trucks, lights, radios, rain — they become lines. Lines become “CLEAR.”'}
+        {'You do not carry. You clear. You verify. You file.\n  Trucks, lights, radios, rain — they become lines. Lines become "CLEAR".'}
       </span>
       {'\n\nYour console is active. Four readouts. Read them.\n\n'}
       <span className="warn">SHIFT DAY: {day}</span>
@@ -38,7 +42,13 @@ function StationCheck({ day, actionsRemaining }) {
   );
 }
 
-export default function OrientTerminalStation({ day, actionsRemaining, onComplete }) {
+interface OrientTerminalStationProps {
+  day: number;
+  actionsRemaining: number;
+  onComplete: () => void;
+}
+
+export default function OrientTerminalStation({ day, actionsRemaining, onComplete }: OrientTerminalStationProps) {
   return (
     <div className="orient-terminal">
       <div className="orient-head">

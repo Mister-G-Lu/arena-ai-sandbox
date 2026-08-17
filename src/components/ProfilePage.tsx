@@ -1,8 +1,7 @@
-import React from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { QUALITY_DEFS, visibleQualityDefs, attentionTone } from '../game/qualities';
 import { requirementLabel, missingRequirements } from '../game/progression';
-import { GLITCH_DEFS } from '../game/glitches';
+import { GLITCH_DEFS, REQUIRED_GLITCH_CATEGORIES, glitchCategoriesHeld, canUseSeamRipper } from '../game/glitches';
 import SaveManagement from './SaveManagement';
 import './ProfilePage.css';
 
@@ -11,22 +10,22 @@ import './ProfilePage.css';
  * `requires` maps; a quality alone unlocks nothing. Rendered dimmed and
  * checkmark-free so the profile never advertises a ✓ the data didn't open.
  */
-const QUALITY_UNLOCKS = {
+const QUALITY_UNLOCKS: Record<string, string[]> = {
   doubt: [
     'Notice storylets',
     'Investigation actions',
     "Operator 5's log",
     'All secret zones',
-    'The Summons'
+    'The Summons',
   ],
   perception: [
     'Basic notices',
     'Hidden memos',
     "Operator 5's clues",
     "VANTABLACK's nature",
-    "The Cleaner's identity"
+    "The Cleaner's identity",
   ],
-  routine: []
+  routine: [],
 };
 
 export default function ProfilePage() {
@@ -40,12 +39,12 @@ export default function ProfilePage() {
     deaths,
     logbook,
     discoveries,
-    contacts
+    contacts,
   } = state;
 
   const componentsCount = Object.values(components).filter(Boolean).length;
   const currentPromotion = PROMOTIONS[state.promotion.tier];
-  const nextPromotion = PROMOTIONS[state.promotion.tier + 1];
+  const nextPromo = PROMOTIONS[state.promotion.tier + 1];
   const attentionDef = QUALITY_DEFS.attention;
 
   return (
@@ -69,8 +68,6 @@ export default function ProfilePage() {
                 <span className="info-label">Days on Roster:</span>
                 <span className="info-value">{day}</span>
               </div>
-              {/* The career total lives here now. The tank in the header is
-                  what limits a sitting; this is just the record. */}
               <div className="info-item">
                 <span className="info-label">Results Filed:</span>
                 <span className="info-value">{tasksCompleted.toLocaleString()}</span>
@@ -184,7 +181,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="quality-description">{def.description}</div>
                   <div className="quality-bar-container">
-                    {[...Array(Math.min(segments, 10))].map((_, i) => (
+                    {[...Array(Math.min(segments, 10))].map((_: any, i: number) => (
                       <div key={i} className={`quality-segment ${i < value ? 'filled' : ''}`} />
                     ))}
                   </div>
@@ -208,7 +205,7 @@ export default function ProfilePage() {
               </div>
               <div className="quality-description">{attentionDef.description}</div>
               <div className="quality-bar-container">
-                {[...Array(attentionDef.max)].map((_, i) => (
+                {[...Array(attentionDef.max)].map((_: any, i: number) => (
                   <div key={i} className="quality-segment hidden" />
                 ))}
               </div>
@@ -224,7 +221,7 @@ export default function ProfilePage() {
           <div className="profile-section">
             <h3>ANOMALIES ON FILE</h3>
             <div className="qualities-display">
-              {state.glitches.map((id) => {
+              {state.glitches.map((id: string) => {
                 const glitch = GLITCH_DEFS[id];
                 if (!glitch) return null;
                 return (
@@ -235,9 +232,30 @@ export default function ProfilePage() {
                       <span className="quality-value">KEPT</span>
                     </div>
                     <div className="quality-description">{glitch.description}</div>
+                    <div className="quality-unlocks">
+                      <span className="unlock dim">EVIDENCE OF: {glitch.reveals.toUpperCase()}</span>
+                    </div>
                   </div>
                 );
               })}
+            </div>
+            <div className="glitch-categories">
+              <span className="fine">
+                EVIDENCE CATEGORIES: {glitchCategoriesHeld(state.glitches)} / {REQUIRED_GLITCH_CATEGORIES.length}
+                {canUseSeamRipper(state.glitches) ? ' — THE SEAM RIPPER CAN READ THIS.' : ''}
+              </span>
+              <div className="component-dots">
+                {REQUIRED_GLITCH_CATEGORIES.map((cat) => {
+                  const held = state.glitches.some((id: string) => GLITCH_DEFS[id]?.reveals === cat);
+                  return (
+                    <div
+                      key={cat}
+                      className={`component-dot ${held ? 'acquired' : ''}`}
+                      title={`${cat.toUpperCase()} ${held ? '(proven)' : '(unproven)'}`}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -253,30 +271,30 @@ export default function ProfilePage() {
               <div className="promotion-unlocks">
                 <div className="unlocks-label">Unlocked:</div>
                 <div className="unlocks-list">
-                  {state.promotion.unlocks.map((unlock, i) => (
+                  {state.promotion.unlocks.map((unlock: string, i: number) => (
                     <span key={i} className="unlock-badge">{unlock}</span>
                   ))}
                 </div>
               </div>
             </div>
 
-            {nextPromotion && (
+            {nextPromo && (
               <div className="promotion-next">
                 <div className="next-label">Next Promotion:</div>
-                <div className="next-tier">TIER {nextPromotion.tier}</div>
-                <div className="next-title">{nextPromotion.title}</div>
+                <div className="next-tier">TIER {nextPromo.tier}</div>
+                <div className="next-title">{nextPromo.title}</div>
                 <div className="next-requirements">
-                  <span>{requirementLabel(nextPromotion.requires)}</span>
-                  {missingRequirements(nextPromotion.requires, requirementCtx).length > 0 && (
+                  <span>{requirementLabel(nextPromo.requires)}</span>
+                  {missingRequirements(nextPromo.requires, requirementCtx).length > 0 && (
                     <span className="dim">
-                      {' '}— currently {missingRequirements(nextPromotion.requires, requirementCtx).join(', ')}
+                      {' '}— currently {missingRequirements(nextPromo.requires, requirementCtx).join(', ')}
                     </span>
                   )}
                 </div>
               </div>
             )}
 
-            {!nextPromotion && (
+            {!nextPromo && (
               <div className="promotion-max">
                 <div className="max-label">Maximum rank achieved</div>
                 <div className="max-title">You have reached the end of the hierarchy.</div>
@@ -297,7 +315,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="logbook-entries">
-              {logbook.slice(-5).reverse().map((entry, i) => (
+              {logbook.slice(-5).reverse().map((entry: any, i: number) => (
                 <div key={i} className="logbook-entry">
                   <div className="entry-day">Day {entry.day}</div>
                   <div className="entry-text">{entry.text}</div>
@@ -312,7 +330,7 @@ export default function ProfilePage() {
           <div className="profile-section">
             <h3>DISCOVERIES</h3>
             <div className="logbook-entries">
-              {discoveries.slice(-5).reverse().map((entry, i) => (
+              {discoveries.slice(-5).reverse().map((entry: any, i: number) => (
                 <div key={i} className="logbook-entry">
                   <div className="entry-day">Day {entry.day}</div>
                   <div className="entry-text">{entry.text}</div>
@@ -334,7 +352,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="contacts-list">
-              {contacts.map((contact, i) => (
+              {contacts.map((contact: any, i: number) => (
                 <div key={i} className="contact-item">
                   <div className="contact-name">{contact.name}</div>
                   <div className="contact-role">{contact.role}</div>

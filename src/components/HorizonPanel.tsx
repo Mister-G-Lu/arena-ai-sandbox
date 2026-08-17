@@ -1,4 +1,3 @@
-import React from 'react';
 import { useGameState } from '../context/GameStateContext';
 import {
   PROMOTIONS,
@@ -17,7 +16,7 @@ import {
 export default function HorizonPanel() {
   const { state, requirementCtx, availableZones } = useGameState();
   const next = PROMOTIONS[state.promotion.tier + 1];
-  const locked = availableZones.filter((zone) => zone.status === 'locked');
+  const locked = availableZones.filter((zone: any) => zone.status === 'locked');
 
   if (!next && locked.length === 0) return null;
 
@@ -69,7 +68,7 @@ export default function HorizonPanel() {
           <div className="horizon-cell horizon-locked-cell">
             <span className="horizon-label">LOCKED CONTENT ON FILE</span>
             <span className="horizon-locked-list">
-              {locked.map((zone) => (
+              {locked.map((zone: any) => (
                 <span key={zone.id} className="horizon-locked-item">
                   <span className="horizon-locked-title">{zone.title.toUpperCase()}</span>
                   <span className="horizon-locked-req">

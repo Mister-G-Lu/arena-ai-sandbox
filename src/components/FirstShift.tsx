@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import OrientTerminalBoot from './OrientTerminalBoot';
 import OrientTerminalMemo from './OrientTerminalMemo';
 import OrientTerminalVista from './OrientTerminalVista';
@@ -10,17 +10,21 @@ import OrientTerminalWaiver from './OrientTerminalWaiver';
 import { useGameState } from '../context/GameStateContext';
 import { ACTION_CAP } from '../game/actions';
 
+type OrientStage = 'idle' | 'boot' | 'memo' | 'vista' | 'station' | 'breakroom' | 'task' | 'complete' | 'waiver';
+
 export default function FirstShift() {
   const { state, actions, actionTank } = useGameState();
   // Capture this once: completing orientation should not turn the final screen into review mode.
   const [reviewMode] = useState(state.orientation.completed);
-  const [stage, setStage] = useState('idle');
+  const [stage, setStage] = useState<OrientStage>('idle');
   const [transitioning, setTransitioning] = useState(false);
-  const transitionTimer = useRef(null);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => window.clearTimeout(transitionTimer.current), []);
+  useEffect(() => () => {
+    if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
+  }, []);
 
-  function transitionTo(nextStage) {
+  function transitionTo(nextStage: OrientStage) {
     setTransitioning(true);
     transitionTimer.current = window.setTimeout(() => {
       setStage(nextStage);
@@ -55,7 +59,7 @@ export default function FirstShift() {
   }
 
   /** The break-room answer is the operator's first filed consequence. */
-  function recordBreakRoomChoice({ effects, logbook }) {
+  function recordBreakRoomChoice({ effects, logbook }: { effects: Record<string, number>; logbook: string | null }) {
     actions.applyEffects(effects);
     if (logbook) actions.addLogEntry(logbook);
   }

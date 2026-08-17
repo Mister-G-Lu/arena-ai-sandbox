@@ -1,4 +1,3 @@
-import React from 'react';
 
 function VistaCopy() {
   return (
@@ -14,7 +13,7 @@ function VistaCopy() {
       </p>
       <p>
         {'Thirty floors below, Meridian throws its own light back at itself. '}
-        {'Rain-slick streets in Sector 4. The annex roof still wet from a rain that isn’t on the weather desk. '}
+        {'Rain-slick streets in Sector 4. The annex roof still wet from a rain that isn\'t on the weather desk. '}
         {'Neon bleeding into puddles until the whole grid looks like a circuit board left out in the weather. '}
         {'A cutter holds altitude over the municipal tower, searchlight painting the eleventh floor amber and holding there, like it forgot what it was looking for.'}
       </p>
@@ -22,20 +21,24 @@ function VistaCopy() {
         <span className="warn">None of that is your jurisdiction.</span>
       </p>
       <p>
-        {'You are not in a cutter. You are not on a bike. You are not on Sector 9’s night asphalt with VANTABLACK, watching the stars get the order wrong. '}
+        {'You are not in a cutter. You are not on a bike. You are not on Sector 9\'s night asphalt with VANTABLACK, watching the stars get the order wrong. '}
         {'You are in here — under a fluorescent bar that hums a little too evenly, at a desk the roster already assigned to you, in front of a terminal that knew your name before you applied.'}
       </p>
       <p>
-        {'This is dispatch. You don’t move. You authorize movement. '}
+        {'This is dispatch. You don\'t move. You authorize movement. '}
         <em>Fifty work orders. One live feed. One stamp.</em>
-        {' You keep the lines moving so the city outside can pretend it wasn’t written the night before. '}
+        {' You keep the lines moving so the city outside can pretend it wasn\'t written the night before. '}
         <span className="dim">The city is counting on you. The city has always been counting on you — that part was not exaggeration.</span>
       </p>
     </div>
   );
 }
 
-export default function OrientTerminalVista({ onComplete }) {
+interface OrientTerminalVistaProps {
+  onComplete: () => void;
+}
+
+export default function OrientTerminalVista({ onComplete }: OrientTerminalVistaProps) {
   return (
     <div className="orient-terminal orient-terminal-vista">
       <div className="orient-head">

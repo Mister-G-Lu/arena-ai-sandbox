@@ -1,6 +1,9 @@
-import React from 'react';
 
-function CompletionCopy({ reviewMode }) {
+interface CompletionCopyProps {
+  reviewMode: boolean;
+}
+
+function CompletionCopy({ reviewMode }: CompletionCopyProps) {
   if (reviewMode) {
     return (
       <div className="orient-content">
@@ -32,7 +35,17 @@ function CompletionCopy({ reviewMode }) {
   );
 }
 
-export default function OrientTerminalComplete({ reviewMode = false, onContinue, onReplay }) {
+interface OrientTerminalCompleteProps {
+  reviewMode?: boolean;
+  onContinue: () => void;
+  onReplay: () => void;
+}
+
+export default function OrientTerminalComplete({
+  reviewMode = false,
+  onContinue,
+  onReplay,
+}: OrientTerminalCompleteProps) {
   return (
     <div className="orient-terminal">
       <div className="orient-head">

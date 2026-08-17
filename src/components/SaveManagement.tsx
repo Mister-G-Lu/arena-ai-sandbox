@@ -2,7 +2,13 @@ import React, { useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { MAX_SAVE_BYTES, parseSaveJson } from '../lib/gameSave';
 
-function FileSummary({ label, game, savedAt }) {
+interface FileSummaryProps {
+  label: string;
+  game: { day: number; tasksCompleted: number; promotion: { tier: number } };
+  savedAt: string | null;
+}
+
+function FileSummary({ label, game, savedAt }: FileSummaryProps) {
   return (
     <div className="save-summary">
       <strong>{label}</strong>
@@ -17,12 +23,12 @@ function FileSummary({ label, game, savedAt }) {
 export default function SaveManagement() {
   const { state, persistence, cloud, actions } = useGameState();
   const [email, setEmail] = useState('');
-  const [localMessage, setLocalMessage] = useState(null);
-  const [pendingImport, setPendingImport] = useState(null);
+  const [localMessage, setLocalMessage] = useState<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ text: string; game: FileSummaryProps['game']; savedAt: string | null } | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
-  const fileInput = useRef(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  async function requestToken(event) {
+  async function requestToken(event: React.FormEvent) {
     event.preventDefault();
     if (!email.trim()) return;
     await cloud.requestToken(email.trim());
@@ -39,13 +45,10 @@ export default function SaveManagement() {
     setLocalMessage('Operator file exported.');
   }
 
-  async function importFile(event) {
+  async function importFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      // A real operator file is a few hundred KB; anything near the browser
-      // string limit is a hostile payload. Refuse it before JSON.parse freezes
-      // the terminal.
       if (file.size > MAX_SAVE_BYTES) {
         throw new Error(
           `Import refused: file is ${(file.size / 1024 / 1024).toFixed(1)} MB; ` +

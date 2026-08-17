@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { describeEffects } from '../game/qualities';
 
 function BreakRoomCopy() {
@@ -11,20 +11,35 @@ function BreakRoomCopy() {
   );
 }
 
+interface BreakRoomLine {
+  text: string;
+  em?: boolean;
+  warn?: boolean;
+  dim?: boolean;
+}
+
+interface BreakRoomChoice {
+  id: string;
+  label: string;
+  effects: Record<string, number>;
+  lines: BreakRoomLine[];
+  logbook: string | null;
+}
+
 /**
  * The first real choice. Each option is data: label, response lines, effects,
  * residue. "The system has noted your observation" — and now it actually does.
  */
-const CHOICES = [
+const CHOICES: BreakRoomChoice[] = [
   {
     id: 'fine',
     label: "IT'S FINE",
     effects: { Routine: 1 },
     lines: [
       { text: 'It is fine. It is always fine.' },
-      { text: 'Comfort is compliance.', em: true }
+      { text: 'Comfort is compliance.', em: true },
     ],
-    logbook: null
+    logbook: null,
   },
   {
     id: 'didnt-make',
@@ -34,9 +49,9 @@ const CHOICES = [
       { text: 'Correct. You did not.' },
       { text: 'No one did. It was warm before the shift.' },
       { text: 'It was warm before the building.', warn: true },
-      { text: 'The system has noted your observation.' }
+      { text: 'The system has noted your observation.' },
     ],
-    logbook: 'Night one: the coffee was warm before I arrived. Nobody made it. Noted, by me and by something else.'
+    logbook: 'Night one: the coffee was warm before I arrived. Nobody made it. Noted, by me and by something else.',
   },
   {
     id: 'who',
@@ -47,29 +62,41 @@ const CHOICES = [
       { text: 'The question has been filed. The file is empty.' },
       { text: 'The file has always been empty.', em: true },
       { text: 'The system appreciates your curiosity.' },
-      { text: 'The system does not appreciate it enough to answer.' }
+      { text: 'The system does not appreciate it enough to answer.' },
     ],
-    logbook: 'Night one: asked who makes the coffee. The answer field exists. It is empty. An empty field is still a field.'
-  }
+    logbook: 'Night one: asked who makes the coffee. The answer field exists. It is empty. An empty field is still a field.',
+  },
 ];
 
-function LineText({ line }) {
+function LineText({ line }: { line: BreakRoomLine }) {
   if (line.em) return <em>{line.text}</em>;
   if (line.warn) return <span className="warn">{line.text}</span>;
   if (line.dim) return <span className="dim">{line.text}</span>;
-  return line.text;
+  return <>{line.text}</>;
 }
 
-export default function OrientTerminalBreakRoom({ onComplete, onChoose, reviewMode = false }) {
-  const [choiceId, setChoiceId] = useState(null);
-  const [showContinue, setShowContinue] = useState(false);
-  const continueTimer = useRef(null);
+interface OrientTerminalBreakRoomProps {
+  onComplete: () => void;
+  onChoose: (data: { effects: Record<string, number>; logbook: string | null }) => void;
+  reviewMode?: boolean;
+}
 
-  useEffect(() => () => window.clearTimeout(continueTimer.current), []);
+export default function OrientTerminalBreakRoom({
+  onComplete,
+  onChoose,
+  reviewMode = false,
+}: OrientTerminalBreakRoomProps) {
+  const [choiceId, setChoiceId] = useState<string | null>(null);
+  const [showContinue, setShowContinue] = useState(false);
+  const continueTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (continueTimer.current) window.clearTimeout(continueTimer.current);
+  }, []);
 
   const choice = CHOICES.find((c) => c.id === choiceId);
 
-  const handleChoice = (selected) => {
+  const handleChoice = (selected: BreakRoomChoice) => {
     setChoiceId(selected.id);
     // A replayed orientation is an archived record: it must not re-file effects.
     if (!reviewMode && typeof onChoose === 'function') {

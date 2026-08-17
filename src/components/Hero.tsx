@@ -1,11 +1,23 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { ACTION_CAP } from '../game/actions';
 // City artwork: Pixabay (Gam-Ol, image 7088420, "City View, Night, Digital Art")
 // — Pixabay Content License, free for use, no attribution required.
 import meridianCity from '../assets/meridian-city.jpg';
 
-const SECTORS = [
+interface Sector {
+  id: number;
+  status: string;
+  signal: string;
+}
+
+interface Bulletin {
+  id: string;
+  title: string;
+  body: string;
+}
+
+const SECTORS: Sector[] = [
   { id: 1, status: 'NOMINAL', signal: 'Street grid synchronized.' },
   { id: 2, status: 'NOMINAL', signal: 'No calls awaiting dispatch.' },
   { id: 3, status: 'WATCH', signal: 'Annex elevator returned an extra tone.' },
@@ -14,39 +26,39 @@ const SECTORS = [
   { id: 6, status: 'NOMINAL', signal: 'Weather loop holding steady.' },
   { id: 7, status: 'UNLISTED', signal: 'Sector is present. Public map disagrees.' },
   { id: 8, status: 'NOMINAL', signal: 'Population ledger balanced.' },
-  { id: 9, status: 'SIGNAL', signal: 'VANTABLACK reports: roads quiet. stars wrong.' }
+  { id: 9, status: 'SIGNAL', signal: 'VANTABLACK reports: roads quiet. stars wrong.' },
 ];
 
-const BULLETINS = [
+const BULLETINS: Bulletin[] = [
   {
     id: '012',
     title: 'VENDING MACHINE REDESIGNATION',
-    body: 'The vending machine on the third floor has been removed from the floor plan. It was not on the third floor. Do not check. — M.'
+    body: 'The vending machine on the third floor has been removed from the floor plan. It was not on the third floor. Do not check. — M.',
   },
   {
     id: '011',
     title: 'MUNICIPAL ANNEX FLOOR COUNT',
-    body: 'The Municipal Annex contains eleven (11) floors. Reports of a twelfth (12th) floor are to be filed in the elevator. — M.'
+    body: 'The Municipal Annex contains eleven (11) floors. Reports of a twelfth (12th) floor are to be filed in the elevator. — M.',
   },
   {
     id: '010',
     title: 'OPERATOR STATUS',
-    body: 'Operator status: ACTIVE. The city has noted your presence. Your presence was expected. Do not deviate from the expected. — M.'
-  }
+    body: 'Operator status: ACTIVE. The city has noted your presence. Your presence was expected. Do not deviate from the expected. — M.',
+  },
 ];
 
-const DIRECTIVES = [
+const DIRECTIVES: [string, string, string][] = [
   ['BUDGET', `${ACTION_CAP} ACTIONS`, 'One returns every ten minutes. Always.'],
   ['ROSTER', 'CONFIRMED', 'Your entry predates your application.'],
   ['COFFEE', 'WARM', 'Preparation timestamp unavailable.'],
-  ['ATTENDANCE', '100.0%', 'The record cannot be broken.']
+  ['ATTENDANCE', '100.0%', 'The record cannot be broken.'],
 ];
 
 export default function Hero() {
   const { state } = useGameState();
   const [selectedSector, setSelectedSector] = useState(9);
   const [selectedBulletin, setSelectedBulletin] = useState(0);
-  const sector = SECTORS.find(item => item.id === selectedSector);
+  const sector = SECTORS.find(item => item.id === selectedSector)!;
   const bulletin = BULLETINS[selectedBulletin];
   const shiftTarget = state.orientation.completed ? '#console' : '#first-shift';
 
@@ -136,7 +148,7 @@ export default function Hero() {
                   </div>
                 ))}
               </div>
-              <div className="deck-whisper">“operator is performing within parameters. do not intervene.” — m.</div>
+              <div className="deck-whisper">"operator is performing within parameters. do not intervene." — m.</div>
             </article>
 
             <article className="deck-panel grid-panel">

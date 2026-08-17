@@ -1,9 +1,8 @@
-import React from 'react';
 
 function MemoCopy() {
   return (
     <div className="orient-content">
-      {'Operator.\n\nI would normally begin with “welcome.” Records informs me that would be inaccurate.\n\nYour name appeared on the overnight roster this morning.\nIt has been there for '}
+      {'Operator.\n\nI would normally begin with "welcome." Records informs me that would be inaccurate.\n\nYour name appeared on the overnight roster this morning.\nIt has been there for '}
       <em>some time</em>
       {'.\n\nDo not be concerned. Or do. Quietly.\nNew operators are always on the roster before they apply.\nThe paperwork arrives in the correct order.\nIt has '}
       <em>always</em>
@@ -15,7 +14,11 @@ function MemoCopy() {
   );
 }
 
-export default function OrientTerminalMemo({ onComplete }) {
+interface OrientTerminalMemoProps {
+  onComplete: () => void;
+}
+
+export default function OrientTerminalMemo({ onComplete }: OrientTerminalMemoProps) {
   return (
     <div className="orient-terminal">
       <div className="orient-head">

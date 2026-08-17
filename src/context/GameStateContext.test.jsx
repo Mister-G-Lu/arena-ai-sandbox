@@ -3,7 +3,7 @@
  * pushing the ledger past its 32-bit word, because the reward for breaking
  * the number is knowing there is a number.
  */
-import React from 'react';
+import 'react';
 import { render, act } from '@testing-library/react';
 import { describe, expect, it, beforeEach } from 'vitest';
 import {

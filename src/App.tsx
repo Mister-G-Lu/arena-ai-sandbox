@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import NavBar from './components/NavBar';
 import ResourceBar from './components/ResourceBar';
 import Hero from './components/Hero';
@@ -27,23 +27,28 @@ function RouteFallback() {
   );
 }
 
+interface PageGate {
+  open: boolean;
+  fallback: string;
+}
+
 function GameShell() {
   const { page, navigate } = useRouter();
   const { state } = useGameState();
   // Pages can be gated by state; a locked page redirects to its prerequisite.
   // Notices are a promotion privilege. Investigations appear to everyone when
   // the Shift 2 Annex case arrives, then promotion controls their depth.
-  const PAGE_GATES = {
+  const PAGE_GATES: Record<string, PageGate> = {
     console: { open: state.orientation.completed, fallback: 'first-shift' },
     shop: { open: state.orientation.completed, fallback: 'first-shift' },
     notices: {
       open: state.orientation.completed && state.promotion.unlocks.includes('notice-storylets'),
-      fallback: state.orientation.completed ? 'console' : 'first-shift'
+      fallback: state.orientation.completed ? 'console' : 'first-shift',
     },
     investigations: {
       open: state.orientation.completed && state.day >= 2,
-      fallback: state.orientation.completed ? 'console' : 'first-shift'
-    }
+      fallback: state.orientation.completed ? 'console' : 'first-shift',
+    },
   };
 
   const gate = PAGE_GATES[page];

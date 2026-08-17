@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 
-const BOOT_LINES = [
+const BOOT_LINES: ReactNode[] = [
   <>&gt; MERIDIAN CENTRAL DISPATCH</>,
   <>&gt; TERMINAL v0.41.312</>,
   <>&gt; ──────────────────────────────</>,
@@ -14,10 +14,14 @@ const BOOT_LINES = [
   <>&gt; LOADING ORIENTATION PROTOCOL...</>,
 ];
 
-export default function OrientTerminalBoot({ onComplete }) {
-  const [bootLines, setBootLines] = useState([]);
+interface OrientTerminalBootProps {
+  onComplete: () => void;
+}
+
+export default function OrientTerminalBoot({ onComplete }: OrientTerminalBootProps) {
+  const [bootLines, setBootLines] = useState<ReactNode[]>([]);
   const [bootIndex, setBootIndex] = useState(0);
-  const [phase, setPhase] = useState('booting'); // booting, ready
+  const [phase, setPhase] = useState<'booting' | 'ready'>('booting');
 
   useEffect(() => {
     if (phase === 'booting' && bootIndex < BOOT_LINES.length) {

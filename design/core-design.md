@@ -153,6 +153,17 @@ The Fallen London-chess analog, diegetic to this game's fiction:
 - Six Components assemble into **the Seam Ripper** — a tool that holds the gap at
   0600 open and lets you descend to **the Loom**, the engine that weaves the city
   nightly.
+- The Seam Ripper requires two things: **Components** (the physical pieces, found
+  in secret zones) and **Glitches** (evidence of simulation flaws, kept from
+  anomalies the operator chose not to correct). See `design/glitches.md`.
+- Components authorize the tool. Glitches authorize the *use* of it: the operator
+  must have proven, through kept evidence, that the simulation has structure
+  (`architecture`), that it has erased history (`history`), that the operator is
+  not what the system says (`identity`), that the frame has a seam (`agency`), and
+  that the whole thing is a program (`simulation`). A player with all six
+  Components but zero Glitches has built a door but does not know it leads
+  anywhere. A player with Glitches but no Components knows the door is there but
+  cannot open it.
 - The finale is cracking the Loom's code — a story sequence, not a stat check. The
   components *authorize* actions in the finale; they don't add +damage.
 - *Origin:* user direction — "more likely building a tool end game to crack the code

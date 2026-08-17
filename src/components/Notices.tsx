@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { loadAllStorylets, findCard, cardsInZone } from '../content/load';
 import { describeEffects } from '../game/qualities';
@@ -7,34 +7,51 @@ import { supplyById } from '../game/shop';
 import HorizonPanel from './HorizonPanel';
 import './Notices.css';
 
-const BOARD_COPY = {
+interface BoardCopy {
+  title: string;
+  lede: string;
+  vista: string;
+  empty: string;
+  footer: string;
+}
+
+const BOARD_COPY: Record<string, BoardCopy> = {
   notices: {
     title: 'NOTICES',
     lede: 'Work that Dispatch did not assign. Everything here is optional, which is how the system knows who is only pretending to be tired.',
     vista: 'Through the office window, the hoverlanes keep their amber river whether you notice or not. The notices are what you notice instead of them.',
     empty: 'Nothing is posted tonight. Notices appear for operators who have started noticing. Keep working. Or do not — the difference is the point.',
-    footer: '// NOTICES ARE NEVER REQUIRED. THE SYSTEM PREFERS OPERATORS WHO WORK.'
+    footer: '// NOTICES ARE NEVER REQUIRED. THE SYSTEM PREFERS OPERATORS WHO WORK.',
   },
   investigations: {
     title: 'INVESTIGATIONS',
     lede: 'Cases that exist because the official result did not. Clearance changes what the terminal admits; management would prefer that you call this coincidence.',
-    vista: 'The elevator still sits where you left it — Floor 11, display steady, one blank warmth where it shouldn’t be. The investigation is a door you have to keep choosing to open.',
+    vista: 'The elevator still sits where you left it — Floor 11, display steady, one blank warmth where it shouldn\'t be. The investigation is a door you have to keep choosing to open.',
     empty: 'No open cases. This is the expected result. M. would like you to stop checking.',
-    footer: '// INVESTIGATION IS OUTSIDE YOUR JOB DESCRIPTION. THIS HAS NOT STOPPED YOU.'
-  }
+    footer: '// INVESTIGATION IS OUTSIDE YOUR JOB DESCRIPTION. THIS HAS NOT STOPPED YOU.',
+  },
 };
+
+interface NoticesProps {
+  board?: 'notices' | 'investigations';
+}
 
 /**
  * The shared storylet runner behind the Notices and Investigations tabs.
  * Content declares which board owns it; consequences still file through the
  * one effects pipeline.
  */
-export default function Notices({ board = 'notices' }) {
+export default function Notices({ board = 'notices' }: NoticesProps) {
   const { state, actions, availableZones, requirementCtx, actionTank } = useGameState();
-  const [lastOutcome, setLastOutcome] = useState(null);
-  const [refusal, setRefusal] = useState(null);
+  const [lastOutcome, setLastOutcome] = useState<{
+    title: string;
+    text: string;
+    effects: string | null;
+    revisit: boolean;
+  } | null>(null);
+  const [refusal, setRefusal] = useState<string | null>(null);
   const copy = BOARD_COPY[board] ?? BOARD_COPY.notices;
-  const boardZones = availableZones.filter((zone) => zone.board === board);
+  const boardZones = availableZones.filter((zone: any) => zone.board === board);
 
   // Content is schema-validated at load; a bad card fails loudly, never by
   // setting state during render.
@@ -49,38 +66,35 @@ export default function Notices({ board = 'notices' }) {
   const current = state.currentStorylet;
   const savedCard = current ? findCard(cards, current.storyletId) : undefined;
   const currentBelongsHere = Boolean(
-    current && boardZones.some((zone) => zone.id === current.zone),
+    current && boardZones.some((zone: any) => zone.id === current.zone),
   );
   const card = currentBelongsHere ? savedCard : undefined;
-  const otherBoard = current && savedCard && !currentBelongsHere
-    ? availableZones.find((zone) => zone.id === current.zone)?.board
-    : null;
+  const otherBoard =
+    current && savedCard && !currentBelongsHere
+      ? availableZones.find((zone: any) => zone.id === current.zone)?.board
+      : null;
   // A first read of a card charges; a reread never does.
-  const cardCosts = Boolean(card) && !state.seenStorylets.includes(card.id);
+  const cardCosts = Boolean(card) && !state.seenStorylets.includes(card!.id);
 
   /** Serve the first card in the zone the operator has not already resolved. */
-  function nextCardId(zone) {
+  function nextCardId(zone: any) {
     const zoneCards = cardsInZone(cards, zone.id);
-    const unread = zoneCards.find((c) => !state.seenStorylets.includes(c.id));
+    const unread = zoneCards.find((c: any) => !state.seenStorylets.includes(c.id));
     return (zone.onceEach ? unread?.id : undefined) ?? zone.entry;
   }
 
-  function openZone(zone) {
+  function openZone(zone: any) {
     setLastOutcome(null);
     setRefusal(null);
-    // Opening a board and reading a card are free. Only committing to a choice
-    // spends from the tank, so nobody pays to find out what a notice says.
     actions.enterZone(zone.id, nextCardId(zone));
   }
 
-  function choose(choice) {
+  function choose(choice: { id: string; outcome?: { text?: string; qualities?: Record<string, number> }; death?: boolean }) {
     if (!card) return;
-    // Consequences file once per card. A re-read replays the text only, and a
-    // re-read is free — you are charged for the decision, not the paper.
     const revisit = state.seenStorylets.includes(card.id);
     if (!revisit && actionTank.empty) {
       setRefusal(
-        `NO ACTIONS REMAINING. THE DECISION HOLDS. NEXT ACTION IN ${actionTank.countdown}.`
+        `NO ACTIONS REMAINING. THE DECISION HOLDS. NEXT ACTION IN ${actionTank.countdown}.`,
       );
       return;
     }
@@ -93,9 +107,9 @@ export default function Notices({ board = 'notices' }) {
         ? null
         : describeEffects(choice.outcome?.qualities, {
             qualities: state.qualities,
-            attention: state.attention
+            attention: state.attention,
           }),
-      revisit
+      revisit,
     });
   }
 
@@ -106,10 +120,10 @@ export default function Notices({ board = 'notices' }) {
   }
 
   /** Cards in a zone the operator has already resolved (a notice is read once). */
-  function remainingIn(zone) {
+  function remainingIn(zone: any) {
     const zoneCards = cardsInZone(cards, zone.id);
     if (!zone.onceEach) return zoneCards.length;
-    return zoneCards.filter((c) => !state.seenStorylets.includes(c.id)).length;
+    return zoneCards.filter((c: any) => !state.seenStorylets.includes(c.id)).length;
   }
 
   return (
@@ -119,7 +133,9 @@ export default function Notices({ board = 'notices' }) {
         <p className="section-lede">{copy.lede}</p>
         {copy.vista && (
           <div className="board-vista">
-            <span className="board-vista-kicker">// VISUAL // {board === 'investigations' ? 'OUT-OF-RANGE' : 'DESK WINDOW'}</span>
+            <span className="board-vista-kicker">
+              // VISUAL // {board === 'investigations' ? 'OUT-OF-RANGE' : 'DESK WINDOW'}
+            </span>
             <p>{copy.vista}</p>
           </div>
         )}
@@ -143,7 +159,7 @@ export default function Notices({ board = 'notices' }) {
               <span className="console-status">▣ RECOVERY</span>
             </div>
             <p className="fine">
-              The saved pointer “{current.storyletId}” does not exist in this content build.
+              The saved pointer &ldquo;{current.storyletId}&rdquo; does not exist in this content build.
               Clear only the open order to keep the rest of the operator file.
             </p>
             <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>
@@ -160,7 +176,8 @@ export default function Notices({ board = 'notices' }) {
               <span className="console-status">▣ HELD</span>
             </div>
             <p className="fine">
-              Finish or close the order on the {otherBoard === 'notices' ? 'Notices' : 'Investigations'} tab before opening another.
+              Finish or close the order on the {otherBoard === 'notices' ? 'Notices' : 'Investigations'}{' '}
+              tab before opening another.
             </p>
             <a className="btn btn-ghost btn-compact" href={`#${otherBoard}`}>
               RETURN TO OPEN FILE
@@ -169,14 +186,16 @@ export default function Notices({ board = 'notices' }) {
         )}
 
         <div className="zone-board">
-          {boardZones.map((zone) => {
+          {boardZones.map((zone: any) => {
             const remaining = remainingIn(zone);
             const exhausted = zone.onceEach && remaining === 0;
             const status = exhausted && zone.status !== 'complete' ? 'complete' : zone.status;
             const blockers = missingRequirements(zone.requires, requirementCtx);
-            const clearanceHeld = !zone.requiresUnlock || state.promotion.unlocks.includes(zone.requiresUnlock);
-            const needsSupplies = Object.keys(zone.requires ?? {})
-              .some((key) => supplyById(key) && !state.supplies[key]);
+            const clearanceHeld =
+              !zone.requiresUnlock || state.promotion.unlocks.includes(zone.requiresUnlock);
+            const needsSupplies = Object.keys(zone.requires ?? {}).some(
+              (key: any) => supplyById(key) && !state.supplies[key],
+            );
 
             return (
               <article key={zone.id} className={`zone-card zone-${status}`}>
@@ -184,7 +203,9 @@ export default function Notices({ board = 'notices' }) {
                 <h3>{zone.title}</h3>
                 <p>{zone.blurb}</p>
                 <div className="zone-meta">
-                  <span className={`zone-status-pill zone-status-${status}`}>{status.toUpperCase()}</span>
+                  <span className={`zone-status-pill zone-status-${status}`}>
+                    {status.toUpperCase()}
+                  </span>
                   {zone.component && (
                     <span className="zone-prize">
                       {state.components[zone.component] ? '✓ ' : '◇ '}
@@ -235,9 +256,7 @@ export default function Notices({ board = 'notices' }) {
             );
           })}
 
-          {boardZones.length === 0 && (
-            <p className="fine">{copy.empty}</p>
-          )}
+          {boardZones.length === 0 && <p className="fine">{copy.empty}</p>}
         </div>
 
         <HorizonPanel />
@@ -257,7 +276,7 @@ export default function Notices({ board = 'notices' }) {
               {card.choices.map((choice) => {
                 const effects = describeEffects(choice.outcome?.qualities, {
                   qualities: state.qualities,
-                  attention: state.attention
+                  attention: state.attention,
                 });
                 return (
                   <button
@@ -286,8 +305,6 @@ export default function Notices({ board = 'notices' }) {
                 <p className="fine storylet-refusal">
                   BUDGET EXHAUSTED // THE ORDER STAYS OPEN. NEXT ACTION IN {actionTank.countdown}.
                 </p>
-                {/* Never strand an operator inside an order they cannot pay
-                    for. Standing down releases the board without charge. */}
                 <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>
                   ↩ STAND DOWN
                 </button>

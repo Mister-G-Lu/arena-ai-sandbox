@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { taskPayout } from '../game/payouts';
 import { describeEffects } from '../game/qualities';
@@ -7,30 +7,39 @@ import { taskOrderFor } from '../game/dispatch';
 
 const SHIFT_ACTIONS = ACTION_CAP;
 
+interface FilingDef {
+  id: string;
+  label: string;
+  hint?: string;
+  effects: Record<string, number> | null;
+  logbook: ((task: PendingTaskDisplay) => string) | string | null;
+}
+
 /** Consequence table for filing a result: every verb carries its own effects,
  *  payout rule and residue line, so adding a filing verb is one entry here. */
-const FILINGS = {
+const FILINGS: Record<string, FilingDef> = {
   clean: {
     id: 'clean',
     label: '✓ ACKNOWLEDGE RESULT',
     effects: null,
-    logbook: null
+    logbook: null,
   },
   'file-clean': {
     id: 'file-clean',
     label: '✓ FILE AS CLEAN',
     hint: 'The system will correct the record and pay the reading it took. Nothing further is required of you.',
     effects: { Routine: 1 },
-    logbook: null
+    logbook: null,
   },
   discrepancy: {
     id: 'discrepancy',
     label: '⚠ LOG THE DISCREPANCY',
     hint: 'The line stays in the log exactly as it arrived. Unreconciled work is unbilled work. The system will notice that you noticed.',
     effects: { Doubt: 1, Attention: 1 },
-    logbook: (task) => `Day-log, ${task.timestamp} — ${task.code} returned: "${task.displayedResult}" ` +
-      'I did not correct it. Ink does not forget.'
-  }
+    logbook: (task: PendingTaskDisplay) =>
+      `Day-log, ${task.timestamp} — ${task.code} returned: "${task.displayedResult}" ` +
+      'I did not correct it. Ink does not forget.',
+  },
 };
 
 /** What the window shows while you file — the city you never touch. Rotates with time and tasks so the outside feels alive while the queue feels identical. */
@@ -48,12 +57,12 @@ const WINDOW_VISTAS = [
 ];
 
 /** Deterministic vista for a given shift moment — no extra state, just atmosphere that ticks forward. */
-function vistaForMoment({ day, tasksThisShift, minutes }) {
+function vistaForMoment({ day, tasksThisShift, minutes }: { day: number; tasksThisShift: number; minutes: number }) {
   const idx = (tasksThisShift + day * 3 + Math.floor(minutes / 40)) % WINDOW_VISTAS.length;
   return WINDOW_VISTAS[idx];
 }
 
-function formatTime(mins) {
+function formatTime(mins: number) {
   const hours = Math.floor(mins / 60) % 24;
   const minutes = mins % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -64,7 +73,7 @@ function formatTime(mins) {
  * task total: the night is 01:00–06:00 however the operator chooses to spend
  * it, and it advances whether an action went to the queue or to a notice.
  */
-function timeForActionsSpent(actionsSpent) {
+function timeForActionsSpent(actionsSpent: number) {
   return formatTime(Math.min(60 + actionsSpent * 6, 360));
 }
 
@@ -88,7 +97,7 @@ const GENERIC_INIT = [
  * whole time.
  */
 const M_PROD =
-  'M. // “You file everything clean. Admirable. Also suspicious. Noticing is permitted — the button has been on your screen all along.”';
+  'M. // \u201cYou file everything clean. Admirable. Also suspicious. Noticing is permitted — the button has been on your screen all along.\u201d';
 
 /**
  * M.'s direct-channel check-in, one per night from Day 4 on. Days 1–3 carry
@@ -97,17 +106,24 @@ const M_PROD =
  * Each line quietly keeps a thread warm without naming a reveal.
  */
 const M_AMBIENT = [
-  'M. // “You are ahead of your paperwork. That is not a compliment.”',
-  'M. // “The doorman says he has seen you. The doorman is not on payroll. He has seen everyone.”',
-  'M. // “Sector 9 called. There is no Sector 9 line. Do not ask me to reconcile that.”',
-  'M. // “The roof is under maintenance. It has been under maintenance for forty-one weeks. Maintenance has never attended.”',
-  'M. // “A truck reports a street that is not on the map. I filed it under MAP ERRORS. The map does not make errors.”',
-  'M. // “Someone left you a note. It was me. No — it was not me. — M.”',
-  'M. // “06:00 approaches. We do not discuss 06:00. You were not going to ask.”',
-  'M. // “Your file grows. Files do that. I would not read it if I were you.”',
+  'M. // \u201cYou are ahead of your paperwork. That is not a compliment.\u201d',
+  'M. // \u201cThe doorman says he has seen you. The doorman is not on payroll. He has seen everyone.\u201d',
+  'M. // \u201cSector 9 called. There is no Sector 9 line. Do not ask me to reconcile that.\u201d',
+  'M. // \u201cThe roof is under maintenance. It has been under maintenance for forty-one weeks. Maintenance has never attended.\u201d',
+  'M. // \u201cA truck reports a street that is not on the map. I filed it under MAP ERRORS. The map does not make errors.\u201d',
+  'M. // \u201cSomeone left you a note. It was me. No — it was not me. — M.\u201d',
+  'M. // \u201c06:00 approaches. We do not discuss 06:00. You were not going to ask.\u201d',
+  'M. // \u201cYour file grows. Files do that. I would not read it if I were you.\u201d',
 ];
 
-function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, handwritingOrderComplete }) {
+interface ShiftInitParams {
+  day: number;
+  tasksThisShift: number;
+  annexOrderComplete: boolean;
+  handwritingOrderComplete: boolean;
+}
+
+function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, handwritingOrderComplete }: ShiftInitParams) {
   if (day === 1 && tasksThisShift > 0) {
     return 'ORIENTATION RECORD RECEIVED // TASK VERIFIED // LIVE QUEUE OPEN.';
   }
@@ -120,47 +136,76 @@ function shiftInitializationText({ day, tasksThisShift, annexOrderComplete, hand
   return GENERIC_INIT[day % GENERIC_INIT.length];
 }
 
+interface PendingTaskDisplay {
+  id: string;
+  logId: string;
+  timestamp: string;
+  code: string;
+  title: string;
+  displayedResult: string;
+  cleanResult?: string;
+  isCorrupt: boolean;
+  isPersonal: boolean;
+  shiftAction: number;
+}
+
+interface LogEntry {
+  id: string;
+  timestamp: string;
+  type: string;
+  text: string;
+}
+
 export default function Console() {
   const { state, actions, actionTank } = useGameState();
   const savedPending = state.pendingDispatch;
-  const pendingTask = useMemo(() => savedPending ? {
-    ...savedPending,
-    logId: savedPending.id,
-    timestamp: timeForActionsSpent(savedPending.shiftAction)
-  } : null, [savedPending]);
-  const [phase, setPhase] = useState(() => pendingTask ? 'result' : 'ready');
-  const [logs, setLogs] = useState(() => {
-    const initial = [{
-      id: 'shift-initialized',
-      timestamp: timeForActionsSpent(state.actionsSpentThisShift),
-      type: 'system',
-      text: shiftInitializationText({
-        day: state.day,
-        tasksThisShift: state.tasksThisShift,
-        annexOrderComplete: state.zones['annex-order'] === 'complete',
-        handwritingOrderComplete: state.zones['handwritten-order'] === 'complete'
-      })
-    }];
-    if (pendingTask) initial.push({
-      id: pendingTask.logId,
-      timestamp: pendingTask.timestamp,
-      text: pendingTask.displayedResult,
-      type: pendingTask.isCorrupt
-        ? pendingTask.isPersonal ? 'corrupt personal' : 'corrupt'
-        : ''
-    });
+  const pendingTask: PendingTaskDisplay | null = useMemo(
+    () =>
+      savedPending
+        ? {
+            ...savedPending,
+            logId: savedPending.id,
+            timestamp: timeForActionsSpent(savedPending.shiftAction),
+          }
+        : null,
+    [savedPending],
+  );
+  const [phase, setPhase] = useState<'ready' | 'processing' | 'result'>(() =>
+    pendingTask ? 'result' : 'ready',
+  );
+  const [logs, setLogs] = useState<LogEntry[]>(() => {
+    const initial: LogEntry[] = [
+      {
+        id: 'shift-initialized',
+        timestamp: timeForActionsSpent(state.actionsSpentThisShift),
+        type: 'system',
+        text: shiftInitializationText({
+          day: state.day,
+          tasksThisShift: state.tasksThisShift,
+          annexOrderComplete: state.zones['annex-order'] === 'complete',
+          handwritingOrderComplete: state.zones['handwritten-order'] === 'complete',
+        }),
+      },
+    ];
+    if (pendingTask)
+      initial.push({
+        id: pendingTask.logId,
+        timestamp: pendingTask.timestamp,
+        text: pendingTask.displayedResult,
+        type: pendingTask.isCorrupt
+          ? pendingTask.isPersonal
+            ? 'corrupt personal'
+            : 'corrupt'
+          : '',
+      });
     return initial;
   });
-  const logRef = useRef(null);
-  const processingTimer = useRef(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  const processingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startingTask = useRef(false);
 
   const minutes = Math.min(60 + state.actionsSpentThisShift * 6, 360);
-  // The night ends when the shift's action budget is spent. A console-only
-  // night can file fifty results; notices and investigations spend from the
-  // same budget instead of creating a second hidden quota.
   const shiftComplete = state.actionsSpentThisShift >= SHIFT_ACTIONS;
-  // Out of budget: the clock, not a task quota, is what stops the operator.
   const outOfActions = actionTank.empty;
   const annexOrderPending = state.day >= 2 && state.zones['annex-order'] !== 'complete';
   const handwritingOrderPending = state.day >= 3 && state.zones['handwritten-order'] !== 'complete';
@@ -172,35 +217,42 @@ export default function Console() {
     }
   }, [logs, phase]);
 
-  useEffect(() => () => window.clearTimeout(processingTimer.current), []);
+  useEffect(() => () => {
+    if (processingTimer.current) window.clearTimeout(processingTimer.current);
+  }, []);
 
   useEffect(() => {
     if (phase !== 'processing') return undefined;
     if (!pendingTask) {
-      // The reservation is canonical: if the reducer refused it (a future
-      // caller whose gate disagrees with the tank), the optimistic phase
-      // must roll back — otherwise the console sits at PROCESSING forever
-      // with the queue button disabled and no timer armed to end it.
       startingTask.current = false;
       setPhase('ready');
       return undefined;
     }
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     processingTimer.current = window.setTimeout(() => {
-      setLogs(prev => prev.some((entry) => entry.id === pendingTask.logId) ? prev : [...prev, {
-        id: pendingTask.logId,
-        timestamp: pendingTask.timestamp,
-        text: pendingTask.displayedResult,
-        type: pendingTask.isCorrupt
-          ? pendingTask.isPersonal ? 'corrupt personal' : 'corrupt'
-          : ''
-      }]);
+      setLogs((prev) =>
+        prev.some((entry) => entry.id === pendingTask.logId)
+          ? prev
+          : [
+              ...prev,
+              {
+                id: pendingTask.logId,
+                timestamp: pendingTask.timestamp,
+                text: pendingTask.displayedResult,
+                type: pendingTask.isCorrupt
+                  ? pendingTask.isPersonal
+                    ? 'corrupt personal'
+                    : 'corrupt'
+                  : '',
+              },
+            ],
+      );
       startingTask.current = false;
       setPhase('result');
-      // A corrupted record stays wrong until the operator decides what to do
-      // with it — that decision is the game.
     }, reducedMotion ? 100 : 900);
-    return () => window.clearTimeout(processingTimer.current);
+    return () => {
+      if (processingTimer.current) window.clearTimeout(processingTimer.current);
+    };
   }, [pendingTask, phase]);
 
   function executeTask() {
@@ -209,14 +261,15 @@ export default function Console() {
     setPhase('processing');
     actions.startDispatchTask({
       anomalyRoll: Math.random(),
-      corruptionRoll: Math.random()
+      corruptionRoll: Math.random(),
     });
   }
 
   /**
    * File the pending result. `verb` is a key of FILINGS; everything else is
    * derived from data so the console never hardcodes a reward or a quality.
-   */  function fileResult(verb) {
+   */
+  function fileResult(verb: string) {
     if (phase !== 'result' || !pendingTask) return;
     const filing = FILINGS[verb] ?? FILINGS.clean;
     const filedClean = verb !== 'discrepancy';
@@ -225,7 +278,7 @@ export default function Console() {
       tier: state.promotion.tier,
       corrupted: pendingTask.isCorrupt,
       filedClean,
-      resultText: pendingTask.displayedResult
+      resultText: pendingTask.displayedResult,
     });
 
     actions.fileTaskResult({
@@ -233,34 +286,43 @@ export default function Console() {
       payout: payout.amount,
       discrepancy: verb === 'discrepancy',
       anomaly: pendingTask.isCorrupt,
-      logbookEntry: typeof filing.logbook === 'function' ? filing.logbook(pendingTask) : filing.logbook
+      logbookEntry: typeof filing.logbook === 'function' ? filing.logbook(pendingTask) : filing.logbook,
     });
 
     if (pendingTask.isCorrupt && filedClean) {
-      // The system smooths its own error over — but only once you sign off.
-      setLogs(prev => prev.map(entry => entry.id === pendingTask.logId
-        ? { ...entry, text: pendingTask.cleanResult, type: 'corrected' }
-        : entry));
+      setLogs((prev) =>
+        prev.map((entry) =>
+          entry.id === pendingTask.logId
+            ? { ...entry, text: pendingTask.cleanResult ?? pendingTask.displayedResult, type: 'corrected' }
+            : entry,
+        ),
+      );
     }
 
     if (payout.anomalous) {
-      setLogs(prev => [...prev, {
-        id: `${pendingTask.logId}-payroll`,
-        timestamp: pendingTask.timestamp,
-        type: 'system',
-        text: `PAYROLL // +¤${payout.amount.toLocaleString()} — amount read from field. Field was damaged. Amount was paid.`
-      }]);
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `${pendingTask.logId}-payroll`,
+          timestamp: pendingTask.timestamp,
+          type: 'system',
+          text: `PAYROLL // +¤${payout.amount.toLocaleString()} — amount read from field. Field was damaged. Amount was paid.`,
+        },
+      ]);
     }
 
     if (state.actionsSpentThisShift >= SHIFT_ACTIONS) {
-      setLogs(prev => [...prev, {
-        id: `day-${state.day}-complete`,
-        timestamp: '06:00',
-        type: 'system',
-        text: 'SHIFT COMPLETE // ACTION BUDGET SPENT // RESULT ACKNOWLEDGED. REPORT TO BREAK ROOM. DO NOT LOOK OUTSIDE.'
-      }]);
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `day-${state.day}-complete`,
+          timestamp: '06:00',
+          type: 'system',
+          text: 'SHIFT COMPLETE // ACTION BUDGET SPENT // RESULT ACKNOWLEDGED. REPORT TO BREAK ROOM. DO NOT LOOK OUTSIDE.',
+        },
+      ]);
       actions.addLogEntry(
-        `Day ${state.day}: shift budget spent. ${state.tasksThisShift + 1} results acknowledged.`
+        `Day ${state.day}: shift budget spent. ${state.tasksThisShift + 1} results acknowledged.`,
       );
     }
 
@@ -268,29 +330,32 @@ export default function Console() {
   }
 
   function nextShift() {
-    window.clearTimeout(processingTimer.current);
+    if (processingTimer.current) window.clearTimeout(processingTimer.current);
     actions.incrementDay();
     setPhase('ready');
-    setLogs([{
-      id: `day-${state.day + 1}-initialized`,
-      timestamp: '01:00',
-      type: 'system',
-      text: shiftInitializationText({
-        day: state.day + 1,
-        tasksThisShift: 0,
-        annexOrderComplete: state.zones['annex-order'] === 'complete',
-        handwritingOrderComplete: state.zones['handwritten-order'] === 'complete'
-      })
-    }]);
+    setLogs([
+      {
+        id: `day-${state.day + 1}-initialized`,
+        timestamp: '01:00',
+        type: 'system',
+        text: shiftInitializationText({
+          day: state.day + 1,
+          tasksThisShift: 0,
+          annexOrderComplete: state.zones['annex-order'] === 'complete',
+          handwritingOrderComplete: state.zones['handwritten-order'] === 'complete',
+        }),
+      },
+    ]);
   }
 
-  const consoleStatus = phase === 'processing'
-    ? 'PROCESSING'
-    : phase === 'result'
-      ? 'REVIEW REQUIRED'
-      : shiftComplete
-        ? 'BUDGET SPENT'
-        : 'LINKED';
+  const consoleStatus =
+    phase === 'processing'
+      ? 'PROCESSING'
+      : phase === 'result'
+        ? 'REVIEW REQUIRED'
+        : shiftComplete
+          ? 'BUDGET SPENT'
+          : 'LINKED';
 
   const windowVista = vistaForMoment({ day: state.day, tasksThisShift: state.tasksThisShift, minutes });
 
@@ -357,8 +422,8 @@ export default function Console() {
                   the system will admit exists.
                 </p>
                 <p className="manager-aside">
-                  M. // “Elevators occasionally become ambitious. We do not reward initiative
-                  here. File it and return to your actual job.”
+                  M. // "Elevators occasionally become ambitious. We do not reward initiative
+                  here. File it and return to your actual job."
                 </p>
               </div>
               <a className="btn btn-primary btn-compact" href="#investigations">
@@ -380,8 +445,8 @@ export default function Console() {
                   a very good memory.
                 </p>
                 <p className="manager-aside">
-                  M. // “I did not authorise this. Do not authorise it either. Return it to the
-                  desk it came from — the one that is not there.”
+                  M. // "I did not authorise this. Do not authorise it either. Return it to the
+                  desk it came from — the one that is not there."
                 </p>
               </div>
               <a className="btn btn-primary btn-compact" href="#investigations">
@@ -391,7 +456,7 @@ export default function Console() {
           )}
 
           <div className="log" ref={logRef} aria-label="Dispatch log" aria-live="polite">
-            {logs.map(log => (
+            {logs.map((log) => (
               <div key={log.id} className={`log-line ${log.type}`}>
                 <span className="ts">[{log.timestamp}]</span> {log.text}
               </div>
@@ -444,9 +509,12 @@ export default function Console() {
                     : 'RESULT RECEIVED // ACKNOWLEDGMENT REQUIRED'}
                 </div>
                 <div className="task-title">{pendingTask.code} // {pendingTask.title}</div>
-                <p className={pendingTask.isCorrupt
-                  ? `task-result corrupt${pendingTask.isPersonal ? ' personal' : ''}`
-                  : 'task-result'}
+                <p
+                  className={
+                    pendingTask.isCorrupt
+                      ? `task-result corrupt${pendingTask.isPersonal ? ' personal' : ''}`
+                      : 'task-result'
+                  }
                 >
                   {pendingTask.displayedResult}
                 </p>
@@ -457,17 +525,17 @@ export default function Console() {
                         ? 'The returned record is written in a hand you know — the same hand that signs your logbook. Dispatch is waiting for you to decide what happened.'
                         : 'The returned record does not match the work order. Dispatch is waiting for you to decide what happened.'}
                     </p>
-                    {['file-clean', 'discrepancy'].map((verb) => {
+                    {(['file-clean', 'discrepancy'] as const).map((verb) => {
                       const filing = FILINGS[verb];
                       const preview = taskPayout({
                         tier: state.promotion.tier,
                         corrupted: true,
                         filedClean: verb !== 'discrepancy',
-                        resultText: pendingTask.displayedResult
+                        resultText: pendingTask.displayedResult,
                       });
                       const consequences = describeEffects(filing.effects, {
                         qualities: state.qualities,
-                        attention: state.attention
+                        attention: state.attention,
                       });
                       return (
                         <div key={verb} className="task-decision-option">
@@ -502,8 +570,8 @@ export default function Console() {
                   waiting. The next action clears in {actionTank.countdown}.
                 </p>
                 <p className="manager-aside">
-                  M. // “Rest is scheduled, the same as everything else. Come back when the
-                  building says you may.”
+                  M. // "Rest is scheduled, the same as everything else. Come back when the
+                  building says you may."
                 </p>
               </div>
             )}

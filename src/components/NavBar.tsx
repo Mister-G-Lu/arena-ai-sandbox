@@ -1,10 +1,20 @@
 import React from 'react';
 import { useGameState } from '../context/GameStateContext';
 
-export default function NavBar({ currentPage, onNavigate }) {
+interface NavItem {
+  page: string;
+  icon: string;
+  label: string;
+}
+
+interface NavBarProps {
+  currentPage: string;
+  onNavigate: (page: string) => void;
+}
+
+export default function NavBar({ currentPage, onNavigate }: NavBarProps) {
   const { state } = useGameState();
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  // Nav is derived from state: a destination appears the moment it exists.
   const navItems = [
     { page: 'home', icon: '⌂', label: 'HOME' },
     state.orientation.completed
@@ -22,13 +32,13 @@ export default function NavBar({ currentPage, onNavigate }) {
           icon: '⌕',
           label: state.zones['annex-order'] !== 'complete'
             ? 'INVESTIGATIONS · NEW'
-            : 'INVESTIGATIONS'
+            : 'INVESTIGATIONS',
         }
       : null,
     { page: 'profile', icon: '◉', label: 'PROFILE' },
-  ].filter(Boolean);
+  ].filter((item): item is NavItem => item !== null);
 
-  function handleClick(page) {
+  function handleClick(page: string) {
     onNavigate(page);
     setMobileOpen(false);
   }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { setDevOptIn } from '../lib/devMode';
 import './DevPanel.css';
