@@ -148,7 +148,7 @@ export default function Hero() {
                   </div>
                 ))}
               </div>
-              <div className="deck-whisper">"operator is performing within parameters. do not intervene." — m.</div>
+              <div className="deck-whisper">&quot;operator is performing within parameters. do not intervene.&quot; — m.</div>
             </article>
 
             <article className="deck-panel grid-panel">

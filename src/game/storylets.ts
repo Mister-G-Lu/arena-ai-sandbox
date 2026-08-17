@@ -155,6 +155,66 @@ export function validateStorylet(raw: unknown): Storylet {
   return { id, zone: zone as ZoneId, title, body, choices };
 }
 
+function validateChoiceTransition(
+  card: Storylet,
+  choice: Choice,
+  byId: Map<string, Storylet>,
+): void {
+  const transitions = [Boolean(choice.next), choice.endZone === true, choice.completeZone === true]
+    .filter(Boolean).length;
+  if (transitions !== 1) {
+    throw new SchemaError(
+      `${card.id}.${choice.id} must declare exactly one of next, endZone, or completeZone`,
+    );
+  }
+
+  if (choice.death && !choice.next) {
+    throw new SchemaError(`${card.id}.${choice.id} death must transition to aftermath content`);
+  }
+
+  if (choice.next) {
+    const target = byId.get(choice.next);
+    if (!target) throw new SchemaError(`${card.id}.${choice.id} points to missing ${choice.next}`);
+    if (target.zone !== card.zone) {
+      throw new SchemaError(`${card.id}.${choice.id} crosses from ${card.zone} to ${target.zone}`);
+    }
+  }
+}
+
+function validateChoiceEffects(card: Storylet, choice: Choice): void {
+  for (const effect of Object.keys(choice.outcome.qualities ?? {})) {
+    if (!qualityDef(effect)) {
+      throw new SchemaError(`${card.id}.${choice.id} uses unknown effect: ${effect}`);
+    }
+  }
+}
+
+function validateCardChoices(card: Storylet, byId: Map<string, Storylet>): void {
+  const choiceIds = new Set<string>();
+  for (const choice of card.choices) {
+    if (choiceIds.has(choice.id)) {
+      throw new SchemaError(`${card.id} has duplicate choice id: ${choice.id}`);
+    }
+    choiceIds.add(choice.id);
+    validateChoiceTransition(card, choice, byId);
+    validateChoiceEffects(card, choice);
+  }
+}
+
+function validateEntryPoints(
+  entryPoints: Partial<Record<ZoneId, string>>,
+  byId: Map<string, Storylet>,
+): void {
+  for (const [zone, entryId] of Object.entries(entryPoints)) {
+    if (!entryId) continue;
+    const entry = byId.get(entryId);
+    if (!entry) throw new SchemaError(`${zone} entry points to missing ${entryId}`);
+    if (entry.zone !== zone) {
+      throw new SchemaError(`${zone} entry ${entryId} belongs to ${entry.zone}`);
+    }
+  }
+}
+
 export function validateStoryGraph(
   cards: Storylet[],
   entryPoints: Partial<Record<ZoneId, string>> = {},
@@ -165,53 +225,8 @@ export function validateStoryGraph(
     byId.set(card.id, card);
   }
 
-  for (const card of cards) {
-    const choiceIds = new Set<string>();
-    for (const choice of card.choices) {
-      if (choiceIds.has(choice.id)) {
-        throw new SchemaError(`${card.id} has duplicate choice id: ${choice.id}`);
-      }
-      choiceIds.add(choice.id);
-
-      const transitions = [Boolean(choice.next), choice.endZone === true, choice.completeZone === true]
-        .filter(Boolean).length;
-      if (transitions !== 1) {
-        throw new SchemaError(
-          `${card.id}.${choice.id} must declare exactly one of next, endZone, or completeZone`,
-        );
-      }
-
-      if (choice.death && !choice.next) {
-        throw new SchemaError(`${card.id}.${choice.id} death must transition to aftermath content`);
-      }
-
-      if (choice.next) {
-        const target = byId.get(choice.next);
-        if (!target) throw new SchemaError(`${card.id}.${choice.id} points to missing ${choice.next}`);
-        if (target.zone !== card.zone) {
-          throw new SchemaError(
-            `${card.id}.${choice.id} crosses from ${card.zone} to ${target.zone}`,
-          );
-        }
-      }
-
-      for (const effect of Object.keys(choice.outcome.qualities ?? {})) {
-        if (!qualityDef(effect)) {
-          throw new SchemaError(`${card.id}.${choice.id} uses unknown effect: ${effect}`);
-        }
-      }
-    }
-  }
-
-  for (const [zone, entryId] of Object.entries(entryPoints)) {
-    if (!entryId) continue;
-    const entry = byId.get(entryId);
-    if (!entry) throw new SchemaError(`${zone} entry points to missing ${entryId}`);
-    if (entry.zone !== zone) {
-      throw new SchemaError(`${zone} entry ${entryId} belongs to ${entry.zone}`);
-    }
-  }
-
+  for (const card of cards) validateCardChoices(card, byId);
+  validateEntryPoints(entryPoints, byId);
   return cards;
 }
 

@@ -1,0 +1,124 @@
+/* ====================================================================
+   FOOTER
+   ==================================================================== */
+
+.site-footer {
+  margin-left: var(--sidebar-w);
+  border-top: 1px solid var(--line-soft);
+  padding: 28px 0 40px;
+  color: var(--faint);
+  font-size: 0.78rem;
+}
+.site-footer p { margin: 0 0 6px; }
+.footer-sub { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; }
+
+/* ====================================================================
+   RESPONSIVE
+   ==================================================================== */
+
+@media (max-width: 860px) {
+  :root { --sidebar-w: 0px; }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    width: 240px;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  main {
+    margin-left: 0;
+    padding-top: 0;
+  }
+
+  .hero { padding: 80px 0 64px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 36px; }
+  .feed-header,
+  .feed-launch,
+  .section-heading-row { align-items: flex-start; flex-direction: column; }
+  .directive-panel,
+  .grid-panel,
+  .bulletin-panel { grid-column: span 12; }
+  .bulletin-panel { grid-template-columns: 1fr; }
+  .bulletin-panel .deck-panel-head { grid-column: auto; }
+  .bulletin-inbox { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+  .bulletin-document { min-height: 230px; }
+  .feed-launch .btn { width: 100%; text-align: center; }
+  .console-utility-row { align-items: flex-start; flex-direction: column; }
+  .readouts,
+  .console > .readouts { grid-template-columns: repeat(2, 1fr); }
+  .readout:nth-child(2),
+  .console > .readouts .readout:nth-child(2) { border-right: none; }
+  .console-action-note { width: 100%; margin-left: 0; text-align: left; }
+  .console .console-actions { flex-wrap: wrap; }
+  .secondary-order { align-items: flex-start; flex-direction: column; }
+  .secondary-order .btn { width: 100%; text-align: center; }
+
+  /* overlay when sidebar open on mobile */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+  }
+  .sidebar-overlay.show {
+    display: block;
+  }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+  .page.active { opacity: 1; }
+}
+
+/* ====================================================================
+   GLITCH FX
+   ==================================================================== */
+
+.log-line.corrupt {
+  color: var(--red);
+  text-shadow: 0 0 10px rgba(255, 111, 111, 0.45);
+}
+
+/* A corruption that is addressed to the operator personally: not red noise,
+   but amber attention — the system's own highlight colour for your file. */
+.log-line.corrupt.personal {
+  color: #ffc66b;
+  text-shadow: 0 0 12px rgba(255, 198, 107, 0.55);
+}
+
+.fx-flicker { animation: fx-flicker 150ms steps(2) 2; }
+
+@keyframes fx-flicker {
+  0%, 100% { transform: none; opacity: 1; }
+  25% {
+    transform: translateX(-2px) skewX(-4deg);
+    opacity: 0.55;
+    text-shadow: 2px 0 var(--red), -2px 0 var(--teal);
+  }
+  50% { transform: translateX(2px); opacity: 0.9; }
+  75% { transform: translateX(-1px); opacity: 0.7; }
+}
+
+/* Generic corruption *arrives* glitching: the moment a record comes back
+   wrong is a visual event, not just red text. The animation runs once on
+   mount (150ms, twice), then the line sits still — persistent jitter would
+   turn a wrong record into a broken page. Deliberate contrast: personal
+   lines do NOT flicker. They are the opposite of noise — precise, in your
+   own hand — and the horror is that they hold still. (Both are silenced by
+   the prefers-reduced-motion block above.) */
+.log-line.corrupt:not(.personal),
+.task-card .task-result.corrupt:not(.personal) {
+  animation: fx-flicker 150ms steps(2) 2;
+}
+
