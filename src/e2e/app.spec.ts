@@ -89,10 +89,13 @@ test.describe('Dev panel (Maintenance Terminal)', () => {
     await expect(page.locator('button', { hasText: /REFILL TANK|DETACH BUDGET FROM CLOCK/ })).toBeVisible();
   });
 
-  test('dev panel is absent when dev mode is off', async ({ page }) => {
-    await bootApp(page);
-    await expect(page.locator('.dev-panel')).toHaveCount(0);
-  });
+  // The "Maintenance Terminal is absent when dev capability is off"
+  // guarantee cannot be exercised in this suite: every origin this webServer
+  // can reach (localhost/127.0.0.1) auto-grants dev capability by design
+  // (Tier 2, src/lib/devMode.ts), so the panel is always present here. The
+  // guarantee is covered at the unit layer (src/lib/devMode.test.ts — "stays
+  // off for a real deployment") and the component layer
+  // (src/__tests__/dev-panel.test.tsx — renders nothing when off).
 });
 
 test.describe('Save management lifecycle', () => {
