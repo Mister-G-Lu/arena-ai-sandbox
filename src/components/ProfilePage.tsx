@@ -137,12 +137,12 @@ export default function ProfilePage() {
               </div>
               <div className="resource-details">
                 <div className="resource-amount">¤ {ledger.display}</div>
-                <div className="resource-bar-container">
-                  <div
-                    className="resource-bar-fill"
-                    style={{ width: `${Math.max(0.6, ledger.pressure * 100)}%` }}
-                  />
-                </div>
+                <progress
+                  className="resource-bar-container"
+                  max={100}
+                  value={Math.max(0.6, ledger.pressure * 100)}
+                  aria-label="Municipal ledger word usage"
+                />
                 <div className="resource-subtitle">
                   LEDGER WORD: {ledger.limit.toLocaleString()}
                   {ledger.unbound ? ' — EXCEEDED. FIELD ABANDONED.' : ''}

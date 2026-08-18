@@ -217,7 +217,6 @@
 }
 
 .task-card-processing { border-left-color: var(--amber); }
-.task-card-processing .processing-fill { animation-duration: 0.9s; }
 
 .task-card-result {
   border-left-color: var(--amber);

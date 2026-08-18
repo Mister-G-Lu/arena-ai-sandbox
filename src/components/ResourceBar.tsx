@@ -27,12 +27,12 @@ export default function ResourceBar() {
             >
               {ledger.display}
             </span>
-            <div className="resource-meter">
-              <div
-                className="resource-meter-fill"
-                style={{ width: `${wordPercent}%` }}
-              />
-            </div>
+            <progress
+              className="resource-meter"
+              max={100}
+              value={wordPercent}
+              aria-label="Municipal ledger word usage"
+            />
           </div>
         </div>
 
@@ -89,16 +89,12 @@ export default function ResourceBar() {
                 {actionTank.msUntilNext == null ? 'FULL' : `+1 IN ${actionTank.countdown}`}
               </span>
             )}
-            <div className="resource-meter">
-              <div
-                className="resource-meter-fill actions-fill"
-                style={{
-                  width: `${actionTank.unbound
-                    ? 100
-                    : (actionTank.actions / actionTank.cap) * 100}%`,
-                }}
-              />
-            </div>
+            <progress
+              className="resource-meter actions-meter"
+              max={actionTank.cap}
+              value={actionTank.unbound ? actionTank.cap : Math.min(actionTank.actions, actionTank.cap)}
+              aria-label="Actions remaining"
+            />
           </div>
         </div>
 
