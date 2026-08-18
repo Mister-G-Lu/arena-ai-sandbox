@@ -112,9 +112,7 @@ export default function OrientTerminalTask({
             <div className="orient-content">
               <span className="blink-cursor">▌</span> <em>VERIFYING TERMINAL LINK</em>
               <div className="task-processing">
-                <div className="processing-bar">
-                  <div className="processing-fill"></div>
-                </div>
+                <progress className="processing-bar" aria-hidden="true" />
                 <div className="processing-lines">
                   <div className="processing-line">→ querying dispatch network...</div>
                   <div className="processing-line">→ verifying operator credentials...</div>

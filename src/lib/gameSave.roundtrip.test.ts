@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { CREDIT_LIMIT } from '../game/ledger';
 import { COMPONENT_DEFS, PROMOTIONS, ZONES } from '../game/progression';
 import { QUALITY_DEFS } from '../game/qualities';
 import { SUPPLY_DEFS } from '../game/shop';
 import {
   CREDIT_INFINITY,
   GAME_SAVE_VERSION,
-  MAX_SAVE_BYTES,
-  SaveValidationError,
   clockIndependentFingerprint,
   createInitialGameState,
   createStoredSaveEnvelope,
-  encodeGameState,
   gameStateFingerprint,
   migrateLegacyGameState,
   parseSaveJson,
@@ -19,7 +15,8 @@ import {
   serializeSaveEnvelope,
 } from './gameSave';
 
-describe('canonical game save', () => {
+/** Round-trips, data-derived defaults, migration, and fingerprints. */
+describe('canonical game save — round-trip & fingerprints', () => {
   it('derives additive defaults from the game data tables', () => {
     const state = createInitialGameState();
     expect(Object.keys(state.components)).toEqual(COMPONENT_DEFS.map(({ id }) => id));
@@ -104,105 +101,7 @@ describe('canonical game save', () => {
     expect(migrated.game.pendingDispatch?.isCorrupt).toBe(true);
   });
 
-  it('rejects unknown top-level and nested keys', () => {
-    const envelope = createStoredSaveEnvelope(createInitialGameState());
-    expect(() => parseStoredSaveEnvelope({ ...envelope, debug: true })).toThrow(SaveValidationError);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, orientation: { ...envelope.game.orientation, debug: true } },
-      }),
-    ).toThrow(/orientation.*debug/);
-  });
-
-  it('rejects impossible numbers, forged derived fields, and unknown inventory', () => {
-    const envelope = createStoredSaveEnvelope(createInitialGameState());
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, tasksThisShift: 51 },
-      }),
-    ).toThrow(/tasksThisShift/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, anomaliesSeenThisShift: 51 },
-      }),
-    ).toThrow(/anomaliesSeenThisShift/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, promotion: { tier: 1, title: 'Forged' } },
-      }),
-    ).toThrow(/promotion.*title/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, components: { ...envelope.game.components, bogus: true } },
-      }),
-    ).toThrow(/components.*bogus/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, supplies: { ...envelope.game.supplies, bogus: true } },
-      }),
-    ).toThrow(/supplies.*bogus/);
-  });
-
-  it('rejects forged unbound capabilities and balances beyond the ledger word', () => {
-    const envelope = createStoredSaveEnvelope(createInitialGameState());
-    expect(() => parseStoredSaveEnvelope({
-      ...envelope,
-      game: { ...envelope.game, credits: CREDIT_LIMIT + 1 },
-    })).toThrow(/credits/);
-    expect(() => parseStoredSaveEnvelope({
-      ...envelope,
-      game: { ...envelope.game, ledgerUnbound: true },
-    })).toThrow(/ledgerUnbound/);
-    expect(() => parseStoredSaveEnvelope({
-      ...envelope,
-      game: { ...envelope.game, credits: CREDIT_INFINITY },
-    })).toThrow(/ledgerUnbound/);
-    expect(() => parseStoredSaveEnvelope({
-      ...envelope,
-      game: { ...envelope.game, actionsUnbound: true, devTouched: false },
-    })).toThrow(/actionsUnbound.*devTouched/);
-  });
-
-  it('rejects unknown zones, glitches, malformed pointers, and oversized text', () => {
-    const envelope = createStoredSaveEnvelope(createInitialGameState());
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, zones: { nowhere: 'open' } },
-      }),
-    ).toThrow(/zones.*nowhere/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, glitches: ['made-up-glitch'] },
-      }),
-    ).toThrow(/glitches/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: { ...envelope.game, currentStorylet: { zone: 'nowhere', storyletId: 'x' } },
-      }),
-    ).toThrow(/currentStorylet.*zone/);
-    expect(() =>
-      parseStoredSaveEnvelope({
-        ...envelope,
-        game: {
-          ...envelope.game,
-          logbook: [{ day: 1, text: 'x'.repeat(20_001), timestamp: 1 }],
-        },
-      }),
-    ).toThrow(/logbook.*0.*text/);
-  });
-
   it('enforces the same one-megabyte contract locally and in Records', () => {
-    expect(() => parseSaveJson(' '.repeat(MAX_SAVE_BYTES + 1))).toThrow(/operator-file limit/);
-
     const state = createInitialGameState();
     state.logbook = Array.from({ length: 60 }, (_, index) => ({
       day: 1,
@@ -210,27 +109,6 @@ describe('canonical game save', () => {
       timestamp: index,
     }));
     expect(() => createStoredSaveEnvelope(state)).toThrow(/operator-file limit/);
-  });
-
-  it('requires a supported version and a valid timestamp', () => {
-    const envelope = createStoredSaveEnvelope(createInitialGameState());
-    expect(() => parseStoredSaveEnvelope({ ...envelope, version: 999 })).toThrow(/version/);
-    expect(() => parseStoredSaveEnvelope({ ...envelope, savedAt: 'Tuesday' })).toThrow(/savedAt/);
-    expect(() => parseSaveJson('{')).toThrow(/valid JSON/);
-  });
-
-  it('deduplicates bounded identity lists', () => {
-    const envelope = createStoredSaveEnvelope(createInitialGameState());
-    const loaded = parseStoredSaveEnvelope({
-      ...envelope,
-      game: {
-        ...envelope.game,
-        seenStorylets: ['routine-01', 'routine-01'],
-        glitches: ['ledger-overflow', 'ledger-overflow'],
-      },
-    });
-    expect(loaded.game.seenStorylets).toEqual(['routine-01']);
-    expect(loaded.game.glitches).toEqual(['ledger-overflow']);
   });
 
   it('migrates the raw v1 state, including old console and Manager saves', () => {
@@ -250,13 +128,6 @@ describe('canonical game save', () => {
     expect(loaded.orientation.completed).toBe(true);
     expect(loaded.orientation.skipped).toBe(true);
     expect(loaded.promotion.title).toBe(PROMOTIONS[1].title);
-  });
-
-  it('rejects non-object legacy payloads and runtime junk before writing', () => {
-    expect(() => migrateLegacyGameState('not a save')).toThrow(/object/);
-    expect(() =>
-      encodeGameState({ ...createInitialGameState(), unknownField: true }),
-    ).toThrow(/unknownField/);
   });
 
   it('produces a stable fingerprint independent of derived promotion labels', () => {

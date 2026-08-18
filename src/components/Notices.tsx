@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { loadAllStorylets, findCard, cardsInZone } from '../content/load';
 import { describeEffects } from '../game/qualities';
-import { clearanceLabel, requirementLabel, missingRequirements } from '../game/progression';
+import { missingRequirements } from '../game/progression';
 import { supplyById } from '../game/shop';
 import type { Choice, ZoneId } from '../game/storylets';
-import type { ZoneDef, ZoneState } from '../game/progression';
 import HorizonPanel from './HorizonPanel';
+import ZoneCard, { type AvailableZone } from './notices/ZoneCard';
+import StoryletConsole from './notices/StoryletConsole';
+import OutcomePanel from './notices/OutcomePanel';
 import './Notices.css';
 
 interface BoardCopy {
@@ -33,8 +35,6 @@ const BOARD_COPY: Record<string, BoardCopy> = {
     footer: '// INVESTIGATION IS OUTSIDE YOUR JOB DESCRIPTION. THIS HAS NOT STOPPED YOU.',
   },
 };
-
-type AvailableZone = ZoneDef & { status: ZoneState };
 
 interface NoticesProps {
   board?: 'notices' | 'investigations';
@@ -202,61 +202,18 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
             );
 
             return (
-              <article key={zone.id} className={`zone-card zone-${status}`}>
-                <div className="zone-kicker">{zone.kicker}</div>
-                <h3>{zone.title}</h3>
-                <p>{zone.blurb}</p>
-                <div className="zone-meta">
-                  <span className={`zone-status-pill zone-status-${status}`}>
-                    {status.toUpperCase()}
-                  </span>
-                  {zone.component && (
-                    <span className="zone-prize">
-                      {state.components[zone.component] ? '✓ ' : '◇ '}
-                      {zone.componentLabel || zone.component.toUpperCase()}
-                    </span>
-                  )}
-                  {zone.onceEach && status !== 'complete' && (
-                    <span className="zone-remaining">{remaining} unread</span>
-                  )}
-                </div>
-
-                {status === 'locked' && (
-                  <div className="zone-requirement-stack">
-                    {!clearanceHeld && (
-                      <p className="fine zone-requirement">
-                        CLEARANCE REQUIRED: {zone.requiresUnlock ? clearanceLabel(zone.requiresUnlock) : 'UNKNOWN CLEARANCE'}
-                      </p>
-                    )}
-                    {zone.lockedNote && (
-                      <p className="fine zone-requirement">{zone.lockedNote}</p>
-                    )}
-                    <p className="fine zone-requirement">
-                      REQUIRES: {requirementLabel(zone.requires)}
-                      {blockers.length > 0 ? ` — you have ${blockers.join(', ')}` : ''}
-                    </p>
-                    {needsSupplies && (
-                      <a className="zone-supply-link" href="#shop">
-                        ▸ ORDER FROM SUPPLY
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {status === 'complete' && zone.closedNote && (
-                  <p className="fine zone-requirement">{zone.closedNote}</p>
-                )}
-
-                <button
-                  className="btn btn-primary btn-compact"
-                  type="button"
-                  aria-label={`Open ${zone.title}`}
-                  disabled={status !== 'open' || Boolean(current)}
-                  onClick={() => openZone(zone)}
-                >
-                  {current ? 'ORDER IN PROGRESS' : '▸ OPEN'}
-                </button>
-              </article>
+              <ZoneCard
+                key={zone.id}
+                zone={zone}
+                status={status}
+                remaining={remaining}
+                clearanceHeld={clearanceHeld}
+                blockers={blockers}
+                needsSupplies={needsSupplies}
+                componentAcquired={Boolean(state.components[zone.component!])}
+                orderInProgress={Boolean(current)}
+                onOpen={() => openZone(zone)}
+              />
             );
           })}
 
@@ -266,78 +223,29 @@ export default function Notices({ board = 'notices' }: NoticesProps) {
         <HorizonPanel />
 
         {card && (
-          <div className="console storylet-console">
-            <div className="console-head">
-              <span className="dot"></span>
-              {card.zone.toUpperCase()} // {card.id.toUpperCase()}
-              <span className="console-status">▣ OPEN ORDER</span>
-            </div>
-            <div className="storylet-body">
-              <h3>{card.title}</h3>
-              <p>{card.body}</p>
-            </div>
-            <div className="storylet-choices">
-              {card.choices.map((choice) => {
-                const effects = describeEffects(choice.outcome?.qualities, {
-                  qualities: state.qualities,
-                  attention: state.attention,
-                });
-                return (
-                  <button
-                    key={choice.id}
-                    className={`btn btn-ghost storylet-choice${choice.death ? ' storylet-choice-death' : ''}`}
-                    type="button"
-                    onClick={() => choose(choice)}
-                    disabled={cardCosts && actionTank.empty}
-                  >
-                    <span className="storylet-choice-label">{choice.label}</span>
-                    <span className="storylet-choice-meta">
-                      {choice.death && (
-                        <span className="storylet-choice-danger">LETHAL // THIS CHOICE KILLS</span>
-                      )}
-                      {effects && <span className="storylet-choice-effects">{effects}</span>}
-                      <span className="storylet-choice-cost">
-                        {cardCosts ? '1 ACTION' : 'REREAD — FREE'}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {cardCosts && actionTank.empty && (
-              <div className="storylet-refusal-stack">
-                <p className="fine storylet-refusal">
-                  BUDGET EXHAUSTED // THE ORDER STAYS OPEN. NEXT ACTION IN {actionTank.countdown}.
-                </p>
-                <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>
-                  ↩ STAND DOWN
-                </button>
-              </div>
-            )}
-            {refusal && <p className="fine storylet-refusal">{refusal}</p>}
-          </div>
+          <StoryletConsole
+            card={card}
+            cardCosts={cardCosts}
+            countdown={actionTank.countdown}
+            actionTankEmpty={actionTank.empty}
+            refusal={refusal}
+            effectsFor={(choice: Choice) =>
+              describeEffects(choice.outcome?.qualities, {
+                qualities: state.qualities,
+                attention: state.attention,
+              })
+            }
+            onChoose={choose}
+            onStandDown={standDown}
+          />
         )}
 
         {lastOutcome && (
-          <div className="console storylet-outcome">
-            <div className="console-head">
-              <span className="dot"></span>
-              RESULT // {lastOutcome.title.toUpperCase()}
-              <span className="console-status">▣ FILED</span>
-            </div>
-            <p className="storylet-outcome-text">{lastOutcome.text}</p>
-            {lastOutcome.effects && (
-              <p className="fine">FILED TO YOUR RECORD: {lastOutcome.effects}</p>
-            )}
-            {lastOutcome.revisit && (
-              <p className="fine">REREAD // RECORD UNCHANGED — CONSEQUENCES FILE ONCE PER CARD.</p>
-            )}
-            {!card && (
-              <button className="btn btn-ghost btn-compact" type="button" onClick={standDown}>
-                ↩ BACK TO THE DESK
-              </button>
-            )}
-          </div>
+          <OutcomePanel
+            outcome={lastOutcome}
+            showStandDown={!card}
+            onStandDown={standDown}
+          />
         )}
 
         <p className="fine console-note">{copy.footer}</p>

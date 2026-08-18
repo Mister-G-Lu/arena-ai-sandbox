@@ -54,9 +54,7 @@ export default function ConsoleWorkflow({
                 <div className="task-kicker">EXECUTING // {pendingTask.code}</div>
                 <div className="task-title">{pendingTask.title}</div>
                 <div className="task-processing">
-                  <div className="processing-bar" aria-hidden="true">
-                    <div className="processing-fill"></div>
-                  </div>
+                  <progress className="processing-bar" aria-hidden="true" />
                   <div className="processing-lines">
                     <div className="processing-line">→ validating work order...</div>
                     <div className="processing-line">→ contacting dispatch network...</div>

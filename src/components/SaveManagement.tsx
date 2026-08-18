@@ -1,30 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { MAX_SAVE_BYTES, parseSaveJson } from '../lib/gameSave';
-
-interface FileSummaryProps {
-  label: string;
-  game: { day: number; tasksCompleted: number; promotion: { tier: number } };
-  savedAt: string | null;
-}
-
-function FileSummary({ label, game, savedAt }: FileSummaryProps) {
-  return (
-    <div className="save-summary">
-      <strong>{label}</strong>
-      <span>
-        Day {game.day} · {game.tasksCompleted.toLocaleString()} results filed · Tier {game.promotion.tier}
-      </span>
-      {savedAt && <span>Saved {new Date(savedAt).toLocaleString()}</span>}
-    </div>
-  );
-}
+import FileSummary from './save/FileSummary';
+import SaveConflictPanel from './save/SaveConflictPanel';
+import type { FileSummaryGame } from './save/FileSummary';
 
 export default function SaveManagement() {
   const { state, persistence, cloud, actions } = useGameState();
   const [email, setEmail] = useState('');
   const [localMessage, setLocalMessage] = useState<string | null>(null);
-  const [pendingImport, setPendingImport] = useState<{ text: string; game: FileSummaryProps['game']; savedAt: string | null } | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ text: string; game: FileSummaryGame; savedAt: string | null } | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -127,15 +112,12 @@ export default function SaveManagement() {
       )}
 
       {persistence.remoteReset && !persistence.tabConflict && (
-        <div className="save-conflict" role="alert">
-          <p>
-            <strong>Another browser tab erased this operator file.</strong> This tab still holds
-            its copy in memory, but local saving is paused so neither tab can surprise the other.
-          </p>
-          <div className="save-summary-grid">
+        <SaveConflictPanel
+          message="Another browser tab erased this operator file."
+          summaries={
             <FileSummary label="THIS TAB" game={state} savedAt={persistence.lastSavedAt} />
-          </div>
-          <div className="save-action-row">
+          }
+          actions={
             <button
               className="btn btn-primary btn-compact"
               type="button"
@@ -143,41 +125,42 @@ export default function SaveManagement() {
             >
               KEEP THIS TAB&apos;S COPY
             </button>
-          </div>
-        </div>
+          }
+        />
       )}
 
       {persistence.tabConflict && (
-        <div className="save-conflict" role="alert">
-          <p>
-            <strong>Another browser tab changed this operator file.</strong> Local saving is paused
-            here so neither tab can silently erase the other.
-          </p>
-          <div className="save-summary-grid">
-            <FileSummary label="THIS TAB" game={state} savedAt={persistence.lastSavedAt} />
-            <FileSummary
-              label="OTHER TAB"
-              game={persistence.tabConflict.game}
-              savedAt={persistence.tabConflict.savedAt}
-            />
-          </div>
-          <div className="save-action-row">
-            <button
-              className="btn btn-primary btn-compact"
-              type="button"
-              onClick={actions.keepThisTabSave}
-            >
-              KEEP THIS TAB
-            </button>
-            <button
-              className="btn btn-ghost btn-compact"
-              type="button"
-              onClick={actions.useOtherTabSave}
-            >
-              USE OTHER TAB
-            </button>
-          </div>
-        </div>
+        <SaveConflictPanel
+          message="Another browser tab changed this operator file."
+          summaries={
+            <>
+              <FileSummary label="THIS TAB" game={state} savedAt={persistence.lastSavedAt} />
+              <FileSummary
+                label="OTHER TAB"
+                game={persistence.tabConflict.game}
+                savedAt={persistence.tabConflict.savedAt}
+              />
+            </>
+          }
+          actions={
+            <>
+              <button
+                className="btn btn-primary btn-compact"
+                type="button"
+                onClick={actions.keepThisTabSave}
+              >
+                KEEP THIS TAB
+              </button>
+              <button
+                className="btn btn-ghost btn-compact"
+                type="button"
+                onClick={actions.useOtherTabSave}
+              >
+                USE OTHER TAB
+              </button>
+            </>
+          }
+        />
       )}
 
       {!cloud.configured && (
@@ -215,25 +198,29 @@ export default function SaveManagement() {
       )}
 
       {cloud.conflict && (
-        <div className="save-conflict" role="alert">
-          <p><strong>Two valid files disagree.</strong> Nothing will be overwritten until you choose.</p>
-          <div className="save-summary-grid">
-            <FileSummary label="THIS TERMINAL" game={state} savedAt={persistence.lastSavedAt} />
-            <FileSummary
-              label="RECORDS COPY"
-              game={cloud.conflict.game}
-              savedAt={cloud.conflict.envelope.savedAt}
-            />
-          </div>
-          <div className="save-action-row">
-            <button className="btn btn-primary btn-compact" type="button" onClick={cloud.keepLocal}>
-              KEEP THIS TERMINAL
-            </button>
-            <button className="btn btn-ghost btn-compact" type="button" onClick={cloud.useCloud}>
-              USE RECORDS COPY
-            </button>
-          </div>
-        </div>
+        <SaveConflictPanel
+          message="Two valid files disagree. Nothing will be overwritten until you choose."
+          summaries={
+            <>
+              <FileSummary label="THIS TERMINAL" game={state} savedAt={persistence.lastSavedAt} />
+              <FileSummary
+                label="RECORDS COPY"
+                game={cloud.conflict.game}
+                savedAt={cloud.conflict.envelope.savedAt}
+              />
+            </>
+          }
+          actions={
+            <>
+              <button className="btn btn-primary btn-compact" type="button" onClick={cloud.keepLocal}>
+                KEEP THIS TERMINAL
+              </button>
+              <button className="btn btn-ghost btn-compact" type="button" onClick={cloud.useCloud}>
+                USE RECORDS COPY
+              </button>
+            </>
+          }
+        />
       )}
 
       {cloud.configured && cloud.identity && cloud.status === 'error' && (
@@ -248,52 +235,50 @@ export default function SaveManagement() {
       )}
 
       {pendingImport && (
-        <div className="save-conflict" role="alert">
-          <p>
-            <strong>Replace this terminal&apos;s operator file?</strong> Importing changes the
-            whole local file. If signed in, Records will be checked again before either copy
-            can overwrite the other.
-          </p>
-          <div className="save-summary-grid">
-            <FileSummary label="THIS TERMINAL" game={state} savedAt={persistence.lastSavedAt} />
-            <FileSummary
-              label="IMPORT FILE"
-              game={pendingImport.game}
-              savedAt={pendingImport.savedAt}
-            />
-          </div>
-          <div className="save-action-row">
-            <button className="btn btn-primary btn-compact" type="button" onClick={confirmImport}>
-              CONFIRM REPLACE
-            </button>
-            <button className="btn btn-ghost btn-compact" type="button" onClick={cancelImport}>
-              CANCEL IMPORT
-            </button>
-          </div>
-        </div>
+        <SaveConflictPanel
+          message="Replace this terminal&apos;s operator file? Importing changes the whole local file. If signed in, Records will be checked again before either copy can overwrite the other."
+          summaries={
+            <>
+              <FileSummary label="THIS TERMINAL" game={state} savedAt={persistence.lastSavedAt} />
+              <FileSummary
+                label="IMPORT FILE"
+                game={pendingImport.game}
+                savedAt={pendingImport.savedAt}
+              />
+            </>
+          }
+          actions={
+            <>
+              <button className="btn btn-primary btn-compact" type="button" onClick={confirmImport}>
+                CONFIRM REPLACE
+              </button>
+              <button className="btn btn-ghost btn-compact" type="button" onClick={cancelImport}>
+                CANCEL IMPORT
+              </button>
+            </>
+          }
+        />
       )}
 
       {confirmingReset && (
-        <div className="save-conflict save-reset-confirmation" role="alert">
-          <p>
-            <strong>Erase this terminal&apos;s operator file?</strong> Local progress will be
-            replaced by a new Day 1 file. This cannot be undone without an export or a Records
-            copy. Records is never erased automatically; if signed in, you will choose which copy
-            remains.
-          </p>
-          <div className="save-action-row">
-            <button className="btn btn-primary btn-compact" type="button" onClick={resetFile}>
-              ERASE AND START OVER
-            </button>
-            <button
-              className="btn btn-ghost btn-compact"
-              type="button"
-              onClick={() => setConfirmingReset(false)}
-            >
-              CANCEL RESET
-            </button>
-          </div>
-        </div>
+        <SaveConflictPanel
+          className="save-reset-confirmation"
+          message="Erase this terminal&apos;s operator file? Local progress will be replaced by a new Day 1 file. This cannot be undone without an export or a Records copy. Records is never erased automatically; if signed in, you will choose which copy remains."
+          actions={
+            <>
+              <button className="btn btn-primary btn-compact" type="button" onClick={resetFile}>
+                ERASE AND START OVER
+              </button>
+              <button
+                className="btn btn-ghost btn-compact"
+                type="button"
+                onClick={() => setConfirmingReset(false)}
+              >
+                CANCEL RESET
+              </button>
+            </>
+          }
+        />
       )}
 
       <div className="save-action-row save-file-actions">

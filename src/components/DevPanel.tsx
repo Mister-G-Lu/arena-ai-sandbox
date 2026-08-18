@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef } from 'react';
 import { useGameState } from '../context/GameStateContext';
 import { setDevOptIn } from '../lib/devMode';
 import './DevPanel.css';
@@ -14,26 +14,22 @@ import './DevPanel.css';
  * Everything here latches `devTouched`, which the header then advertises for
  * the life of the file. A cheat that hides itself is a cheat that eventually
  * gets mistaken for a bug report.
+ *
+ * The collapsible body uses the native `<details>`/`<summary>` disclosure
+ * element instead of a hand-rolled `useState` toggle, so the open/close
+ * behavior, keyboard support, and accessible name come from the browser.
  */
 export default function DevPanel() {
   const { devMode, actionTank, actions } = useGameState();
-  const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDetailsElement>(null);
 
   if (!devMode) return null;
 
   return (
-    <aside className={`dev-panel${open ? ' open' : ''}`} aria-label="Maintenance terminal">
-      <button
-        type="button"
-        className="dev-panel-toggle"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-      >
-        ⚑ MAINTENANCE
-      </button>
+    <details className="dev-panel" ref={panelRef}>
+      <summary className="dev-panel-toggle">⚑ MAINTENANCE</summary>
 
-      {open && (
-        <div className="dev-panel-body">
+      <div className="dev-panel-body">
           <p className="dev-panel-note">
             Capability granted by this build and this device. Not an account. Every change
             below marks the operator file permanently.
@@ -65,7 +61,7 @@ export default function DevPanel() {
               className="btn btn-ghost btn-compact"
               onClick={() => {
                 setDevOptIn(false);
-                setOpen(false);
+                if (panelRef.current) panelRef.current.open = false;
               }}
             >
               ▸ DROP DEV OPT-IN (?dev=0)
@@ -77,8 +73,7 @@ export default function DevPanel() {
               This file is flagged ALTERED. That flag does not clear.
             </p>
           )}
-        </div>
-      )}
-    </aside>
+      </div>
+    </details>
   );
 }

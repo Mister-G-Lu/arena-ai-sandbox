@@ -58,21 +58,35 @@
   font-family: 'Share Tech Mono', monospace;
 }
 
-/* Credits meter */
+/* Credits meter — a native <progress> element. The fill lives on the
+   browser pseudo-elements; we style the track and the neon fill here. */
 .resource-meter {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
   width: 100px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  border: none;
   border-radius: 2px;
   overflow: hidden;
   margin-top: 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.resource-meter-fill {
-  height: 100%;
+.resource-meter::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.resource-meter::-webkit-progress-value {
   background: linear-gradient(90deg, var(--terminal-accent), var(--terminal-glow));
-  transition: width 0.3s ease;
   box-shadow: 0 0 10px var(--terminal-glow);
+}
+
+.resource-meter::-moz-progress-bar {
+  background: linear-gradient(90deg, var(--terminal-accent), var(--terminal-glow));
+  box-shadow: 0 0 10px var(--terminal-glow);
+  border-radius: 2px;
 }
 
 /* Component dots */
@@ -212,7 +226,8 @@
   text-shadow: 0 0 12px rgba(87, 214, 195, 0.55);
 }
 
-.resource-item.actions-unbound .actions-fill {
+.resource-item.actions-unbound .actions-meter::-webkit-progress-value,
+.resource-item.actions-unbound .actions-meter::-moz-progress-bar {
   background: linear-gradient(90deg, #57d6c3, #ffc66b);
 }
 

@@ -11,7 +11,11 @@
 }
 
 .dev-panel-toggle {
+  /* The disclosure marker is the browser's detail arrow; hide it so the
+     panel reads as the same button-shaped toggle it always was. */
+  list-style: none;
   display: block;
+  width: fit-content;
   margin-left: auto;
   padding: 0.35rem 0.7rem;
   background: #1a1206;
@@ -22,6 +26,10 @@
   font-size: 0.7rem;
   letter-spacing: 0.12em;
   cursor: pointer;
+}
+
+.dev-panel-toggle::-webkit-details-marker {
+  display: none;
 }
 
 .dev-panel-toggle:hover,
