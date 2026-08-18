@@ -86,7 +86,12 @@ test.describe('Dev panel (Maintenance Terminal)', () => {
     await expect(summary).toContainText('MAINTENANCE');
     await summary.click();
     // The action-tank controls are inside the opened details body.
-    await expect(page.locator('button', { hasText: /REFILL TANK|DETACH BUDGET FROM CLOCK/ })).toBeVisible();
+    await expect(
+      page.locator('button', { hasText: /REFILL TANK/ }),
+    ).toBeVisible();
+    await expect(
+      page.locator('button', { hasText: /DETACH BUDGET FROM CLOCK/ }),
+    ).toBeVisible();
   });
 
   // The "Maintenance Terminal is absent when dev capability is off"
