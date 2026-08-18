@@ -52,19 +52,18 @@ overall percentage would hide that split.
 - [x] Production build, save validation, content-graph validation, and automated
   test/coverage gates pass locally.
 - [x] Import/reset require confirmation and re-check Records before cloud writes resume.
-- [ ] A repository owner installs the CI/Pages workflow templates from
-  `ops/github-workflows/` under `.github/workflows/`; then sets **Build and
-  deployment / Source** to **GitHub Actions**. Templates are ready; push requires
-  a token with `workflow` scope (GitHub Apps are blocked from writing workflow files).
+- [x] The CI/Pages workflow templates from `ops/github-workflows/` are
+  installed under `.github/workflows/`. Pull requests now run TypeScript,
+  lint, unit tests with coverage, Playwright E2E tests, and the production
+  build automatically. A repository owner still needs to set **Build and
+  deployment / Source** to **GitHub Actions** for the Pages workflow to
+  deploy (requires a token with `workflow` scope).
 - [ ] Author and integration-playtest the Month-1 tracks (Shifts 8–30), Attention
   pressure/cooling, routine-pool refill, and the complete first Reinstatement.
 - [ ] Build and playtest Arcs II–III, the remaining zones, Seam Ripper, and endings.
 - [ ] Complete the three unchecked human playtest questions in
   [`design/tutorial-first-shift.md`](design/tutorial-first-shift.md#7-testing-checklist),
   plus keyboard, reduced-motion, mobile, and restore/conflict checks on real browsers.
-- [ ] Have a repository owner install the CI/Pages workflow templates from
-  `ops/github-workflows/`; Pages currently deploys the committed `docs/` tree from
-  `main`, but pull requests do not have an active repository CI gate.
 - [ ] Verify production Supabase migrations, RLS, auth redirect URLs, and a real
   magic-link save/restore round trip.
 - [ ] Before any trust-sensitive release, exclude the Maintenance panel from
@@ -76,8 +75,15 @@ full first Reinstatement, with the owner-side CI and deployment checks active.
 
 ## Documentation
 
-- [`design/`](design/) — the design bible: [`core-design.md`](design/core-design.md) (pillars), [`arcs.md`](design/arcs.md) (story), [`NARRATION_SETS.md`](design/NARRATION_SETS.md) (all narration text), plus ADRs and reviews (⚠ full spoilers)
-- [`design/DEVELOPMENT.md`](design/DEVELOPMENT.md) — the operational handoff: commands, save schema, Supabase config, content safety, deployment
+- [`AGENTS.md`](AGENTS.md) — AI coding agent guidelines: boundaries, patterns,
+  commands, and Definition of Done for agents working in this repo
+- [`design/`](design/) — the design bible: [`core-design.md`](design/core-design.md)
+  (pillars), [`arcs.md`](design/arcs.md) (story),
+  [`NARRATION_SETS.md`](design/NARRATION_SETS.md) (all narration text), plus
+  ADRs and reviews (⚠ full spoilers)
+- [`design/DEVELOPMENT.md`](design/DEVELOPMENT.md) — the operational handoff:
+  commands, save schema, Supabase config, content safety, deployment,
+  testing strategy
 
 ## Architecture
 
@@ -100,26 +106,61 @@ npm run quality         # TypeScript + ESLint + 500-line budget + coverage
 npm run check           # quality gates plus the production build
 npm run check:file-length # report the 500-line source budget directly
 npm run build           # writes the GitHub Pages site to docs/
+
+# Testing
+npm run test            # Vitest unit tests (fast, jsdom)
+npm run test:coverage   # Vitest with 80% coverage enforcement
+npm run test:e2e        # Playwright E2E/integration tests (real browser)
+npm run test:e2e:ui     # Playwright UI debug mode
 ```
 
 ## Automated quality gates
 
-The repository uses the flat ESLint configuration in [`eslint.config.js`](eslint.config.js)
-for JavaScript, JSX, TypeScript, and TSX. It applies React and TypeScript-aware
-rules, a 500-line maximum to every linted code file, and focused SonarJS checks
-for cognitive complexity, duplicated branches/functions, duplicate literals, and
+The repository uses **three layers of automated validation**, all running in CI
+on every pull request and push to `main`:
+
+### Layer 1 — Static analysis and linting
+
+The flat ESLint configuration in [`eslint.config.js`](eslint.config.js) covers
+JavaScript, JSX, TypeScript, and TSX with React and TypeScript-aware rules,
+a 500-line maximum to every linted code file, and focused SonarJS checks for
+cognitive complexity, duplicated branches/functions, duplicate literals, and
 unsafe `any` values. CSS and SQL are covered by
-[`scripts/check-file-length.mjs`](scripts/check-file-length.mjs), so the same 500-line
-budget applies to the rest of the source tree. `npm run quality` runs these gates
-with zero ESLint warnings; `npm run check` adds coverage and the production build.
+[`scripts/check-file-length.mjs`](scripts/check-file-length.mjs), so the same
+500-line budget applies to the rest of the source tree. TypeScript strict mode
+(`tsc --noEmit`) catches type errors before they reach the browser.
+
+### Layer 2 — Unit and component tests
+
+[Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)
+run in jsdom with 80% coverage thresholds (lines, functions, branches,
+statements). All test files live alongside their source in `src/` as
+`*.test.{js,jsx,ts,tsx}`.
+
+### Layer 3 — E2E and integration tests
+
+[Playwright](https://playwright.dev/) runs critical user flows against the real
+app in Chromium: boot sequence, navigation, save/load lifecycle, dev panel
+interactions, error resilience, and responsive layout. Tests live in
+`src/e2e/*.spec.ts`. Screenshots and traces are captured on failure for
+debugging in CI.
+
+### Hosted analysis
 
 [`sonar-project.properties`](sonar-project.properties) configures the deeper
-SonarQube/SonarCloud analysis: TypeScript code smells, duplication, coverage, and
-the hosted quality gate. The CI template under
-[`ops/github-workflows/ci.yml`](ops/github-workflows/ci.yml) runs it when the
-repository has a `SONAR_HOST_URL` variable and `SONAR_TOKEN` secret. SonarQube is
-complementary to ESLint: ESLint blocks fast local regressions, while the hosted
-analysis can track maintainability and duplication trends across pull requests.
+SonarQube/SonarCloud analysis: TypeScript code smells, duplication, coverage,
+and the hosted quality gate. It runs in CI when the repository has a
+`SONAR_HOST_URL` variable and `SONAR_TOKEN` secret. SonarQube is complementary
+to ESLint: ESLint blocks fast local regressions, while the hosted analysis can
+track maintainability and duplication trends across pull requests.
+
+### CI workflow
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs all three layers
+on every pull request and push to `main`. The pages deployment workflow at
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) handles GitHub
+Pages deployment from the `docs/` build output. See
+[`AGENTS.md`](AGENTS.md) for the agent-facing rules of engagement.
 
 ## License
 
