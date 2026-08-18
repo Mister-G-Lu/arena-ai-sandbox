@@ -21,6 +21,11 @@ export default defineConfig({
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['list'],
+    // On GitHub Actions, append failing test names to the job summary so
+    // E2E regressions are visible without digging through the raw log.
+    ...(process.env.GITHUB_ACTIONS
+      ? [[new URL('./scripts/ci-e2e-summary-reporter.mjs', import.meta.url).pathname, null]]
+      : []),
   ],
   use: {
     /* The app is served locally; Playwright talks to the Vite dev server. */
