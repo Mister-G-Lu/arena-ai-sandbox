@@ -19,6 +19,8 @@
     "check:file-length": "node scripts/check-file-length.mjs",
     "quality": "npm run typecheck && npm run lint && npm run test:coverage",
     "check": "npm run quality && npm run build",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "verify:pages": "npm run build && git diff --exit-code -- docs"
   },
   "repository": {
@@ -40,6 +42,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.4",

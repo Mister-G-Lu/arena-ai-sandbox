@@ -10,6 +10,7 @@ to the repository root.
 ```bash
 npm ci
 npm run check
+npm run test:e2e        # if you made UI or integration-level changes
 ```
 
 `npm run check` runs TypeScript, ESLint, the 500-line source budget, tests with
@@ -18,9 +19,10 @@ terminal pages and enforces a 250 KiB maximum for every minified JavaScript chun
 with `scripts/check-bundle-size.mjs`. ESLint's flat config covers JS/JSX and
 TS/TSX with React, TypeScript, and focused SonarJS maintainability rules;
 `scripts/check-file-length.mjs` extends the same 500-line budget to CSS and SQL.
-The ready-to-install GitHub workflow template lives at `ops/github-workflows/ci.yml`.
-For hosted duplication and maintainability trends, configure `SONAR_HOST_URL` and
-`SONAR_TOKEN`; the same template then runs the `sonar-project.properties` quality gate.
+The GitHub workflow at `.github/workflows/ci.yml` runs all gates on every PR
+including Playwright E2E tests. For hosted duplication and maintainability trends,
+configure `SONAR_HOST_URL` and `SONAR_TOKEN`; the same workflow then runs the
+`sonar-project.properties` quality gate.
 
 ## Canonical runtime and save
 
@@ -160,6 +162,52 @@ string-built event handlers. Rich local copy should be JSX or a small structured
 token format whose allowed tags are rendered by React. If remote rich text is ever
 required, add an audited allowlist sanitizer at the ingestion boundary and tests
 for scripts, event attributes, `javascript:` URLs, SVG, and malformed markup.
+
+## Testing strategy
+
+The repository uses a layered approach — different tools for different levels
+of confidence. The rule is: write the least expensive test that covers the risk.
+
+| Layer | Tool | Environment | What it covers | When to use |
+|---|---|---|---|---|
+| **Unit** | Vitest | jsdom (simulated browser) | Game logic, save schema, content validation, pure functions | Every new or changed function. Fast (~1 s). |
+| **Component** | Vitest + Testing Library | jsdom | React component rendering, user interactions, state changes | Every new or changed component. Covers states and edge cases. |
+| **Integration** | Vitest + Testing Library | jsdom | Multi-component flows, context wiring, hooks | Flows that cross component boundaries. Mocked Supabase. |
+| **E2E** | Playwright | Real Chromium browser | Boot sequence, navigation, save/load lifecycle, responsive layout, full user journeys | Every new route or significant UI change. Tests run against the Vite dev server. |
+
+### Running tests
+
+```bash
+npm run test              # Vitest unit + component + integration
+npm run test:coverage     # same + 80% coverage enforcement
+npm run test:e2e          # Playwright (requires `npx playwright install` first)
+npm run test:e2e:ui       # Playwright UI debug mode
+```
+
+Playwright tests live in `src/e2e/` and follow the naming convention
+`*.spec.ts`. See [`playwright.config.ts`](../playwright.config.ts) for browser
+selection and the web server config.
+
+### E2E test guidelines
+
+- Keep E2E tests focused on **critical user paths** that unit tests can't cover:
+  full render cycles, navigation between boards, save/load, and error resilience.
+- Each test runs against an in-memory `localStorage` state, so tests are
+  hermetic and don't interfere.
+- The Playwright config starts a Vite dev server automatically; tests connect
+  to it at `http://localhost:3000`.
+- Screenshots and traces are captured on failure for CI debugging.
+- Add a test for every new board, route, or significant interaction pattern.
+
+### CI integration
+
+The CI workflow at `.github/workflows/ci.yml` runs all three layers in sequence:
+
+1. `npm run check` (typecheck → lint → coverage → build)
+2. `npx playwright test` (E2E)
+3. SonarQube (if configured)
+
+Pull requests that fail any layer are blocked from merge.
 
 ## Deployment
 
