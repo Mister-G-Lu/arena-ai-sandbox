@@ -24,7 +24,7 @@ export default defineConfig({
     // On GitHub Actions, append failing test names to the job summary so
     // E2E regressions are visible without digging through the raw log.
     ...(process.env.GITHUB_ACTIONS
-      ? [new URL('./scripts/ci-e2e-summary-reporter.mjs', import.meta.url).pathname]
+      ? [[new URL('./scripts/ci-e2e-summary-reporter.mjs', import.meta.url).pathname, null]]
       : []),
   ],
   use: {
