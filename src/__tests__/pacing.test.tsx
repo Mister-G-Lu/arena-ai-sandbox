@@ -12,92 +12,11 @@ import {
   GAME_SAVE_KEY,
   createInitialGameState,
   createStoredSaveEnvelope,
-  parseStoredSaveEnvelope,
   serializeSaveEnvelope,
 } from '../lib/gameSave';
-
-function save() {
-  const raw = JSON.parse(localStorage.getItem(GAME_SAVE_KEY) ?? '{}');
-  return parseStoredSaveEnvelope(raw).game;
-}
-
-function button(text: string): HTMLButtonElement | undefined {
-  return Array.from(document.querySelectorAll('button')).find((b) =>
-    (b.textContent ?? '').includes(text),
-  ) as HTMLButtonElement | undefined;
-}
-
-async function click(text: string) {
-  const el = button(text);
-  if (!el) throw new Error(`no button matching "${text}" — saw: ${
-    Array.from(document.querySelectorAll('button')).map((b) => b.textContent?.trim()).join(' | ')
-  }`);
-  await act(async () => { el.click(); });
-}
-
-async function tick(ms: number) {
-  for (let elapsed = 0; elapsed < ms; elapsed += 50) {
-    await act(async () => { vi.advanceTimersByTime(50); });
-  }
-}
-
-async function go(hash: string) {
-  window.location.hash = hash;
-  await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
-  await vi.dynamicImportSettled();
-  await act(async () => undefined);
-}
-
-async function waitForActions(count: number) {
-  await act(async () => { vi.advanceTimersByTime(count * 10 * 60 * 1000); });
-  await act(async () => { vi.advanceTimersByTime(1000); });
-}
-
-async function runOrientation(answer: string) {
-  await go('first-shift');
-  await click('INITIATE ORIENTATION');
-  await tick(3000);
-  await click('CONTINUE');
-  await tick(400);
-  await click('PROCEED TO STATION');
-  await tick(400);
-  if (button('ACKNOWLEDGE — RETURN TO CONSOLE')) {
-    await click('ACKNOWLEDGE — RETURN TO CONSOLE');
-    await tick(400);
-  }
-  await click('CHECK THE BREAK ROOM');
-  await tick(400);
-  await click(answer);
-  await tick(1000);
-  await click('RETURN TO STATION');
-  await tick(400);
-  await click('EXECUTE FIRST TASK');
-  await tick(1500);
-  await click('CONFIRM RESULT');
-  await tick(1200);
-  await click('ENTER THE LIVE QUEUE');
-  await tick(500);
-  await go('console');
-}
-
-/** Execute one task and file its result; returns true when it came back corrupt. */
-async function executeOneTask(): Promise<boolean> {
-  await click('EXECUTE TASK');
-  await tick(1200);
-  const corrupt = button('LOG THE DISCREPANCY') !== undefined;
-  if (corrupt) await click('FILE AS CLEAN');
-  else await click('ACKNOWLEDGE RESULT');
-  await tick(150);
-  return corrupt;
-}
-
-/** Grind until the budget is spent or the quota is met. */
-async function grindToEndOfShift() {
-  for (let i = 0; i < 60; i++) {
-    if (!button('EXECUTE TASK')) break;
-    await executeOneTask();
-  }
-}
+import {
+  button, click, finishCurrentShift, go, runOrientation, save, tick, waitForActions,
+} from './opening-narrative.helpers';
 
 describe('multi-day pacing (casual playthrough invariants)', () => {
   beforeEach(() => {
@@ -149,7 +68,7 @@ describe('multi-day pacing (casual playthrough invariants)', () => {
     }
     await go('console');
     await tick(100);
-    await grindToEndOfShift();
+    await finishCurrentShift();
 
     const after = save();
     // The notices spent budget, so fewer than fifty tasks were filed this
@@ -219,7 +138,7 @@ describe('multi-day pacing (casual playthrough invariants)', () => {
     await go('console');
     await tick(100);
     await waitForActions(50);
-    await grindToEndOfShift();
+    await finishCurrentShift();
     await click('BEGIN NEXT SHIFT');
     await tick(200);
     expect(save().promotion.title).toBe('Senior Operator');
@@ -241,13 +160,13 @@ describe('multi-day pacing (casual playthrough invariants)', () => {
     await go('console');
     await tick(100);
     await waitForActions(50);
-    await grindToEndOfShift();
+    await finishCurrentShift();
     await click('BEGIN NEXT SHIFT');
     await tick(200);
     expect(save().day).toBe(3);
     expect(document.body.textContent).toContain('NIGHT DESK // FILED 03:12 // IN YOUR HAND');
     await waitForActions(50);
-    await grindToEndOfShift();
+    await finishCurrentShift();
     await click('BEGIN NEXT SHIFT');
     await tick(200);
     expect(save().day).toBe(4);

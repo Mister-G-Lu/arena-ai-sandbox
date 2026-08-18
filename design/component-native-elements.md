@@ -154,3 +154,23 @@ is the single best reuse win (one component, three call sites).
 - When a native element is used, keep its track/fill styled via the browser
   pseudo-elements so the neon HUD is preserved (see `ResourceBar.css`,
   `08-console-polish.css`).
+### Pass 2 — long-file separation (this PR)
+
+The longest component and test files were separated into themed folders:
+
+**Components** (each split into a sub-folder with self-contained presentational units):
+- `ProfilePage.tsx` 397 → 46 — now composes sections from `components/profile/` (`ProfileInfo`, `ProfileResources`, `ProfileQualities`, `ProfilePromotion`, `ProfileJournal`, plus shared `profileData.ts`).
+- `Console.tsx` 413 → 335 — extracted `components/console/ConsoleReadouts`, `ConsoleActions`, and a shared `SecondaryOrder` (the two order asides were near-duplicates).
+- `Notices.tsx` 347 → 255 — extracted `components/notices/ZoneCard`, `StoryletConsole`, `OutcomePanel`.
+- `SaveManagement.tsx` — extracted `components/save/FileSummary` and a shared `SaveConflictPanel` (used by all five "which file wins?" prompts).
+- Orientation/task "PROCESSING" bars were already native `<progress>` (Pass 1).
+
+**Tests** — split by theme, each group now focused:
+- `hooks/useCloudSave.test.ts` 444 → `bootstrap`/`race`/`recovery` files + shared `useCloudSave.testUtils.ts`.
+- `context/GameStateContext.effects.test.jsx` 424 → `effects`/`persistence`/`residue` files.
+- `__tests__/opening-narrative-later.test.tsx` 409 → later-beats + `opening-narrative-floor12.test.tsx`.
+- `game/dispatch.test.ts` 294 → anomaly-schedule + `dispatch.personal.test.ts`.
+- `lib/gameSave.test.ts` 295 → `roundtrip` + `validation` files.
+- `__tests__/pacing.test.tsx` 278 → 197 by reusing the shared `opening-narrative.helpers`.
+
+**Left as-is (cohesive by design):** `useGameActions.js` (406), `gameSave.ts` (366), `dispatch.ts` (352), `useCloudSave.ts` (319) are single-concern hooks/logic modules whose functions share one closure/state owner; force-splitting would hurt cohesion more than line count helps. The `opening-narrative.test.tsx` (347) integration suite is one scenario group.

@@ -4,6 +4,9 @@ import { taskPayout } from '../game/payouts';
 import { taskOrderFor } from '../game/dispatch';
 
 import ConsoleWorkflow from './ConsoleWorkflow';
+import ConsoleReadouts from './console/ConsoleReadouts';
+import ConsoleActions from './console/ConsoleActions';
+import SecondaryOrder from './console/SecondaryOrder';
 import {
   FILINGS,
   M_AMBIENT,
@@ -237,32 +240,20 @@ export default function Console() {
             CENTRAL DISPATCH // OPERATOR TERMINAL
             <span className="console-status">▣ {consoleStatus}</span>
           </div>
-          <div className="readouts">
-            <div className="readout">
-              <label>SHIFT DAY</label>
-              <span>{state.day}</span>
-            </div>
-            <div className="readout">
-              <label>SHIFT CLOCK</label>
-              <span>{formatTime(minutes)}</span>
-            </div>
-            <div className="readout">
-              <label>ACTIONS</label>
-              <span>{actionTank.display}</span>
-            </div>
-            <div className="readout">
-              <label>STATUS</label>
-              <span>
-                {phase === 'result'
-                  ? 'ACKNOWLEDGMENT DUE'
-                  : shiftComplete
-                    ? 'SHIFT COMPLETE'
-                    : outOfActions
-                      ? 'BUDGET EXHAUSTED'
-                      : 'CLEAR UNTIL 06:00'}
-              </span>
-            </div>
-          </div>
+          <ConsoleReadouts
+            day={state.day}
+            clock={formatTime(minutes)}
+            actionsDisplay={actionTank.display}
+            statusLabel={
+              phase === 'result'
+                ? 'ACKNOWLEDGMENT DUE'
+                : shiftComplete
+                  ? 'SHIFT COMPLETE'
+                  : outOfActions
+                    ? 'BUDGET EXHAUSTED'
+                    : 'CLEAR UNTIL 06:00'
+            }
+          />
 
           <div className="console-vista" aria-live="polite" aria-label="Window view">
             <span className="console-vista-kicker">WINDOW // EXTERNAL FEED — {formatTime(minutes)}</span>
@@ -271,49 +262,25 @@ export default function Console() {
           </div>
 
           {annexOrderPending && (
-            <aside className="secondary-order" aria-labelledby="annex-order-title">
-              <div>
-                <div className="secondary-order-kicker">SECONDARY ORDER // OUTSIDE THE LIVE QUEUE</div>
-                <div className="secondary-order-title" id="annex-order-title">
-                  ANNEX ELEVATOR // OUT-OF-RANGE STOP: FLOOR 12
-                </div>
-                <p>
-                  Car 2 stopped above its listed service range at 00:59:57. The request
-                  carries your terminal ID. Clearance determines how much of the attachment
-                  the system will admit exists.
-                </p>
-                <p className="manager-aside">
-                  M. // &quot;Elevators occasionally become ambitious. We do not reward initiative
-                  here. File it and return to your actual job.&quot;
-                </p>
-              </div>
-              <a className="btn btn-primary btn-compact" href="#investigations">
-                ▸ INVESTIGATE
-              </a>
-            </aside>
+            <SecondaryOrder
+              titleId="annex-order-title"
+              kicker="SECONDARY ORDER // OUTSIDE THE LIVE QUEUE"
+              title="ANNEX ELEVATOR // OUT-OF-RANGE STOP: FLOOR 12"
+              body="Car 2 stopped above its listed service range at 00:59:57. The request
+                carries your terminal ID. Clearance determines how much of the attachment
+                the system will admit exists."
+              managerNote="Elevators occasionally become ambitious. We do not reward initiative here. File it and return to your actual job."
+            />
           )}
 
           {handwritingOrderPending && (
-            <aside className="secondary-order" aria-labelledby="handwritten-order-title">
-              <div>
-                <div className="secondary-order-kicker">NIGHT DESK // FILED 03:12 // IN YOUR HAND</div>
-                <div className="secondary-order-title" id="handwritten-order-title">
-                  WORK ORDER // STREETLIGHT 4-B, SECTOR 9
-                </div>
-                <p>
-                  The order is signed with your name, in your handwriting. You were at the
-                  terminal at 03:12. The queue has no memory of this order. The signature has
-                  a very good memory.
-                </p>
-                <p className="manager-aside">
-                  M. // &quot;I did not authorise this. Do not authorise it either. Return it to the
-                  desk it came from — the one that is not there.&quot;
-                </p>
-              </div>
-              <a className="btn btn-primary btn-compact" href="#investigations">
-                ▸ INVESTIGATE
-              </a>
-            </aside>
+            <SecondaryOrder
+              titleId="handwritten-order-title"
+              kicker="NIGHT DESK // FILED 03:12 // IN YOUR HAND"
+              title="WORK ORDER // STREETLIGHT 4-B, SECTOR 9"
+              body="The order is signed with your name, in your handwriting. You were at the terminal at 03:12. The queue has no memory of this order. The signature has a very good memory."
+              managerNote="I did not authorise this. Do not authorise it either. Return it to the desk it came from — the one that is not there."
+            />
           )}
 
           <div className="log" ref={logRef} aria-label="Dispatch log" aria-live="polite">
@@ -342,64 +309,19 @@ export default function Console() {
             outOfActions={outOfActions}
           />
 
-          <div className="console-actions">
-            {phase === 'ready' && !shiftComplete && !outOfActions && (
-              <button className="btn btn-primary" onClick={executeTask}>
-                ▸ EXECUTE TASK {state.tasksThisShift + 1}
-              </button>
-            )}
-            {phase === 'ready' && !shiftComplete && outOfActions && (
-              <button className="btn btn-primary" type="button" disabled>
-                NO ACTIONS — +1 IN {actionTank.countdown}
-              </button>
-            )}
-            {phase === 'processing' && (
-              <button className="btn btn-primary" type="button" disabled>
-                PROCESSING — QUEUE LOCKED
-              </button>
-            )}
-            {phase === 'result' && !pendingTask?.isCorrupt && (
-              <button
-                className="btn btn-primary acknowledge-button"
-                onClick={() => fileResult('clean')}
-                autoFocus
-              >
-                {FILINGS.clean.label}
-              </button>
-            )}
-            {phase === 'result' && pendingTask?.isCorrupt && (
-              <>
-                <button
-                  className="btn btn-primary acknowledge-button"
-                  onClick={() => fileResult('file-clean')}
-                >
-                  {FILINGS['file-clean'].label}
-                </button>
-                <button
-                  className="btn btn-ghost acknowledge-button"
-                  onClick={() => fileResult('discrepancy')}
-                >
-                  {FILINGS.discrepancy.label}
-                </button>
-              </>
-            )}
-            {phase === 'ready' && shiftComplete && (
-              <button className="btn btn-primary" onClick={nextShift}>
-                ▸ BEGIN NEXT SHIFT
-              </button>
-            )}
-            <span className="console-action-note">
-              {phase === 'result'
-                ? pendingTask?.isCorrupt
-                  ? 'Two ways to close this record. Only one of them is honest. Both are permitted.'
-                  : 'The next work order will remain sealed until you confirm this record.'
-                : `${state.tasksThisShift} results logged this shift · ${actionTank.display} actions.${
-                    state.discrepanciesLogged > 0
-                      ? ` ${state.discrepanciesLogged} discrepancies on your record.`
-                      : ''
-                  }`}
-            </span>
-          </div>
+          <ConsoleActions
+            phase={phase}
+            tasksThisShift={state.tasksThisShift}
+            discrepanciesLogged={state.discrepanciesLogged}
+            shiftComplete={shiftComplete}
+            outOfActions={outOfActions}
+            countdown={actionTank.countdown}
+            actionsDisplay={actionTank.display}
+            pendingTask={pendingTask}
+            onExecute={executeTask}
+            onFile={fileResult}
+            onNextShift={nextShift}
+          />
         </div>
 
         <div className="console-utility-row">
