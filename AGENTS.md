@@ -47,6 +47,7 @@ Priorities (highest first):
 
 ```bash
 npm ci                   # Clean install (always use this, never npm install)
+npm audit                # Dependency vulnerability check (also runs as a CI security gate)
 npm run dev              # Local dev server at http://localhost:3000
 npm run quality          # TypeScript + ESLint + 500-line budget + coverage
 npm run check            # quality gates + production build
